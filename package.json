@@ -1,0 +1,10 @@
+{
+  "name": "hyp3e-utilities",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "check": "node --check module/hyp3e-utilities.mjs && node scripts/validate-module.mjs"
+  }
+}
