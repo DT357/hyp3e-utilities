@@ -13,8 +13,20 @@ assert.equal(manifest.id, 'hyp3e-utilities');
 assert.equal(manifest.title, 'Hyp3e Utilities');
 assert.equal(manifest.version, packageMetadata.version);
 assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+assert.equal(manifest.socket, true);
 assert.deepEqual(manifest.relationships?.systems, [
-  { id: 'hyp3e', type: 'system' },
+  {
+    id: 'hyp3e',
+    type: 'system',
+    compatibility: { minimum: '4.0.3' },
+  },
+]);
+assert.deepEqual(manifest.relationships?.requires, [
+  {
+    id: 'socketlib',
+    type: 'module',
+    compatibility: { minimum: '1.1.4' },
+  },
 ]);
 
 const referencedFiles = [

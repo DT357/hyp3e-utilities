@@ -1,1 +1,22 @@
-/* Module styles will be added with the first user-facing feature. */
+.hyp3e-utilities {
+  --hyp3e-utilities-gap: 0.75rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hyp3e-utilities-gap);
+  padding: var(--hyp3e-utilities-gap);
+}
+
+.hyp3e-utilities .hyp3e-utilities__user-list {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.hyp3e-utilities .hyp3e-utilities__form-footer {
+  display: flex;
+  justify-content: flex-end;
+}

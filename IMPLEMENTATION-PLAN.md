@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Ready for Milestone 1 implementation
+Status: Milestone 1 foundation complete; NPC Action HUD implementation next
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -171,12 +171,12 @@ Status: `DONE` — all pre-build work items passed and their evidence is recorde
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| FND-001 | `TODO` | PB-009 | Module constants, setting keys, flag keys, hook names, and logging helper | Unit tests for stable keys; syntax check |
-| FND-002 | `TODO` | PB-004, PB-005 | `hyp3e` adapter for HP, AC/DR, movement, saves, morale, XP, money, and item quantities | Fixture tests for character, NPC, treasure, and synthetic Actor inputs |
-| FND-003 | `TODO` | FND-001 | World/client settings registration, settings menus, defaults, and validation | Setting registration tests and Foundry smoke test |
-| FND-004 | `TODO` | PB-008 | SocketLib dependency declaration and transport bootstrap | Graceful missing/inactive dependency message; authenticated round trip; absent/changed active GM and reconnect behavior |
-| FND-005 | `TODO` | PB-007 | Shared ApplicationV2 shell conventions, template paths, localization loading, and CSS namespace | Empty app renders and closes cleanly in supported Foundry versions |
-| FND-006 | `TODO` | FND-001 | Unsupported-system/version guard and diagnostic logging | Non-`hyp3e` world does not activate feature hooks |
+| FND-001 | `DONE` | PB-009 | Module constants, setting keys, flag keys, hook names, and logging helper | Unit tests for stable keys; syntax check |
+| FND-002 | `DONE` | PB-004, PB-005 | `hyp3e` adapter for HP, AC/DR, movement, saves, morale, XP, money, and item quantities | Fixture tests for character, NPC, treasure, and synthetic Actor inputs |
+| FND-003 | `DONE` | FND-001 | World/client settings registration, settings menus, defaults, and validation | Setting registration tests and Foundry smoke test |
+| FND-004 | `DONE` | PB-008 | SocketLib dependency declaration and transport bootstrap | Graceful missing/inactive dependency message; authenticated round trip; absent/changed active GM and reconnect behavior |
+| FND-005 | `DONE` | PB-007 | Shared ApplicationV2 shell conventions, template paths, localization loading, and CSS namespace | Empty app renders and closes cleanly in supported Foundry versions |
+| FND-006 | `DONE` | FND-001 | Unsupported-system/version guard and diagnostic logging | Non-`hyp3e` world does not activate feature hooks |
 
 Planned production areas: `module/core/`, `module/adapters/`, `module/settings/`, `module/socket/`, `templates/`, `styles/`, and `lang/en.json`.
 
@@ -342,19 +342,17 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Proceed next with:
-
-1. Implement FND-001 through FND-006.
-2. Begin HUD work with HUD-001 and HUD-002 tests.
+The foundation portion of Milestone 1 is now complete. Proceed next with
+HUD-001 and HUD-002 tests, followed by the shared chat-card service in HUD-003.
 
 ## 15. Current Project Status
 
 - Product design: Complete for the planned 1.0 scope.
-- Module scaffold: Present and locally validated.
+- Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0 is complete; all pre-build validation items are `DONE`.
-- Immediate next batch: Implement FND-001 through FND-006, beginning with tests for stable constants and the `hyp3e` adapter contract.
+- Implementation: Milestone 0 and the Milestone 1 foundation are complete.
+- Immediate next batch: Implement HUD-001 and HUD-002 test-first, then HUD-003.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

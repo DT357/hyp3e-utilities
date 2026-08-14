@@ -1,3 +1,8 @@
-Hooks.once('init', () => {
-  console.info('Hyp3e Utilities | Initializing');
+import { registerModuleLifecycle } from './core/bootstrap.mjs';
+import { logger } from './core/logger.mjs';
+
+registerModuleLifecycle({
+  gameProvider: () => globalThis.game,
+  hooks: Hooks,
+  logger,
 });

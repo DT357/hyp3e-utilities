@@ -24,6 +24,14 @@ The local `References/hyp3e` development checkout is read-only reference materia
 
 The local `References/sw-utilities` checkout is development reference material outside the distributed module repository. Only material for which the Hyp3e Utilities copyright holder has the necessary rights may be ported into this project.
 
+## SocketLib
+
+Hyp3e Utilities requires the separately distributed SocketLib module at
+runtime. SocketLib is not bundled in this repository. SocketLib is maintained
+by Manuel Vögele and contributors and is available under the MIT License.
+
+Project: <https://github.com/farling42/foundryvtt-socketlib>
+
 ## Future dependencies and assets
 
 Any third-party dependency or asset added later must retain its required copyright and license notices. Its license must be reviewed before it is bundled or declared as a runtime dependency.

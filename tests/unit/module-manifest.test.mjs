@@ -19,8 +19,20 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
   assert.equal(packageMetadata.version, manifest.version);
   assert.equal(packageMetadata.license, 'MIT');
   assert.equal(manifest.license, 'LICENSE');
+  assert.equal(manifest.socket, true);
   assert.deepEqual(manifest.relationships?.systems, [
-    { id: 'hyp3e', type: 'system' },
+    {
+      id: 'hyp3e',
+      type: 'system',
+      compatibility: { minimum: '4.0.3' },
+    },
+  ]);
+  assert.deepEqual(manifest.relationships?.requires, [
+    {
+      id: 'socketlib',
+      type: 'module',
+      compatibility: { minimum: '1.1.4' },
+    },
   ]);
 });
 

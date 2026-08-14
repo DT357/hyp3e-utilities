@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed for PB-003 through PB-008 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed for PB-003 and PB-007; PB-004 through PB-006 regression checks also passed | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed for PB-003 through PB-008 and FND-001 through FND-006 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed for PB-003 through PB-007 and FND-001 through FND-006 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -75,8 +75,24 @@ request after reconnect. SocketLib does not replace application authorization,
 revision checks, or idempotency. Those remain production requirements in
 FND-004, PAR-002, and PAR-004.
 
+### Production foundation (FND-001 through FND-006)
+
+The same production foundation loaded in Foundry 13.351 and 14.365. Both
+environments published the module API, read representative character, NPC,
+treasure, and synthetic Actor data through the adapter, registered all five
+settings and three setting menus, completed an authenticated SocketLib ping,
+and rendered and closed all four foundation ApplicationV2 classes. The runtime
+compatibility guard accepted both supported environments, and neither run
+produced a module-originated warning or error.
+
+SocketLib selects the active GM for `executeAsGM`; Hyp3e Utilities checks the
+current `game.users.activeGM` for every call and does not cache GM identity.
+Automated tests cover no-GM and changed-GM behavior. Mutation authorization,
+revision control, and idempotency remain intentionally deferred to PAR-002 and
+PAR-004.
+
 ## Current gate
 
-PB-003 through PB-009 are complete. No compatibility finding contradicts the
-approved architecture, so the M0 release gate is complete and Milestone 1
-foundation implementation may begin.
+PB-003 through PB-009 and FND-001 through FND-006 are complete. No
+compatibility finding contradicts the approved architecture. The M0 gate and
+Milestone 1 foundation are complete; NPC Action HUD work may begin.

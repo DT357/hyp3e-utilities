@@ -1,0 +1,43 @@
+<section class="hyp3e-utilities__content">
+  <div class="form-group">
+    <label for="hyp3e-utilities-minimum-role">
+      {{localize "hyp3e-utilities.applications.permissions.minimumRole"}}
+    </label>
+    <select id="hyp3e-utilities-minimum-role" name="minimumEditRole">
+      {{#each roles}}
+        <option value="{{value}}" {{#if selected}}selected{{/if}}>
+          {{localize label}}
+        </option>
+      {{/each}}
+    </select>
+    <p class="hint">
+      {{localize "hyp3e-utilities.applications.permissions.minimumRoleHint"}}
+    </p>
+  </div>
+
+  <fieldset class="hyp3e-utilities__user-list">
+    <legend>
+      {{localize "hyp3e-utilities.applications.permissions.explicitEditors"}}
+    </legend>
+    {{#each users}}
+      <label>
+        <input
+          type="checkbox"
+          name="editorUserIds"
+          value="{{id}}"
+          {{checked checked}}
+        >
+        {{name}}
+      </label>
+    {{else}}
+      <p>{{localize "hyp3e-utilities.applications.permissions.noUsers"}}</p>
+    {{/each}}
+  </fieldset>
+
+  <footer class="hyp3e-utilities__form-footer">
+    <button type="submit">
+      <i class="fas fa-save" aria-hidden="true"></i>
+      {{localize "hyp3e-utilities.applications.permissions.save"}}
+    </button>
+  </footer>
+</section>

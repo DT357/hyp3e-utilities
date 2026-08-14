@@ -1,2 +1,62 @@
-{}
-
+{
+  "hyp3e-utilities": {
+    "settings": {
+      "enableNpcActionHud": {
+        "name": "Enable NPC Action HUD",
+        "hint": "Show the NPC Action HUD for GMs when supported NPC tokens are selected."
+      },
+      "npcActionHudPosition": {
+        "name": "NPC Action HUD Position"
+      },
+      "partyState": {
+        "name": "Party State"
+      },
+      "partySheetMinimumEditRole": {
+        "name": "Party Sheet Minimum Edit Role"
+      },
+      "partySheetExplicitEditorUserIds": {
+        "name": "Party Sheet Explicit Editors"
+      },
+      "resetHudPosition": {
+        "name": "Reset NPC Action HUD Position",
+        "label": "Reset HUD Position",
+        "hint": "Move the NPC Action HUD back to its default position."
+      },
+      "partySheetPermissions": {
+        "name": "Party Sheet Permissions",
+        "label": "Configure Permissions",
+        "hint": "Choose which users may edit the Party Sheet."
+      },
+      "openPartySheet": {
+        "name": "Party Sheet",
+        "label": "Open Party Sheet",
+        "hint": "Open the shared Hyp3e Utilities Party Sheet."
+      }
+    },
+    "applications": {
+      "foundation": {
+        "title": "Hyp3e Utilities",
+        "message": "The Hyp3e Utilities application foundation is active."
+      },
+      "resetHudPosition": {
+        "title": "Reset NPC Action HUD Position",
+        "message": "Reset the NPC Action HUD to its default screen position?",
+        "action": "Reset Position",
+        "complete": "NPC Action HUD position reset."
+      },
+      "permissions": {
+        "title": "Party Sheet Permissions",
+        "minimumRole": "Minimum edit role",
+        "minimumRoleHint": "Users at or above this role may edit the Party Sheet.",
+        "explicitEditors": "Additional editors",
+        "noUsers": "There are no non-GM users in this world.",
+        "save": "Save Permissions",
+        "saved": "Party Sheet permissions saved."
+      },
+      "partySheet": {
+        "title": "Party Sheet",
+        "placeholder": "The Party Sheet foundation is ready. Party features will be added in the Party Sheet milestone."
+      }
+    }
+  }
+}

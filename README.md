@@ -4,12 +4,16 @@ Foundry Virtual Tabletop utilities for the [`hyp3e`](https://github.com/thuriank
 
 ## Status
 
-The repository contains the initial module and release scaffolding. Feature ports from S&W Utilities will be added individually after their `hyp3e` data and API mappings are defined.
+The module foundation is implemented and validated. It includes the `hyp3e`
+document adapter, settings and menus, authenticated SocketLib transport,
+ApplicationV2 shells, localization, and runtime compatibility guards. NPC
+Action HUD implementation is the next milestone batch.
 
 ## Compatibility
 
-- Foundry Virtual Tabletop 13–14 (verified against 14.365)
+- Foundry Virtual Tabletop 13–14 (verified against 13.351 and 14.365)
 - Hyperborea 3rd Edition (`hyp3e`)
+- SocketLib 1.1.4 or newer
 
 ## Development
 

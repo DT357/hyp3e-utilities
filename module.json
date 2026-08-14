@@ -27,11 +27,24 @@
       "path": "lang/en.json"
     }
   ],
+  "socket": true,
   "relationships": {
     "systems": [
       {
         "id": "hyp3e",
-        "type": "system"
+        "type": "system",
+        "compatibility": {
+          "minimum": "4.0.3"
+        }
+      }
+    ],
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module",
+        "compatibility": {
+          "minimum": "1.1.4"
+        }
       }
     ]
   },

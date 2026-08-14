@@ -21,6 +21,12 @@ const results = {
   pb006: {},
   pb007: {},
   pb008: {},
+  fnd001: {},
+  fnd002: {},
+  fnd003: {},
+  fnd004: {},
+  fnd005: {},
+  fnd006: {},
   errors: [],
 };
 
@@ -384,6 +390,106 @@ async function testApplicationV2() {
   };
 }
 
+async function testProductionFoundation(character, npc) {
+  const module = game.modules.get(MODULE_ID);
+  const api = module?.api;
+
+  results.fnd001 = {
+    apiPublished: Boolean(api),
+    adapterPublished: Boolean(api?.adapter),
+    applicationsPublished: Boolean(api?.applications),
+    socketPublished: Boolean(api?.socket),
+  };
+
+  const characterSummary = api?.adapter?.getActorSummary(character);
+  const npcSummary = api?.adapter?.getActorSummary(npc);
+  results.fnd002 = {
+    characterSummary,
+    npcSummary,
+    allFiveSavesRead:
+      Object.keys(api?.adapter?.getSaves(character) ?? {}).length === 5
+      && Object.keys(api?.adapter?.getSaves(npc) ?? {}).length === 5,
+    characterXpWritable: api?.adapter?.canWriteExperience(character) === true,
+    npcXpNotWritable: api?.adapter?.canWriteExperience(npc) === false,
+  };
+
+  const settingKeys = [
+    'enableNpcActionHud',
+    'npcActionHudPosition',
+    'partyState',
+    'partySheetMinimumEditRole',
+    'partySheetExplicitEditorUserIds',
+  ];
+  const menuKeys = [
+    'resetHudPosition',
+    'partySheetPermissions',
+    'openPartySheet',
+  ];
+  results.fnd003 = {
+    settingsRegistered: settingKeys.every(
+      (key) => game.settings.settings.has(`${MODULE_ID}.${key}`),
+    ),
+    menusRegistered: menuKeys.every(
+      (key) => game.settings.menus.has(`${MODULE_ID}.${key}`),
+    ),
+    hudDisabledByDefault:
+      game.settings.get(MODULE_ID, 'enableNpcActionHud') === false,
+    partySchemaVersion:
+      game.settings.get(MODULE_ID, 'partyState')?.schemaVersion ?? null,
+    minimumEditRole:
+      game.settings.get(MODULE_ID, 'partySheetMinimumEditRole'),
+  };
+
+  try {
+    const socketResponse = await api.socket.executeAsActiveGM('ping');
+    results.fnd004 = {
+      available: api.socket.available,
+      socketResponse,
+      authenticatedRoundTrip:
+        socketResponse.requesterUserId === game.user.id
+        && socketResponse.executingUserId === game.user.id
+        && socketResponse.executingUserIsGM === true,
+    };
+  }
+  catch (error) {
+    results.fnd004 = {
+      available: api?.socket?.available ?? false,
+      error: serializeError(error),
+      authenticatedRoundTrip: false,
+    };
+  }
+
+  const applicationResults = {};
+  for (const [name, ApplicationClass] of Object.entries(api.applications)) {
+    const application = new ApplicationClass();
+    await application.render(true);
+    const rendered = await waitUntil(
+      () => application.rendered && application.element?.isConnected,
+    );
+    const localized = !application.element?.textContent?.includes(
+      `${MODULE_ID}.applications`,
+    );
+    await application.close();
+    const closed = await waitUntil(() => !application.rendered);
+    applicationResults[name] = { rendered, localized, closed };
+  }
+  results.fnd005 = {
+    applications: applicationResults,
+    allRenderedLocalizedAndClosed: Object.values(applicationResults).every(
+      (application) => application.rendered
+        && application.localized
+        && application.closed,
+    ),
+  };
+
+  results.fnd006 = {
+    supported: api.compatibility.supported,
+    reasons: api.compatibility.reasons,
+    systemMatches: game.system.id === 'hyp3e',
+    foundryGenerationSupported: [13, 14].includes(game.release.generation),
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -421,6 +527,7 @@ async function runGmDiagnostics() {
     results.pb005 = await testTokenIdentity(npc);
     results.pb006 = await testTreasuryLifecycle();
     results.pb007 = await testApplicationV2();
+    await testProductionFoundation(character, npc);
     results.status = 'complete';
   }
   catch (error) {
