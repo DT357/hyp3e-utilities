@@ -75,14 +75,14 @@ Version targets describe intended feature boundaries. Patch releases may be used
 
 ### PB-002 — Establish the baseline repository commit
 
-- Status: `TODO`
-- Depends on: PB-001 for a local commit; PB-010 for a public push; explicit authorization before commit or push.
-- Outcome: Commit the scaffold, design, implementation plan, and license to `main`; push to `origin`.
+- Status: `DONE`
+- Depends on: None.
+- Outcome: Committed the scaffold, design, implementation plan, and license to `main`; pushed to `origin`.
 - Completion checks:
   - `origin` is `https://github.com/DT357/hyp3e-utilities.git`.
-  - Working tree is clean after the baseline commit.
+  - Working tree was clean after the baseline commit.
   - Remote `main` contains the baseline.
-- Note: Planning this work does not authorize a commit or push.
+- Evidence: `docs/work-items/PB-002.md`.
 
 ### PB-010 — Remove HYPERBOREA from the public project identity
 
@@ -141,14 +141,15 @@ Version targets describe intended feature boundaries. Patch releases may be used
 
 ### PB-009 — Add the automated test foundation
 
-- Status: `TODO`
+- Status: `DONE`
 - Depends on: None.
-- Planned files: `tests/`, `tests/fixtures/`, `tests/helpers/`, and updates to `package.json`.
-- Outcome: Use the Node test runner for pure logic and mocked-adapter tests; make `npm test` and `npm run check` fail on any test, syntax, or manifest validation error.
+- Files: `tests/`, `tests/fixtures/`, `tests/helpers/`, and `package.json`.
+- Outcome: Uses the Node test runner for pure logic and mocked-adapter tests; `npm test` and `npm run check` fail on any test error, while `npm run check` also retains syntax and manifest validation.
 - Completion checks:
   - A representative passing unit test runs locally.
   - A deliberate failure produces a non-zero exit status.
   - Foundry-dependent tests are clearly separated from pure unit tests.
+- Evidence: `docs/work-items/PB-009.md`.
 
 ### M0 release gate
 
@@ -341,8 +342,8 @@ PB-002 should be performed when the user is ready to establish and publish the b
 - Module scaffold: Present and locally validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Not started.
-- Immediate gate: M0 compatibility validation.
+- Implementation: Milestone 0 in progress; PB-002 and PB-009 are complete.
+- Immediate gate: PB-003 through PB-008 compatibility validation.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

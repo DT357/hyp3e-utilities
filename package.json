@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "check": "node --check module/hyp3e-utilities.mjs && node scripts/validate-module.mjs"
+    "test": "node --test",
+    "check": "node --test && node --check module/hyp3e-utilities.mjs && node scripts/validate-module.mjs"
   }
 }
