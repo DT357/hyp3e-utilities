@@ -1,0 +1,41 @@
+{
+  "id": "hyp3e-utilities-diagnostics",
+  "title": "Hyp3e Utilities Compatibility Diagnostics",
+  "description": "Test-only runtime diagnostics for Hyp3e Utilities compatibility spikes.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14.365",
+    "maximum": "14"
+  },
+  "authors": [
+    {
+      "name": "DT357"
+    }
+  ],
+  "esmodules": [
+    "diagnostics.mjs"
+  ],
+  "socket": true,
+  "relationships": {
+    "systems": [
+      {
+        "id": "hyp3e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "4.0.3"
+        }
+      }
+    ],
+    "requires": [
+      {
+        "id": "hyp3e-utilities",
+        "type": "module"
+      },
+      {
+        "id": "socketlib",
+        "type": "module"
+      }
+    ]
+  }
+}

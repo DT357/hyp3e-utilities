@@ -53,3 +53,18 @@ test('release URLs use the current repository and artifact names', async () => {
     `${repositoryUrl}/releases/latest/download/hyp3e-utilities.zip`,
   );
 });
+
+test('Foundry compatibility diagnostics declare their test dependencies', async () => {
+  const diagnosticManifest = await readProjectJson(
+    'tests/foundry/diagnostics/module.json',
+  );
+
+  assert.equal(diagnosticManifest.id, 'hyp3e-utilities-diagnostics');
+  assert.equal(diagnosticManifest.compatibility.minimum, '13');
+  assert.equal(diagnosticManifest.compatibility.maximum, '14');
+  assert.equal(diagnosticManifest.socket, true);
+  assert.deepEqual(
+    diagnosticManifest.relationships.requires.map(({ id }) => id),
+    ['hyp3e-utilities', 'socketlib'],
+  );
+});

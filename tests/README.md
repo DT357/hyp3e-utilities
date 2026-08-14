@@ -11,6 +11,12 @@ The automated suite uses the Node.js built-in test runner and requires no instal
 
 Tests that require a running Foundry world are manual compatibility tests. Record their environment and results under `docs/test-runs/`; do not make `npm test` depend on a local Foundry installation or personal world data.
 
+The test-only module under `foundry/diagnostics/` exercises Foundry document,
+ApplicationV2, and SocketLib behavior and publishes its results to the browser.
+Link or copy that directory into a disposable Foundry data path as the module
+`hyp3e-utilities-diagnostics`. It is intentionally excluded from release
+packages.
+
 Run all automated tests with:
 
 ```powershell

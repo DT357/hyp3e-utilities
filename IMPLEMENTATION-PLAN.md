@@ -97,47 +97,54 @@ Version targets describe intended feature boundaries. Patch releases may be used
 
 ### PB-003 — Smoke-test the scaffold in Foundry
 
-- Status: `TODO`
+- Status: `IN PROGRESS`
 - Depends on: None.
 - Outcome: Confirm Foundry 13 and, when available, Foundry 14 can discover, enable, initialize, and disable the module in a `hyp3e` world without errors.
 - Evidence: Foundry version, `hyp3e` version, browser-console result, and module load result in `docs/compatibility-notes.md`.
+- Current result: Foundry 14.365 passed; Foundry 13 remains pending because no v13 installation is available locally.
 
 ### PB-004 — Verify the five-save source fields
 
-- Status: `TODO`
+- Status: `DONE`
 - Depends on: PB-003.
 - Outcome: Determine whether each current save target is read from `system.saves.<kind>.curr`, `.value`, or another prepared field for both `character` and `npc` Actors.
 - Test cases: death, device, transformation, avoidance, and sorcery; include an Actor whose save modifiers change the prepared target.
 - Gate: Blocks HUD save implementation.
+- Evidence: `docs/work-items/PB-004.md`.
 
 ### PB-005 — Verify token-to-Actor identity behavior
 
-- Status: `TODO`
+- Status: `DONE`
 - Depends on: PB-003.
 - Outcome: Record stable identifiers and update behavior for linked tokens, unlinked synthetic Actors, duplicate tokens, deleted tokens, and selection changes.
 - Gate: Blocks HUD row identity and update subscriptions.
+- Evidence: `docs/work-items/PB-005.md`.
 
 ### PB-006 — Verify managed treasury Actor behavior
 
-- Status: `TODO`
+- Status: `DONE`
 - Depends on: PB-003.
 - Outcome: Prove creation, flagging, ownership configuration, lookup, rename tolerance, deletion recovery, duplicate detection, and recreation for a `treasure` Actor.
 - Gate: Blocks treasury persistence implementation.
+- Evidence: `docs/work-items/PB-006.md`.
 
 ### PB-007 — Verify ApplicationV2 integration
 
-- Status: `TODO`
+- Status: `IN PROGRESS`
 - Depends on: PB-003.
 - Outcome: Record the supported ApplicationV2 construction, parts/templates, listener lifecycle, render/update behavior, and singleton close behavior for Foundry 13 and 14.
 - Gate: Blocks production UI shells.
+- Current result: Foundry 14.365 passed; Foundry 13 remains pending because no v13 installation is available locally.
 
 ### PB-008 — Prove SocketLib caller authentication
 
-- Status: `TODO`
+- Status: `DONE`
 - Depends on: PB-003.
 - Outcome: Demonstrate that the GM handler can identify the actual requesting user independently of caller-supplied payload fields.
-- Security cases: spoofed user ID, unauthorized operation, stale revision, absent GM, multiple active GMs, reconnect, and duplicate request.
+- Security disposition: spoofed identity and absent-GM/reconnect behavior were exercised in the spike; unauthorized and duplicate operations remain PAR-002 checks, stale revision remains a PAR-004 check, and multiple-active-GM routing remains an FND-004 check.
 - Gate: If this spike succeeds, enable authorized player edits. If it fails, party mutation remains GM-only until a trustworthy transport is implemented.
+- Finding: SocketLib v1.1.4 exposes the server-derived requesting user as `this.socketdata.userId` in a GM handler, independently of payload fields. Production authorization, stale-revision handling, active-GM routing, and request idempotency remain required in FND-004, PAR-002, and PAR-004.
+- Evidence: `docs/work-items/PB-008.md`.
 
 ### PB-009 — Add the automated test foundation
 
@@ -164,7 +171,7 @@ M0 is complete when PB-003 through PB-009 are `DONE`, findings are recorded, and
 | FND-001 | `TODO` | PB-009 | Module constants, setting keys, flag keys, hook names, and logging helper | Unit tests for stable keys; syntax check |
 | FND-002 | `TODO` | PB-004, PB-005 | `hyp3e` adapter for HP, AC/DR, movement, saves, morale, XP, money, and item quantities | Fixture tests for character, NPC, treasure, and synthetic Actor inputs |
 | FND-003 | `TODO` | FND-001 | World/client settings registration, settings menus, defaults, and validation | Setting registration tests and Foundry smoke test |
-| FND-004 | `TODO` | PB-008 | SocketLib dependency declaration and transport bootstrap | Graceful missing/inactive dependency message; authenticated round trip |
+| FND-004 | `TODO` | PB-008 | SocketLib dependency declaration and transport bootstrap | Graceful missing/inactive dependency message; authenticated round trip; absent/changed active GM and reconnect behavior |
 | FND-005 | `TODO` | PB-007 | Shared ApplicationV2 shell conventions, template paths, localization loading, and CSS namespace | Empty app renders and closes cleanly in supported Foundry versions |
 | FND-006 | `TODO` | FND-001 | Unsupported-system/version guard and diagnostic logging | Non-`hyp3e` world does not activate feature hooks |
 
@@ -342,8 +349,8 @@ PB-002 should be performed when the user is ready to establish and publish the b
 - Module scaffold: Present and locally validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0 in progress; PB-002 and PB-009 are complete.
-- Immediate gate: PB-003 through PB-008 compatibility validation.
+- Implementation: Milestone 0 in progress; PB-004, PB-005, PB-006, PB-008, and PB-009 are complete.
+- Immediate gate: Finish Foundry 13 validation for PB-003 and PB-007, then complete the M0 release gate.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

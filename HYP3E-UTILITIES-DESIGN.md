@@ -238,7 +238,7 @@ NPC followers may use either <code>system.npcType = npc</code> or <code>system.n
 | Sorcery save | None | <code>system.saves.sorcery.curr</code> |
 | Coin purse | <code>system.treasure.&lt;coin&gt;</code> | <code>system.money.&lt;coin&gt;.value</code> |
 
-The adapter should prefer each save's prepared <code>curr</code> value so active effects are honored. The current NPC sheet passes <code>value</code> to its roll action while the shared data model also prepares <code>curr</code>; this discrepancy must receive an integration test before release.
+The adapter must read each save's prepared <code>curr</code> value. A Foundry 14.365 runtime test against <code>hyp3e</code> 4.1.0 verified all five fields on both <code>character</code> and <code>npc</code> Actors and proved that an Active Effect applied to <code>system.saves.death.curr</code> changes the rolled target without changing <code>value</code>. The NPC sheet's current use of <code>value</code> is therefore not the contract for this module.
 
 ### 5.3 Currency
 
@@ -301,6 +301,14 @@ Otherwise it is removed immediately.
 ### 6.2 Target Rows
 
 Each controlled NPC token produces one row. Do not deduplicate by base actor ID: two unlinked or duplicated tokens can have different HP and must remain distinct.
+
+Runtime identity testing established these rules:
+
+- linked tokens share the durable world Actor UUID and follow base Actor updates;
+- an unlinked token exposes a token-scoped synthetic Actor UUID;
+- base Actor updates propagate into an unlinked token until a synthetic Actor field is overridden;
+- writes through the synthetic Actor remain isolated from the base Actor;
+- token UUID, not Actor UUID alone, is the stable HUD-row identity for duplicate and unlinked tokens.
 
 Each row includes:
 
@@ -394,6 +402,8 @@ The Party Sheet is one ApplicationV2 instance per client and can be opened from:
 - a button in the Actor Directory.
 
 Opening it again focuses or rerenders the existing instance. Actor, item, state, permission, and treasury changes refresh the open sheet without discarding unsaved local form values.
+
+Foundry 14.365 runtime validation confirmed the ApplicationV2 plus HandlebarsApplicationMixin parts/template lifecycle, action dispatch, explicit rerender, stable singleton reference, and clean close behavior. Foundry 13 validation remains required before this compatibility contract is complete.
 
 ### 7.2 Overview Tab
 
@@ -601,6 +611,8 @@ The <code>revision</code> field supports stale-write detection. Every authoritat
 
 The accepted storage backend is one world Actor of type <code>treasure</code>.
 
+Foundry 14.365 runtime validation confirmed that <code>hyp3e</code> 4.1.0 supports creating this Actor type, persisting the module flag and ownership, resolving it after rename, detecting deletion, recreating it, and detecting multiple flagged candidates.
+
 Creation behavior:
 
 - create only from an active GM;
@@ -687,7 +699,9 @@ The GM handler must:
 6. apply the operation through a serialized mutation queue;
 7. return a structured success or error result.
 
-Never trust a user ID supplied only inside the request payload. If the selected SocketLib API cannot provide trustworthy caller identity, keep edits GM-only until an authenticated relay is available.
+Never trust a user ID supplied only inside the request payload. SocketLib v1.1.4 runtime and source validation proved that a GM-side registered handler receives the server-derived requesting Foundry user ID as <code>this.socketdata.userId</code>. A player request that falsely claimed the GM's ID still exposed the player's real ID, and Foundry's raw socket callback reported the same sender. Production handlers must authorize this transport-derived ID; payload identity fields are informational only.
+
+SocketLib supplies caller identity and active-GM routing, not the complete mutation protocol. FND-004, PAR-002, and PAR-004 must still handle missing or changing active GMs, reconnects, named-operation authorization, schema validation, stale revisions, duplicate request IDs, and structured errors.
 
 Party Sheet edit authorization is granted when the user is a GM, the user's role is at or above <code>partySheetMinimumEditRole</code>, or the user's ID appears in <code>partySheetExplicitEditorUserIds</code>. The GM handler must evaluate the same rule as the UI for every mutation.
 

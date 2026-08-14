@@ -6,6 +6,6 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test",
-    "check": "node --test && node --check module/hyp3e-utilities.mjs && node scripts/validate-module.mjs"
+    "check": "node --test && node --check module/hyp3e-utilities.mjs && node --check tests/foundry/diagnostics/diagnostics.mjs && node scripts/validate-module.mjs"
   }
 }
