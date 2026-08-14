@@ -8,10 +8,12 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
 | 14.365 | 4.1.0 (`dev`) | Passed for PB-003 through PB-008 | Full isolated run recorded under `docs/test-runs/` |
-| 13 | Pending | Not run | No Foundry 13 installation is available on the development machine |
+| 13.351 | 4.0.3 | Passed for PB-003 and PB-007; PB-004 through PB-006 regression checks also passed | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
-`8d9aae354712087dacfea10fb0fd5a1f6beca8db` and SocketLib v1.1.4.
+`8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
+for the diagnostic dependency; the two-client caller-authentication proof was
+performed in Foundry 14.
 
 ## Verified findings
 
@@ -22,8 +24,7 @@ The Foundry 14 run used `hyp3e` commit
 - The diagnostic module and SocketLib enabled alongside it.
 - Deactivating all modules and reloading returned the world to zero active
   modules without a module-originated console error.
-- PB-003 remains `IN PROGRESS` until the same lifecycle is checked in Foundry
-  13.
+- The same lifecycle passed in Foundry 13.351 and 14.365.
 
 ### Five-save fields (PB-004)
 
@@ -56,10 +57,10 @@ silently delete either Actor.
 
 ### ApplicationV2 (PB-007)
 
-Foundry 14.365 passed ApplicationV2 construction with
+Foundry 13.351 and 14.365 passed ApplicationV2 construction with
 HandlebarsApplicationMixin, parts/template rendering, action dispatch,
 action-triggered and explicit rerenders, stable singleton reference, and clean
-close. PB-007 remains `IN PROGRESS` until Foundry 13 is tested.
+close.
 
 ### SocketLib caller identity (PB-008)
 
@@ -76,6 +77,6 @@ FND-004, PAR-002, and PAR-004.
 
 ## Current gate
 
-PB-004, PB-005, PB-006, and PB-008 are complete. PB-003 and PB-007 remain open
-only for the declared Foundry 13 compatibility pass, so the M0 release gate is
-not yet complete.
+PB-003 through PB-009 are complete. No compatibility finding contradicts the
+approved architecture, so the M0 release gate is complete and Milestone 1
+foundation implementation may begin.

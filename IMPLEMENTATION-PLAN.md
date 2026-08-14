@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Ready for pre-build validation
+Status: Ready for Milestone 1 implementation
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -97,11 +97,11 @@ Version targets describe intended feature boundaries. Patch releases may be used
 
 ### PB-003 — Smoke-test the scaffold in Foundry
 
-- Status: `IN PROGRESS`
+- Status: `DONE`
 - Depends on: None.
 - Outcome: Confirm Foundry 13 and, when available, Foundry 14 can discover, enable, initialize, and disable the module in a `hyp3e` world without errors.
-- Evidence: Foundry version, `hyp3e` version, browser-console result, and module load result in `docs/compatibility-notes.md`.
-- Current result: Foundry 14.365 passed; Foundry 13 remains pending because no v13 installation is available locally.
+- Evidence: `docs/work-items/PB-003.md` and `docs/compatibility-notes.md`.
+- Result: Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with `hyp3e` 4.1.0 both passed discovery, enable, initialization, disable, and reload checks.
 
 ### PB-004 — Verify the five-save source fields
 
@@ -130,11 +130,12 @@ Version targets describe intended feature boundaries. Patch releases may be used
 
 ### PB-007 — Verify ApplicationV2 integration
 
-- Status: `IN PROGRESS`
+- Status: `DONE`
 - Depends on: PB-003.
 - Outcome: Record the supported ApplicationV2 construction, parts/templates, listener lifecycle, render/update behavior, and singleton close behavior for Foundry 13 and 14.
 - Gate: Blocks production UI shells.
-- Current result: Foundry 14.365 passed; Foundry 13 remains pending because no v13 installation is available locally.
+- Evidence: `docs/work-items/PB-007.md`.
+- Result: The same ApplicationV2 contract passed in Foundry 13.351 and 14.365.
 
 ### PB-008 — Prove SocketLib caller authentication
 
@@ -161,6 +162,8 @@ Version targets describe intended feature boundaries. Patch releases may be used
 ### M0 release gate
 
 M0 is complete when PB-003 through PB-009 are `DONE`, findings are recorded, and no finding contradicts the approved architecture. PB-001, PB-002, and PB-010 must be complete before public publication, but PB-002 and PB-010 may remain open during local feature development.
+
+Status: `DONE` — all pre-build work items passed and their evidence is recorded.
 
 ## 5. Milestone 1 — Foundation and NPC Action HUD
 
@@ -332,16 +335,17 @@ A work item is not `DONE` if its listed verification has been deferred without a
 
 ## 14. Recommended First Execution Batch
 
-Proceed in this order before feature implementation:
+The pre-build portion of this sequence is complete:
 
-1. Complete PB-003 and create `docs/compatibility-notes.md`.
-2. Run PB-004, PB-005, PB-006, and PB-007 in the Foundry test world.
-3. Run PB-008 before adding any player-authorized write path.
-4. Complete PB-009 and make the test runner part of `npm run check`.
-5. Implement FND-001 through FND-006.
-6. Begin HUD work with HUD-001 and HUD-002 tests.
+1. PB-003 and `docs/compatibility-notes.md` are complete.
+2. PB-004 through PB-007 passed in the Foundry test worlds.
+3. PB-008 proved trustworthy SocketLib caller identity.
+4. PB-009 made the test runner part of `npm run check`.
 
-PB-002 should be performed when the user is ready to establish and publish the baseline; it is not a prerequisite for local technical validation.
+Proceed next with:
+
+1. Implement FND-001 through FND-006.
+2. Begin HUD work with HUD-001 and HUD-002 tests.
 
 ## 15. Current Project Status
 
@@ -349,8 +353,8 @@ PB-002 should be performed when the user is ready to establish and publish the b
 - Module scaffold: Present and locally validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0 in progress; PB-004, PB-005, PB-006, PB-008, and PB-009 are complete.
-- Immediate gate: Finish Foundry 13 validation for PB-003 and PB-007, then complete the M0 release gate.
+- Implementation: Milestone 0 is complete; all pre-build validation items are `DONE`.
+- Immediate next batch: Implement FND-001 through FND-006, beginning with tests for stable constants and the `hyp3e` adapter contract.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

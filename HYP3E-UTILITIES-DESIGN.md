@@ -238,7 +238,7 @@ NPC followers may use either <code>system.npcType = npc</code> or <code>system.n
 | Sorcery save | None | <code>system.saves.sorcery.curr</code> |
 | Coin purse | <code>system.treasure.&lt;coin&gt;</code> | <code>system.money.&lt;coin&gt;.value</code> |
 
-The adapter must read each save's prepared <code>curr</code> value. A Foundry 14.365 runtime test against <code>hyp3e</code> 4.1.0 verified all five fields on both <code>character</code> and <code>npc</code> Actors and proved that an Active Effect applied to <code>system.saves.death.curr</code> changes the rolled target without changing <code>value</code>. The NPC sheet's current use of <code>value</code> is therefore not the contract for this module.
+The adapter must read each save's prepared <code>curr</code> value. Runtime tests in Foundry 13.351 with <code>hyp3e</code> 4.0.3 and Foundry 14.365 with <code>hyp3e</code> 4.1.0 verified all five fields on both <code>character</code> and <code>npc</code> Actors and proved that an Active Effect applied to <code>system.saves.death.curr</code> changes the rolled target without changing <code>value</code>. The NPC sheet's current use of <code>value</code> is therefore not the contract for this module.
 
 ### 5.3 Currency
 
@@ -403,7 +403,7 @@ The Party Sheet is one ApplicationV2 instance per client and can be opened from:
 
 Opening it again focuses or rerenders the existing instance. Actor, item, state, permission, and treasury changes refresh the open sheet without discarding unsaved local form values.
 
-Foundry 14.365 runtime validation confirmed the ApplicationV2 plus HandlebarsApplicationMixin parts/template lifecycle, action dispatch, explicit rerender, stable singleton reference, and clean close behavior. Foundry 13 validation remains required before this compatibility contract is complete.
+Foundry 13.351 and 14.365 runtime validation confirmed the ApplicationV2 plus HandlebarsApplicationMixin parts/template lifecycle, action dispatch, explicit rerender, stable singleton reference, and clean close behavior.
 
 ### 7.2 Overview Tab
 
@@ -611,7 +611,7 @@ The <code>revision</code> field supports stale-write detection. Every authoritat
 
 The accepted storage backend is one world Actor of type <code>treasure</code>.
 
-Foundry 14.365 runtime validation confirmed that <code>hyp3e</code> 4.1.0 supports creating this Actor type, persisting the module flag and ownership, resolving it after rename, detecting deletion, recreating it, and detecting multiple flagged candidates.
+Foundry 13.351 with <code>hyp3e</code> 4.0.3 and Foundry 14.365 with <code>hyp3e</code> 4.1.0 confirmed that this Actor type supports creation, module-flag and ownership persistence, resolution after rename, deletion detection, recreation, and detection of multiple flagged candidates.
 
 Creation behavior:
 
