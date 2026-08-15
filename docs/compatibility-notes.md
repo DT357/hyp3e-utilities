@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-005 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-005 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through MAR-002 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through MAR-002 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -347,9 +347,26 @@ explicit recovery input for TRY-001 and confirms PAR-010 does not silently
 recreate, rebind, or delete treasury Actors. The full two-client Milestone 2
 regression then passed on both supported generations with no diagnostic errors.
 
+### Marching-order Party UI (MAR-002)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the connected GM/Player marching-order gate. Each
+generation rendered Unassigned, Front, Middle, and Rear groups with enriched
+member, follower, and deliberately missing Actor rows. Native buttons moved
+Actors within a rank and between groups, and the drag/drop enhancement used the
+same authenticated authoritative mutation path.
+
+An authorized Player entered a rank-note draft before an unrelated GM state
+mutation. The rerender preserved the exact draft and displayed the stale
+warning; saving at the captured base revision was rejected without overwriting
+authoritative state, and discard restored the current value. Both generations
+also confirmed four accessible controls per row, correct disabled boundaries,
+responsive group wrapping, successful cleanup, matching raw Foundry sender
+identity, and no diagnostic errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010 are complete. No compatibility finding contradicts the
-approved architecture. Milestones 1 and 2 are complete; the next compatibility
-work is marching order, supplies, and notes in Milestone 3.
+PAR-001 through PAR-010, MAR-001, and MAR-002 are complete. No compatibility
+finding contradicts the approved architecture. Milestones 1 and 2 are
+complete; Milestone 3 is active, with the marching-order chat report next.

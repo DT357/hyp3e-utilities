@@ -8,6 +8,10 @@ import {
 } from '../../module/apps/foundation-applications.mjs';
 import { PARTY_MEMBER_OPERATIONS } from '../../module/party/party-members.mjs';
 import { PARTY_FOLLOWER_OPERATIONS } from '../../module/party/party-followers.mjs';
+import {
+  PARTY_MARCHING_OPERATIONS,
+  createMarchingOrderModel,
+} from '../../module/party/party-marching-order.mjs';
 import { createPartyStateDefault } from '../../module/party/party-state.mjs';
 
 class StubApplicationV2 {
@@ -608,4 +612,186 @@ test('Party Sheet preserves follower drafts and rejects stale saves at their bas
   const removedContext = await app._prepareContext({});
   assert.equal(removedContext.hasUnsavedChanges, false);
   assert.equal(removedContext.followers.length, 0);
+});
+
+test('Party Sheet Marching Order enriches rows, routes controls/drop, and preserves note drafts', async () => {
+  let state = createPartyStateDefault();
+  state.revision = 5;
+  state.memberActorUuids = ['Actor.hero', 'Actor.missing'];
+  state.followerActorUuids = ['Actor.retainer'];
+  state.marchingOrder.front = {
+    actorUuids: ['Actor.hero'],
+    notes: 'Authoritative front',
+  };
+  const requests = [];
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyFollowersProvider: () => ({
+      getActor: () => null,
+      getFollowerRows: () => [{
+        actorUuid: 'Actor.retainer',
+        img: 'retainer.webp',
+        missing: false,
+        name: 'Retainer',
+      }],
+    }),
+    partyMarchingOrderProvider: () => ({
+      getModel: (currentState) => createMarchingOrderModel(currentState),
+    }),
+    partyMembersProvider: () => ({
+      getActor: () => null,
+      getMemberRows: () => [
+        {
+          actorUuid: 'Actor.hero',
+          img: 'hero.webp',
+          missing: false,
+          name: 'Hero',
+        },
+        {
+          actorUuid: 'Actor.missing',
+          img: 'missing.webp',
+          missing: true,
+          name: 'Actor.missing',
+        },
+      ],
+    }),
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        if (operation === PARTY_MARCHING_OPERATIONS.setNote) {
+          return { error: { code: 'staleRevision' }, ok: false };
+        }
+        return { ok: true };
+      },
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    requestIdProvider: (() => {
+      let sequence = 0;
+      return () => `marching-${sequence += 1}`;
+    })(),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
+  await actions.selectTab.call(app, undefined, {
+    dataset: { tab: 'marchingOrder' },
+  });
+
+  const context = await app._prepareContext({});
+  assert.equal(context.showMarchingOrder, true);
+  assert.deepEqual(context.marchingGroups.map(({ id }) => id), [
+    'unassigned',
+    'front',
+    'middle',
+    'rear',
+  ]);
+  assert.equal(context.marchingGroups[0].rows[0].name, 'Actor.missing');
+  assert.equal(context.marchingGroups[0].rows[1].name, 'Retainer');
+  assert.equal(context.marchingGroups[1].rows[0].name, 'Hero');
+  assert.equal(context.marchingGroups[1].rows[0].canMovePrevious, true);
+  assert.equal(context.marchingGroups[1].rows[0].canMoveNext, true);
+  assert.equal(context.marchingGroups[1].rows[0].canMoveUp, false);
+
+  await actions.moveMarchingActor.call(app, undefined, {
+    dataset: {
+      actorUuid: 'Actor.hero',
+      targetPosition: '0',
+      targetRank: 'middle',
+    },
+  });
+  await actions.moveMarchingActor.call(app, undefined, {
+    dataset: {
+      actorUuid: 'Actor.hero',
+      targetRank: 'unassigned',
+    },
+  });
+
+  app._captureMarchingNoteDraft({
+    target: {
+      closest: () => ({ dataset: { marchingRank: 'front' } }),
+      value: 'Draft front',
+    },
+  });
+  state = {
+    ...state,
+    revision: 6,
+    marchingOrder: {
+      ...state.marchingOrder,
+      front: { ...state.marchingOrder.front, notes: 'External front' },
+    },
+  };
+  const staleContext = await app._prepareContext({});
+  assert.equal(staleContext.marchingGroups[1].notes, 'Draft front');
+  assert.equal(staleContext.hasStaleDraft, true);
+  await actions.saveMarchingNote.call(app, undefined, {
+    dataset: { marchingRank: 'front' },
+  });
+
+  await app._handleMarchingDrop({
+    preventDefault: () => {},
+    target: {
+      closest: (selector) => selector.includes('row')
+        ? { dataset: { marchingPosition: '0', marchingRank: 'rear' } }
+        : { dataset: { marchingRank: 'rear' } },
+    },
+    dataTransfer: {
+      getData: () => JSON.stringify({
+        actorUuid: 'Actor.retainer',
+        type: 'Hyp3eUtilitiesMarchingActor',
+      }),
+    },
+  });
+
+  assert.deepEqual(requests, [
+    {
+      operation: PARTY_MARCHING_OPERATIONS.place,
+      envelope: {
+        expectedRevision: 5,
+        payload: {
+          actorUuid: 'Actor.hero',
+          position: 0,
+          rank: 'middle',
+        },
+        requestId: 'marching-1',
+      },
+    },
+    {
+      operation: PARTY_MARCHING_OPERATIONS.remove,
+      envelope: {
+        expectedRevision: 5,
+        payload: { actorUuid: 'Actor.hero' },
+        requestId: 'marching-2',
+      },
+    },
+    {
+      operation: PARTY_MARCHING_OPERATIONS.setNote,
+      envelope: {
+        expectedRevision: 5,
+        payload: { rank: 'front', text: 'Draft front' },
+        requestId: 'marching-3',
+      },
+    },
+    {
+      operation: PARTY_MARCHING_OPERATIONS.place,
+      envelope: {
+        expectedRevision: 6,
+        payload: {
+          actorUuid: 'Actor.retainer',
+          position: 0,
+          rank: 'rear',
+        },
+        requestId: 'marching-4',
+      },
+    },
+  ]);
+  assert.equal((await app._prepareContext({})).hasStaleDraft, true);
+  await actions.discardPartyDrafts.call(app);
+  const discarded = await app._prepareContext({});
+  assert.equal(discarded.hasUnsavedChanges, false);
+  assert.equal(discarded.marchingGroups[1].notes, 'External front');
 });

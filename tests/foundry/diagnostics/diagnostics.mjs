@@ -31,6 +31,7 @@ const results = {
   par008: {},
   par009: {},
   par010: {},
+  mar002: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -421,6 +422,7 @@ async function testProductionFoundation(character, npc) {
     partyActionsPublished: Boolean(api?.partyActions),
     partyCleanupPublished: Boolean(api?.partyCleanup),
     partyFollowersPublished: Boolean(api?.partyFollowers),
+    partyMarchingOrderPublished: Boolean(api?.partyMarchingOrder),
     partyMembersPublished: Boolean(api?.partyMembers),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     partyStorePublished: Boolean(api?.partyStore),
@@ -2349,6 +2351,135 @@ async function testProductionPartyCleanup() {
   }
 }
 
+async function testProductionMarchingOrder(character, npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const request = (operation, payload, suffix) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `mar002-gm-${game.user.id}-${suffix}`,
+    },
+  );
+  let sheet;
+
+  try {
+    const memberResult = await request(
+      'party.addMember',
+      { actorUuid: character.uuid },
+      'member',
+    );
+    const followerResult = await request(
+      'party.addFollower',
+      { actorUuid: npc.uuid },
+      'follower',
+    );
+    sheet = new api.applications.OpenPartySheetApplication();
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="marchingOrder"]',
+    ).click();
+    const marchingRendered = await waitUntil(() => (
+      sheet.element?.querySelectorAll('[data-marching-rank]').length >= 4
+    ));
+    const getRow = (actorUuid) => sheet.element?.querySelector(
+      `[data-marching-row][data-actor-uuid="${actorUuid}"]`,
+    );
+    const initialCharacterRow = getRow(character.uuid);
+    const initialNpcRow = getRow(npc.uuid);
+    const enrichedRows = initialCharacterRow?.textContent.includes(
+      character.name,
+    ) && initialNpcRow?.textContent.includes(npc.name);
+    const accessibleControls = [initialCharacterRow, initialNpcRow].every(
+      (row) => row?.querySelectorAll(
+        '[data-action="moveMarchingActor"]',
+      ).length === 4,
+    );
+    const unassignedPreviousDisabled = initialCharacterRow?.querySelector(
+      '[data-action="moveMarchingActor"][data-target-rank=""]',
+    )?.disabled === true;
+
+    initialCharacterRow.querySelector(
+      '[data-action="moveMarchingActor"][data-target-rank="front"]',
+    ).click();
+    const characterMovedFront = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.front.actorUuids.includes(
+        character.uuid,
+      )
+    ));
+    getRow(npc.uuid).querySelector(
+      '[data-action="moveMarchingActor"][data-target-rank="front"]',
+    ).click();
+    const npcMovedFront = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.front.actorUuids.at(-1)
+        === npc.uuid
+    ));
+    getRow(npc.uuid).querySelector(
+      '[data-action="moveMarchingActor"][data-target-rank="front"][data-target-position="0"]',
+    ).click();
+    const movedUp = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.front.actorUuids[0] === npc.uuid
+    ));
+
+    const dataTransfer = new DataTransfer();
+    getRow(character.uuid).dispatchEvent(new DragEvent('dragstart', {
+      bubbles: true,
+      dataTransfer,
+    }));
+    sheet.element.querySelector(
+      '[data-marching-rank="middle"]',
+    ).dispatchEvent(new DragEvent('drop', {
+      bubbles: true,
+      dataTransfer,
+    }));
+    const dragMovedMiddle = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.middle.actorUuids.includes(
+        character.uuid,
+      )
+    ));
+    const groups = [...sheet.element.querySelectorAll(
+      '.hyp3e-utilities__marching-group',
+    )];
+    const responsiveWrap = new Set(groups.map(
+      (group) => Math.round(group.getBoundingClientRect().top),
+    )).size > 1;
+
+    return {
+      setupSucceeded: memberResult.ok && followerResult.ok,
+      marchingRendered,
+      fourGroupsRendered: groups.length === 4,
+      enrichedRows,
+      accessibleControls,
+      unassignedPreviousDisabled,
+      threeNoteFields:
+        sheet.element.querySelectorAll('[data-field="marching-note"]')
+          .length === 3,
+      characterMovedFront,
+      npcMovedFront,
+      movedUp,
+      dragMovedMiddle,
+      responsiveWrap,
+    };
+  }
+  finally {
+    if (sheet?.rendered) await sheet.close();
+    if (api.partyStore.getState().memberActorUuids.includes(character.uuid)) {
+      await request(
+        'party.removeMember',
+        { actorUuid: character.uuid },
+        'cleanup-member',
+      );
+    }
+    if (api.partyStore.getState().followerActorUuids.includes(npc.uuid)) {
+      await request(
+        'party.removeFollower',
+        { actorUuid: npc.uuid },
+        'cleanup-follower',
+      );
+    }
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2402,6 +2533,10 @@ async function runGmDiagnostics() {
     results.par007 = await testProductionPartyFollowers(character, npc);
     results.par008 = await testProductionPartyActions(character, npc);
     results.par010 = await testProductionPartyCleanup();
+    results.mar002 = {
+      gm: await testProductionMarchingOrder(character, npc),
+      waitingForPlayer: true,
+    };
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,
@@ -2535,6 +2670,147 @@ async function testPlayerDraftConflict(partyMutations) {
   }
 }
 
+async function testPlayerMarchingOrder(partyMutations, actorUuid) {
+  const api = game.modules.get(MODULE_ID).api;
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const sheet = new PartySheet();
+
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="marchingOrder"]',
+    ).click();
+    const rowRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector(
+        `[data-marching-row][data-actor-uuid="${actorUuid}"]`,
+      ),
+    ));
+    const getRow = () => sheet.element?.querySelector(
+      `[data-marching-row][data-actor-uuid="${actorUuid}"]`,
+    );
+    const missingRowVisible = getRow()?.classList.contains(
+      'hyp3e-utilities__party-member--missing',
+    );
+    const fourKeyboardControls = getRow()?.querySelectorAll(
+      '[data-action="moveMarchingActor"]',
+    ).length === 4;
+    getRow().querySelector(
+      '[data-action="moveMarchingActor"][data-target-rank="front"]',
+    ).click();
+    const controlMoveSucceeded = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.front.actorUuids.includes(
+        actorUuid,
+      )
+    ));
+
+    const authoritativeNote = api.partyStore.getState()
+      .marchingOrder.front.notes;
+    const noteInput = sheet.element.querySelector(
+      '[data-marching-rank="front"] [data-field="marching-note"]',
+    );
+    noteInput.value = `MAR-002 draft ${game.user.id}`;
+    noteInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const draftRevision = api.partyStore.getState().revision;
+    const externalResult = await partyMutations.request(
+      'party.compatibilityNotesMutation',
+      {
+        expectedRevision: draftRevision,
+        payload: { notes: `MAR-002 external ${game.user.id}` },
+        requestId: `mar002-${game.user.id}-external`,
+      },
+    );
+    const externalRevisionObserved = await waitUntil(() => (
+      api.partyStore.getState().revision === draftRevision + 1
+    ));
+    const noteDraftPreserved = await waitUntil(() => (
+      sheet.element?.querySelector(
+        '[data-marching-rank="front"] [data-field="marching-note"]',
+      )?.value === `MAR-002 draft ${game.user.id}`
+    ));
+    const staleWarningRendered = Boolean(sheet.element.querySelector(
+      '.hyp3e-utilities__party-draft-status strong',
+    ));
+    sheet.element.querySelector(
+      '[data-action="saveMarchingNote"][data-marching-rank="front"]',
+    ).click();
+    await wait(300);
+    const afterRejectedSave = api.partyStore.getState();
+    const staleSaveRejected = afterRejectedSave.revision === draftRevision + 1
+      && afterRejectedSave.marchingOrder.front.notes === authoritativeNote
+      && Boolean(sheet.element.querySelector(
+        '.hyp3e-utilities__party-draft-status strong',
+      ));
+    sheet.element.querySelector(
+      '[data-action="discardPartyDrafts"]',
+    ).click();
+    const discardRestoredAuthoritative = await waitUntil(() => (
+      sheet.element?.querySelector(
+        '[data-marching-rank="front"] [data-field="marching-note"]',
+      )?.value === authoritativeNote
+      && !sheet.element?.querySelector(
+        '.hyp3e-utilities__party-draft-status',
+      )
+    ));
+
+    const dataTransfer = new DataTransfer();
+    getRow().dispatchEvent(new DragEvent('dragstart', {
+      bubbles: true,
+      dataTransfer,
+    }));
+    sheet.element.querySelector(
+      '[data-marching-rank="middle"]',
+    ).dispatchEvent(new DragEvent('drop', {
+      bubbles: true,
+      dataTransfer,
+    }));
+    const dragMoveSucceeded = await waitUntil(() => (
+      api.partyStore.getState().marchingOrder.middle.actorUuids.includes(
+        actorUuid,
+      )
+    ));
+    const groups = [...sheet.element.querySelectorAll(
+      '.hyp3e-utilities__marching-group',
+    )];
+    const responsiveWrap = new Set(groups.map(
+      (group) => Math.round(group.getBoundingClientRect().top),
+    )).size > 1;
+    const cleanupResult = await partyMutations.request(
+      'party.removeMember',
+      {
+        expectedRevision: api.partyStore.getState().revision,
+        payload: { actorUuid },
+        requestId: `mar002-${game.user.id}-cleanup`,
+      },
+    );
+
+    return {
+      rowRendered,
+      missingRowVisible,
+      fourKeyboardControls,
+      controlMoveSucceeded,
+      externalMutationSucceeded: externalResult.ok,
+      externalRevisionObserved,
+      noteDraftPreserved,
+      staleWarningRendered,
+      staleSaveRejected,
+      discardRestoredAuthoritative,
+      dragMoveSucceeded,
+      responsiveWrap,
+      cleanupSucceeded: cleanupResult.ok,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    if (api.partyStore.getState().memberActorUuids.includes(actorUuid)) {
+      await partyMutations.request('party.removeMember', {
+        expectedRevision: api.partyStore.getState().revision,
+        payload: { actorUuid },
+        requestId: `mar002-${game.user.id}-finally`,
+      });
+    }
+  }
+}
+
 async function runPlayerSocketDiagnostic() {
   if (!diagnosticSocket) {
     results.pb008 = { error: 'SocketLib registration was unavailable.' };
@@ -2662,10 +2938,15 @@ async function runPlayerSocketDiagnostic() {
         && finalState.memberActorUuids.includes(secondActorUuid),
     };
     const partyDraftResult = await testPlayerDraftConflict(partyMutations);
+    const marchingResult = await testPlayerMarchingOrder(
+      partyMutations,
+      firstActorUuid,
+    );
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
     results.par009 = partyDraftResult;
+    results.mar002 = marchingResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -2673,6 +2954,7 @@ async function runPlayerSocketDiagnostic() {
       par002: partyMutationResult,
       par004: partyStoreResult,
       par009: partyDraftResult,
+      mar002: marchingResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -2741,6 +3023,14 @@ Hooks.once('ready', async () => {
       gmState: game.modules.get(MODULE_ID).api.partyStore.getState(),
     };
     results.par009 = message.par009;
+    results.mar002 = {
+      ...results.mar002,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.mar002,
+      waitingForPlayer: false,
+    };
     publishResults();
   });
 

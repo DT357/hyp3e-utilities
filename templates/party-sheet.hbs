@@ -290,7 +290,111 @@
           {{/if}}
         </section>
       {{else}}
-        <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+        {{#if showMarchingOrder}}
+          <section
+            class="hyp3e-utilities__marching-order"
+            data-party-marching-order
+          >
+            <p>{{localize "hyp3e-utilities.applications.partySheet.marchingHelp"}}</p>
+            <div class="hyp3e-utilities__marching-groups">
+              {{#each marchingGroups}}
+                <section
+                  class="hyp3e-utilities__marching-group"
+                  data-marching-rank="{{id}}"
+                  aria-label="{{localize label}}"
+                >
+                  <h3>{{localize label}}</h3>
+                  <ol class="hyp3e-utilities__marching-rows">
+                    {{#each rows}}
+                      <li
+                        class="hyp3e-utilities__marching-row {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
+                        data-actor-uuid="{{actorUuid}}"
+                        data-marching-position="{{position}}"
+                        data-marching-rank="{{rank}}"
+                        data-marching-row
+                        draggable="{{#if @root.canEdit}}true{{else}}false{{/if}}"
+                      >
+                        <img src="{{img}}" alt="" width="36" height="36">
+                        <div class="hyp3e-utilities__marching-identity">
+                          {{#if missing}}
+                            <strong>{{name}}</strong>
+                            <span>{{localize "hyp3e-utilities.applications.partySheet.missingReference"}}</span>
+                          {{else}}
+                            <button
+                              type="button"
+                              data-action="openMarchingActor"
+                              data-actor-uuid="{{actorUuid}}"
+                            >{{name}}</button>
+                          {{/if}}
+                        </div>
+                        {{#if @root.canEdit}}
+                          <div class="hyp3e-utilities__marching-controls">
+                            <button
+                              type="button"
+                              data-action="moveMarchingActor"
+                              data-actor-uuid="{{actorUuid}}"
+                              data-target-rank="{{rank}}"
+                              data-target-position="{{upPosition}}"
+                              {{#unless canMoveUp}}disabled{{/unless}}
+                            >{{localize "hyp3e-utilities.applications.partySheet.moveUp"}}</button>
+                            <button
+                              type="button"
+                              data-action="moveMarchingActor"
+                              data-actor-uuid="{{actorUuid}}"
+                              data-target-rank="{{rank}}"
+                              data-target-position="{{downPosition}}"
+                              {{#unless canMoveDown}}disabled{{/unless}}
+                            >{{localize "hyp3e-utilities.applications.partySheet.moveDown"}}</button>
+                            <button
+                              type="button"
+                              data-action="moveMarchingActor"
+                              data-actor-uuid="{{actorUuid}}"
+                              data-target-rank="{{previousRank}}"
+                              {{#unless canMovePrevious}}disabled{{/unless}}
+                            >{{localize "hyp3e-utilities.applications.partySheet.movePrevious"}}</button>
+                            <button
+                              type="button"
+                              data-action="moveMarchingActor"
+                              data-actor-uuid="{{actorUuid}}"
+                              data-target-rank="{{nextRank}}"
+                              {{#unless canMoveNext}}disabled{{/unless}}
+                            >{{localize "hyp3e-utilities.applications.partySheet.moveNext"}}</button>
+                          </div>
+                        {{/if}}
+                      </li>
+                    {{else}}
+                      <li class="hyp3e-utilities__marching-empty">
+                        {{localize "hyp3e-utilities.applications.partySheet.noMarchingActors"}}
+                      </li>
+                    {{/each}}
+                  </ol>
+                  {{#if acceptsNotes}}
+                    <div class="hyp3e-utilities__marching-note">
+                      <label for="hyp3e-utilities-marching-note-{{id}}">
+                        {{localize "hyp3e-utilities.applications.partySheet.marchingNote"}}
+                      </label>
+                      {{#if @root.canEdit}}
+                        <textarea
+                          id="hyp3e-utilities-marching-note-{{id}}"
+                          data-field="marching-note"
+                        >{{notes}}</textarea>
+                        <button
+                          type="button"
+                          data-action="saveMarchingNote"
+                          data-marching-rank="{{id}}"
+                        >{{localize "hyp3e-utilities.applications.partySheet.saveMarchingNote"}}</button>
+                      {{else}}
+                        <p>{{notes}}</p>
+                      {{/if}}
+                    </div>
+                  {{/if}}
+                </section>
+              {{/each}}
+            </div>
+          </section>
+        {{else}}
+          <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+        {{/if}}
       {{/if}}
     {{/if}}
   </section>

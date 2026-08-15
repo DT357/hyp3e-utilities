@@ -176,6 +176,98 @@
   min-width: 8rem;
 }
 
+.hyp3e-utilities .hyp3e-utilities__marching-order,
+.hyp3e-utilities .hyp3e-utilities__marching-group,
+.hyp3e-utilities .hyp3e-utilities__marching-note {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-groups {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-group {
+  align-content: start;
+  border: 1px solid var(--color-border-light-tertiary, #777);
+  border-radius: 0.25rem;
+  min-width: 0;
+  padding: 0.5rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-group h3 {
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-rows {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  min-height: 4rem;
+  padding: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-row {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #777);
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 2.25rem minmax(5rem, 1fr);
+  padding-bottom: 0.4rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-row[draggable="true"] {
+  cursor: grab;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-row img {
+  border: 0;
+  height: 2.25rem;
+  object-fit: cover;
+  width: 2.25rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-identity {
+  display: grid;
+  min-width: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-identity button {
+  border: 0;
+  font-weight: 700;
+  height: auto;
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-controls {
+  display: grid;
+  gap: 0.25rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-controls button {
+  min-width: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-empty {
+  font-style: italic;
+}
+
+.hyp3e-utilities .hyp3e-utilities__marching-note textarea {
+  min-height: 4rem;
+  resize: vertical;
+  width: 100%;
+}
+
 @media (max-width: 44rem) {
   .hyp3e-utilities .hyp3e-utilities__party-member {
     grid-template-columns: 3rem 1fr auto;

@@ -148,6 +148,7 @@ export function registerModuleLifecycle({
       notifications,
       partyActionsProvider: () => partyActions,
       partyFollowersProvider: () => partyFollowers,
+      partyMarchingOrderProvider: () => partyMarchingOrder,
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
       partyStoreProvider: () => partyStore,
