@@ -32,6 +32,7 @@ const results = {
   par009: {},
   par010: {},
   mar002: {},
+  mar003: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -2444,21 +2445,65 @@ async function testProductionMarchingOrder(character, npc) {
       (group) => Math.round(group.getBoundingClientRect().top),
     )).size > 1;
 
+    const unsafeNote = 'Watch <script>alert("marching")</script>';
+    const noteResult = await request(
+      'party.setMarchingNote',
+      { rank: 'front', text: unsafeNote },
+      'report-note',
+    );
+    const reportRevision = api.partyStore.getState().revision;
+    const messageCount = game.messages.size;
+    sheet.element.querySelector(
+      '[data-action="reportMarchingOrder"]',
+    ).click();
+    const reportCreated = await waitUntil(() => game.messages.size > messageCount);
+    const reportMessage = [...game.messages].reverse().find(
+      (message) => message.flags?.[MODULE_ID]?.action
+        === 'marchingOrderReport',
+    );
+    const reportContent = reportMessage?.content ?? '';
+    const frontIndex = reportContent.indexOf('data-rank="front"');
+    const middleIndex = reportContent.indexOf('data-rank="middle"');
+    const rearIndex = reportContent.indexOf('data-rank="rear"');
+
     return {
-      setupSucceeded: memberResult.ok && followerResult.ok,
-      marchingRendered,
-      fourGroupsRendered: groups.length === 4,
-      enrichedRows,
-      accessibleControls,
-      unassignedPreviousDisabled,
-      threeNoteFields:
-        sheet.element.querySelectorAll('[data-field="marching-note"]')
-          .length === 3,
-      characterMovedFront,
-      npcMovedFront,
-      movedUp,
-      dragMovedMiddle,
-      responsiveWrap,
+      mar002: {
+        setupSucceeded: memberResult.ok && followerResult.ok,
+        marchingRendered,
+        fourGroupsRendered: groups.length === 4,
+        enrichedRows,
+        accessibleControls,
+        unassignedPreviousDisabled,
+        threeNoteFields:
+          sheet.element.querySelectorAll('[data-field="marching-note"]')
+            .length === 3,
+        characterMovedFront,
+        npcMovedFront,
+        movedUp,
+        dragMovedMiddle,
+        responsiveWrap,
+      },
+      mar003: {
+        noteSaved: noteResult.ok,
+        reportCreated,
+        publicMessage: (reportMessage?.whisper?.length ?? 0) === 0,
+        revisionFlagged:
+          reportMessage?.flags?.[MODULE_ID]?.revision === reportRevision,
+        ranksOrdered:
+          frontIndex >= 0
+          && frontIndex < middleIndex
+          && middleIndex < rearIndex,
+        actorsOrdered:
+          reportContent.indexOf(npc.name)
+          < reportContent.indexOf(character.name),
+        emptyRearVisible: reportContent.includes(
+          game.i18n.localize(`${MODULE_ID}.chat.marchingOrder.empty`),
+        ),
+        noteEscaped:
+          reportContent.includes('Watch &lt;script&gt;')
+          && reportContent.includes('&lt;/script&gt;')
+          && !reportContent.includes('<script>'),
+      },
     };
   }
   finally {
@@ -2533,8 +2578,13 @@ async function runGmDiagnostics() {
     results.par007 = await testProductionPartyFollowers(character, npc);
     results.par008 = await testProductionPartyActions(character, npc);
     results.par010 = await testProductionPartyCleanup();
+    const marchingResults = await testProductionMarchingOrder(character, npc);
     results.mar002 = {
-      gm: await testProductionMarchingOrder(character, npc),
+      gm: marchingResults.mar002,
+      waitingForPlayer: true,
+    };
+    results.mar003 = {
+      gm: marchingResults.mar003,
       waitingForPlayer: true,
     };
     results.par002 = {
@@ -2942,11 +2992,24 @@ async function runPlayerSocketDiagnostic() {
       partyMutations,
       firstActorUuid,
     );
+    const marchingReportMessage = [...game.messages].reverse().find(
+      (message) => message.flags?.[MODULE_ID]?.action
+        === 'marchingOrderReport',
+    );
+    const marchingReportResult = {
+      observed: Boolean(marchingReportMessage),
+      publicMessage:
+        (marchingReportMessage?.whisper?.length ?? 0) === 0,
+      ranksVisible: ['front', 'middle', 'rear'].every((rank) => (
+        marchingReportMessage?.content?.includes(`data-rank="${rank}"`)
+      )),
+    };
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
     results.par009 = partyDraftResult;
     results.mar002 = marchingResult;
+    results.mar003 = marchingReportResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -2955,6 +3018,7 @@ async function runPlayerSocketDiagnostic() {
       par004: partyStoreResult,
       par009: partyDraftResult,
       mar002: marchingResult,
+      mar003: marchingReportResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3029,6 +3093,14 @@ Hooks.once('ready', async () => {
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
       player: message.mar002,
+      waitingForPlayer: false,
+    };
+    results.mar003 = {
+      ...results.mar003,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.mar003,
       waitingForPlayer: false,
     };
     publishResults();

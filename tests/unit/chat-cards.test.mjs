@@ -33,6 +33,12 @@ const TRANSLATIONS = {
     'Neutral: disinterested or uncertain',
   'hyp3e-utilities.chat.reactions.affable':
     'Affable: extremely accommodating',
+  'hyp3e-utilities.chat.marchingOrder.title': 'Party Marching Order',
+  'hyp3e-utilities.chat.marchingOrder.empty': 'Empty',
+  'hyp3e-utilities.chat.marchingOrder.note': 'Note',
+  'hyp3e-utilities.chat.marchingOrder.ranks.front': 'Front',
+  'hyp3e-utilities.chat.marchingOrder.ranks.middle': 'Middle',
+  'hyp3e-utilities.chat.marchingOrder.ranks.rear': 'Rear',
 };
 
 function createHarness({
@@ -76,7 +82,9 @@ function createHarness({
     }
 
     static async create(messageData, createOptions) {
-      events.push(`create:${messageData.speaker.token ?? messageData.speaker.actor}`);
+      events.push(messageData.speaker
+        ? `create:${messageData.speaker.token ?? messageData.speaker.actor}`
+        : 'create:public');
       messages.push(messageData);
       messageOptions.push(createOptions);
       return { id: `message-${messages.length}`, ...messageData };
@@ -250,4 +258,46 @@ test('chat service fails closed for players or an empty GM recipient list', asyn
 test('roll-message mode options follow the Foundry generation', () => {
   assert.deepEqual(getRollMessageModeOptions(13), { rollMode: 'gmroll' });
   assert.deepEqual(getRollMessageModeOptions(14), { messageMode: 'gm' });
+});
+
+test('marching-order reports are public, ordered, escaped, and retain empty ranks', async () => {
+  const harness = createHarness({ userIsGm: false });
+  const report = await harness.service.createMarchingOrderReport({
+    groups: [
+      {
+        id: 'front',
+        notes: 'Watch <script>alert("note")</script>',
+        rows: [
+          { actorUuid: 'Actor.first', name: '<b>First</b>' },
+          { actorUuid: 'Actor.second', name: 'Second' },
+        ],
+      },
+      { id: 'middle', notes: '', rows: [] },
+      {
+        id: 'rear',
+        notes: 'Guard the mule.',
+        rows: [{ actorUuid: 'Actor.missing', name: 'Actor.missing' }],
+      },
+    ],
+    revision: 7,
+  });
+
+  assert.equal(harness.messages.length, 1);
+  assert.equal(report.message.id, 'message-1');
+  assert.equal(report.revision, 7);
+  assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
+  assert.deepEqual(harness.messageOptions, [undefined]);
+  assert.deepEqual(harness.messages[0].flags['hyp3e-utilities'], {
+    action: 'marchingOrderReport',
+    feature: 'partySheet',
+    revision: 7,
+  });
+  const { content } = harness.messages[0];
+  assert.ok(content.indexOf('Front') < content.indexOf('Middle'));
+  assert.ok(content.indexOf('Middle') < content.indexOf('Rear'));
+  assert.ok(content.indexOf('&lt;b&gt;First&lt;/b&gt;') < content.indexOf('Second'));
+  assert.match(content, /Watch &lt;script&gt;alert\(&quot;note&quot;\)&lt;\/script&gt;/);
+  assert.match(content, /<li[^>]*>Empty<\/li>/);
+  assert.equal(content.includes('<b>First</b>'), false);
+  assert.equal(content.includes('<script>'), false);
 });

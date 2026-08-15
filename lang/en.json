@@ -92,6 +92,8 @@
         "discardDrafts": "Discard Changes",
         "marchingHelp": "Use the movement buttons or drag rows between groups. Dropping on a group appends the row; dropping on a row inserts at that position.",
         "marchingOperationFailed": "The marching-order change could not be completed.",
+        "marchingReportFailed": "The marching-order chat report could not be created.",
+        "reportMarchingOrder": "Post Saved Order to Chat",
         "marchingNote": "Group note",
         "saveMarchingNote": "Save Note",
         "noMarchingActors": "No Actors in this group.",
@@ -167,6 +169,16 @@
       "success": "Success",
       "failure": "Failure",
       "reroll": "Reroll once.",
+      "marchingOrder": {
+        "title": "Party Marching Order",
+        "empty": "Empty",
+        "note": "Note",
+        "ranks": {
+          "front": "Front",
+          "middle": "Middle",
+          "rear": "Rear"
+        }
+      },
       "actions": {
         "reaction": "Reaction Roll",
         "save": "Saving Throw",

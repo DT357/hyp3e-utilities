@@ -39,6 +39,7 @@ export function createFoundationApplications({
   notifications = globalThis.ui?.notifications,
   actorDirectoryProvider = () => globalThis.ui?.actors,
   canvasProvider = () => globalThis.canvas,
+  chatCardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.chatCards,
   partyActionsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyActions,
   partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
   partyMarchingOrderProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMarchingOrder,
@@ -226,6 +227,7 @@ export function createFoundationApplications({
         openMarchingActor: OpenPartySheetApplication.openMarchingActor,
         openMember: OpenPartySheetApplication.openMember,
         pingActor: OpenPartySheetApplication.pingActor,
+        reportMarchingOrder: OpenPartySheetApplication.reportMarchingOrder,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
         rollAllFollowerMorale:
@@ -425,6 +427,34 @@ export function createFoundationApplications({
       return this._executePartyAction(
         () => partyActionsProvider().pingActor(target?.dataset?.actorUuid),
         `${APP_NAMESPACE}.partySheet.tokenUnavailable`,
+      );
+    }
+
+    static async reportMarchingOrder() {
+      const state = partyStoreProvider()?.getState?.()
+        ?? createPartyStateDefault();
+      const model = partyMarchingOrderProvider()?.getModel?.(state)
+        ?? { groups: [] };
+      const resolveActor = (actorUuid) => (
+        partyMembersProvider()?.getActor?.(actorUuid)
+        ?? partyFollowersProvider()?.getActor?.(actorUuid)
+      );
+      const groups = model.groups
+        .filter(({ id }) => id !== 'unassigned')
+        .map((group) => ({
+          id: group.id,
+          notes: group.notes,
+          rows: group.rows.map(({ actorUuid }) => ({
+            actorUuid,
+            name: resolveActor(actorUuid)?.name ?? actorUuid,
+          })),
+        }));
+      return this._executePartyAction(
+        () => chatCardsProvider().createMarchingOrderReport({
+          groups,
+          revision: state.revision,
+        }),
+        `${APP_NAMESPACE}.partySheet.marchingReportFailed`,
       );
     }
 

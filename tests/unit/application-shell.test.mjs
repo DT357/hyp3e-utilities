@@ -795,3 +795,73 @@ test('Party Sheet Marching Order enriches rows, routes controls/drop, and preser
   assert.equal(discarded.hasUnsavedChanges, false);
   assert.equal(discarded.marchingGroups[1].notes, 'External front');
 });
+
+test('Party Sheet reports authoritative marching ranks without local note drafts', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 9;
+  state.memberActorUuids = ['Actor.hero', 'Actor.missing'];
+  state.followerActorUuids = ['Actor.retainer'];
+  state.marchingOrder.front = {
+    actorUuids: ['Actor.hero', 'Actor.missing'],
+    notes: 'Saved front note',
+  };
+  state.marchingOrder.rear = {
+    actorUuids: ['Actor.retainer'],
+    notes: '',
+  };
+  const reports = [];
+  const actors = new Map([
+    ['Actor.hero', { name: 'Hero' }],
+    ['Actor.retainer', { name: 'Retainer' }],
+  ]);
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    chatCardsProvider: () => ({
+      async createMarchingOrderReport(report) {
+        reports.push(report);
+        return { message: { id: 'report' }, revision: report.revision };
+      },
+    }),
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyFollowersProvider: () => ({ getActor: (uuid) => actors.get(uuid) }),
+    partyMarchingOrderProvider: () => ({
+      getModel: (currentState) => createMarchingOrderModel(currentState),
+    }),
+    partyMembersProvider: () => ({ getActor: (uuid) => actors.get(uuid) }),
+    partyStoreProvider: () => ({ getState: () => state }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  app._marchingNoteDrafts.set('front', {
+    baseRevision: 9,
+    text: 'Unsaved front note',
+  });
+
+  const report = await classes.OpenPartySheetApplication.DEFAULT_OPTIONS
+    .actions.reportMarchingOrder.call(app);
+
+  assert.equal(report.message.id, 'report');
+  assert.deepEqual(reports, [{
+    groups: [
+      {
+        id: 'front',
+        notes: 'Saved front note',
+        rows: [
+          { actorUuid: 'Actor.hero', name: 'Hero' },
+          { actorUuid: 'Actor.missing', name: 'Actor.missing' },
+        ],
+      },
+      { id: 'middle', notes: '', rows: [] },
+      {
+        id: 'rear',
+        notes: '',
+        rows: [{ actorUuid: 'Actor.retainer', name: 'Retainer' }],
+      },
+    ],
+    revision: 9,
+  }]);
+});

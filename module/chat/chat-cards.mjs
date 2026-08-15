@@ -5,6 +5,7 @@ import { getReactionOutcome } from '../hud/reaction-table.mjs';
 const FEATURE_ID = 'npcActionHud';
 const LEGACY_GM_ROLL_MODE = 'gmroll';
 const GM_MESSAGE_MODE = 'gm';
+const MARCHING_REPORT_RANKS = Object.freeze(['front', 'middle', 'rear']);
 
 const ACTION_LABEL_KEYS = Object.freeze({
   reaction: `${MODULE_ID}.chat.actions.reaction`,
@@ -38,6 +39,70 @@ function renderRow(label, value) {
     `<dt>${escapeHtml(label)}</dt>`,
     `<dd>${escapeHtml(value)}</dd>`,
     '</div>',
+  ].join('');
+}
+
+function validateMarchingOrderReport(report) {
+  if (!Number.isInteger(report?.revision) || report.revision < 0) {
+    throw new TypeError('A non-negative Party State revision is required.');
+  }
+  if (
+    !Array.isArray(report.groups)
+    || report.groups.length !== MARCHING_REPORT_RANKS.length
+  ) {
+    throw new TypeError('Front, middle, and rear marching groups are required.');
+  }
+  for (const [index, group] of report.groups.entries()) {
+    if (
+      group?.id !== MARCHING_REPORT_RANKS[index]
+      || typeof group.notes !== 'string'
+      || !Array.isArray(group.rows)
+    ) {
+      throw new TypeError('Marching groups must be complete and ordered.');
+    }
+    for (const row of group.rows) {
+      if (
+        typeof row?.actorUuid !== 'string'
+        || typeof row?.name !== 'string'
+      ) {
+        throw new TypeError('Marching rows require an Actor UUID and name.');
+      }
+    }
+  }
+}
+
+function renderMarchingOrderCard(report, localize) {
+  const groups = report.groups.map((group) => {
+    const rows = group.rows.length
+      ? group.rows.map((row) => (
+        `<li data-actor-uuid="${escapeHtml(row.actorUuid)}">${escapeHtml(row.name)}</li>`
+      )).join('')
+      : `<li class="${MODULE_ID}-chat-card__empty">${escapeHtml(
+        localize(`${MODULE_ID}.chat.marchingOrder.empty`),
+      )}</li>`;
+    const note = group.notes
+      ? [
+        `<p class="${MODULE_ID}-chat-card__note">`,
+        `<strong>${escapeHtml(localize(`${MODULE_ID}.chat.marchingOrder.note`))}:</strong> `,
+        escapeHtml(group.notes),
+        '</p>',
+      ].join('')
+      : '';
+    return [
+      `<section class="${MODULE_ID}-chat-card__marching-rank" data-rank="${group.id}">`,
+      `<h4>${escapeHtml(localize(`${MODULE_ID}.chat.marchingOrder.ranks.${group.id}`))}</h4>`,
+      `<ol>${rows}</ol>`,
+      note,
+      '</section>',
+    ].join('');
+  });
+  return [
+    `<section class="${MODULE_ID} ${MODULE_ID}-chat-card" data-action="marchingOrderReport">`,
+    `<h3 class="${MODULE_ID}-chat-card__title">${escapeHtml(
+      localize(`${MODULE_ID}.chat.marchingOrder.title`),
+    )}</h3>`,
+    groups.join(''),
+    '</section>',
   ].join('');
 }
 
@@ -162,6 +227,28 @@ export function createChatCardService({
   logger = console,
   randomId = globalThis.foundry?.utils?.randomID,
 } = {}) {
+  async function createMarchingOrderReport(report) {
+    validateMarchingOrderReport(report);
+    if (typeof ChatMessageClass?.create !== 'function') {
+      throw new Error('Foundry chat APIs are unavailable.');
+    }
+    const message = await ChatMessageClass.create({
+      author: game?.user?.id,
+      content: renderMarchingOrderCard(
+        report,
+        (key) => game.i18n.localize(key),
+      ),
+      flags: {
+        [MODULE_ID]: {
+          action: 'marchingOrderReport',
+          feature: 'partySheet',
+          revision: report.revision,
+        },
+      },
+    });
+    return Object.freeze({ message, revision: report.revision });
+  }
+
   async function createNpcRollBatch(batch, { batchId } = {}) {
     validateBatch(batch);
     if (!game?.user?.isGM) {
@@ -252,5 +339,5 @@ export function createChatCardService({
     });
   }
 
-  return Object.freeze({ createNpcRollBatch });
+  return Object.freeze({ createMarchingOrderReport, createNpcRollBatch });
 }

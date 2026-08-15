@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through MAR-002 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through MAR-002 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through MAR-003 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through MAR-003 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -364,9 +364,22 @@ also confirmed four accessible controls per row, correct disabled boundaries,
 responsive group wrapping, successful cleanup, matching raw Foundry sender
 identity, and no diagnostic errors.
 
+### Public marching-order report (MAR-003)
+
+Foundry 13.351 and 14.365 created one public marching-order message from the
+saved Party State. Both cards retained Front, Middle, and Rear order, kept the
+assigned NPC before the assigned character, displayed the empty Rear rank,
+included the saved revision flag, and rendered a hostile script-shaped note as
+plain text. The stored content contained escaped tag boundaries and no
+executable script tag.
+
+Connected Players in both generations independently observed the same public
+message with all three ranks. The raw Foundry sender checks and the complete
+MAR-002 regression remained green, and neither diagnostic reported an error.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010, MAR-001, and MAR-002 are complete. No compatibility
+PAR-001 through PAR-010 and MAR-001 through MAR-003 are complete. No compatibility
 finding contradicts the approved architecture. Milestones 1 and 2 are
-complete; Milestone 3 is active, with the marching-order chat report next.
+complete; Milestone 3 is active, with validated manual supply fields next.

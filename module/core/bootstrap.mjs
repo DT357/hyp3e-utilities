@@ -138,10 +138,15 @@ export function registerModuleLifecycle({
       return;
     }
 
+    const chatCards = createChatCardService({
+      game: currentGame,
+      logger,
+    });
     const applications = createFoundationApplications({
       ApplicationV2: foundryApi.ApplicationV2,
       HandlebarsApplicationMixin: foundryApi.HandlebarsApplicationMixin,
       canvasProvider,
+      chatCardsProvider: () => chatCards,
       game: currentGame,
       hooks,
       logger,
@@ -157,10 +162,6 @@ export function registerModuleLifecycle({
       'activateActorDirectory',
       applications.OpenPartySheetApplication.activateActorDirectory,
     );
-    const chatCards = createChatCardService({
-      game: currentGame,
-      logger,
-    });
     partyActions = createPartyActionService({
       canvasProvider,
       chatCards,

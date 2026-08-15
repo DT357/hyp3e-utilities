@@ -319,6 +319,23 @@
   margin: 0.25rem 0 0;
 }
 
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__marching-rank {
+  margin-block: 0.5rem;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__marching-rank h4 {
+  margin: 0;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__marching-rank ol {
+  margin-block: 0.2rem;
+  padding-inline-start: 1.5rem;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__empty {
+  font-style: italic;
+}
+
 #hyp3e-utilities-npc-action-hud.hyp3e-utilities-npc-action-hud-overlay {
   left: 50%;
   pointer-events: none;
