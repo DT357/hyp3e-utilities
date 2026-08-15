@@ -1644,3 +1644,98 @@ test('Party Sheet GM XP preview preserves calculator output and local selection'
   assert.deepEqual(awardCalls, [[previewed.xpPreview, 31, 'xp-confirm-id']]);
   assert.equal(app._xpDraft, null);
 });
+
+test('Party Sheet coin preview preserves active-GM output for trusted editors', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 40;
+  state.treasuryActorUuid = 'Actor.treasury';
+  const calls = [];
+  const makePreview = (input = {}) => ({
+    availableCoins: { cp: 10, sp: 20, ep: 30, gp: 40, pp: 50 },
+    distributions: [
+      {
+        actorUuid: 'Actor.hero', awards: { cp: 5, sp: 6, ep: 7, gp: 8, pp: 9 },
+        included: true, missing: false, name: 'Hero', selected: true,
+        share: 1, writeback: true,
+      },
+      {
+        actorUuid: 'Actor.npc', awards: { cp: 2, sp: 3, ep: 4, gp: 5, pp: 6 },
+        included: input.selectedActorUuids?.includes('Actor.npc') ?? true,
+        missing: false, name: 'NPC',
+        selected: input.selectedActorUuids?.includes('Actor.npc') ?? true,
+        share: 0.5, writeback: false,
+      },
+    ],
+    remainingTreasuryCoins: { cp: 3, sp: 11, ep: 19, gp: 27, pp: 35 },
+    revision: 40,
+    splitCoins: input.splitCoins ?? { cp: 10, sp: 20, ep: 30, gp: 40, pp: 50 },
+    splitRemainders: { cp: 3, sp: 11, ep: 19, gp: 27, pp: 35 },
+    totalShares: 1.5,
+    treasuryActorUuid: 'Actor.treasury',
+  });
+  const coinService = {
+    requestPreview: async (input, revision) => {
+      calls.push([structuredClone(input), revision]);
+      return { ok: true, value: makePreview(input) };
+    },
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 2 : [] },
+      user: { id: 'trusted', isGM: false, role: 2 },
+      users: [],
+    },
+    partyCoinsProvider: () => coinService,
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyTreasuryProvider: () => ({
+      getStatus: () => ({
+        actor: null, candidates: [], configuredUuid: state.treasuryActorUuid,
+        hasDuplicates: false, kind: 'missing',
+      }),
+      requestSnapshot: async () => ({
+        ok: true,
+        value: {
+          actorUuid: state.treasuryActorUuid, coins: {}, items: [],
+          name: 'Party Treasury', ready: true, revision: 40,
+        },
+      }),
+    }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
+    .call(app, undefined, { dataset: { tab: 'treasure' } });
+
+  const initial = await app._prepareContext({});
+  assert.equal(initial.canPreviewCoins, true);
+  assert.equal(initial.coinPreviewReady, false);
+  assert.deepEqual(
+    initial.coinDistributions.map((entry) => [entry.actorUuid, entry.awards]),
+    makePreview().distributions.map((entry) => [entry.actorUuid, entry.awards]),
+  );
+
+  const values = { cp: '9', sp: '8', ep: '7', gp: '6', pp: '5' };
+  const section = {
+    querySelector: (selector) => ({
+      value: values[/data-coin-split="([a-z]+)"/.exec(selector)?.[1]],
+    }),
+    querySelectorAll: () => [{ dataset: { actorUuid: 'Actor.hero' } }],
+  };
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.previewCoins
+    .call(app, undefined, { closest: () => section });
+  const previewed = await app._prepareContext({});
+
+  assert.equal(previewed.coinPreviewReady, true);
+  assert.equal(previewed.coinPreview.totalShares, 1.5);
+  assert.deepEqual(calls.at(-1), [{
+    selectedActorUuids: ['Actor.hero'],
+    splitCoins: values,
+  }, 40]);
+  assert.deepEqual(app._coinDraft, {
+    baseRevision: 40,
+    preview: previewed.coinPreview,
+    selectedActorUuids: ['Actor.hero'],
+    splitCoins: values,
+  });
+});

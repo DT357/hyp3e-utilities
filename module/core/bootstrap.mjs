@@ -9,6 +9,7 @@ import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import { createPartyActionService } from '../party/party-actions.mjs';
 import { createPartyCleanupService } from '../party/party-cleanup.mjs';
+import { createPartyCoinPreviewService } from '../party/party-coin-preview.mjs';
 import { createPartyFollowerService } from '../party/party-followers.mjs';
 import {
   createPartyItemTransferService,
@@ -115,6 +116,7 @@ export function registerModuleLifecycle({
   let api;
   let partyActions;
   let partyCleanup;
+  let partyCoins;
   let partyFollowers;
   let partyItemTransfers;
   let partyItemTransferUi;
@@ -174,6 +176,7 @@ export function registerModuleLifecycle({
       logger,
       notifications,
       partyActionsProvider: () => partyActions,
+      partyCoinsProvider: () => partyCoins,
       partyFollowersProvider: () => partyFollowers,
       partyItemTransferUiProvider: () => partyItemTransferUi,
       partyMarchingOrderProvider: () => partyMarchingOrder,
@@ -268,6 +271,12 @@ export function registerModuleLifecycle({
       ownershipLevels,
       store: partyStore,
     });
+    partyCoins = createPartyCoinPreviewService({
+      adapter: hyp3eAdapter,
+      game: currentGame,
+      mutations: partyMutations,
+      store: partyStore,
+    });
     partyXp = createPartyXpPreviewService({
       adapter: hyp3eAdapter,
       game: currentGame,
@@ -318,6 +327,7 @@ export function registerModuleLifecycle({
       npcSelection,
       partyActions,
       partyCleanup,
+      partyCoins,
       partyFollowers,
       partyItemTransfers,
       partyItemTransferUi,

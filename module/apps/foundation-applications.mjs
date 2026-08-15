@@ -45,6 +45,7 @@ export function createFoundationApplications({
   canvasProvider = () => globalThis.canvas,
   chatCardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.chatCards,
   partyActionsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyActions,
+  partyCoinsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyCoins,
   partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
   partyItemTransferUiProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyItemTransferUi,
   partyMarchingOrderProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMarchingOrder,
@@ -220,6 +221,7 @@ export function createFoundationApplications({
       super(options);
       partySheetInstance = this;
       this._activeTab = 'overview';
+      this._coinDraft = null;
       this._followerDrafts = new Map();
       this._marchingNoteDrafts = new Map();
       this._partyNoteDraft = null;
@@ -252,6 +254,7 @@ export function createFoundationApplications({
         openPartyTreasury: OpenPartySheetApplication.openPartyTreasury,
         pingActor: OpenPartySheetApplication.pingActor,
         previewXp: OpenPartySheetApplication.previewXp,
+        previewCoins: OpenPartySheetApplication.previewCoins,
         reportMarchingOrder: OpenPartySheetApplication.reportMarchingOrder,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
@@ -483,11 +486,31 @@ export function createFoundationApplications({
     }
 
     static async discardPartyDrafts() {
+      this._coinDraft = null;
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
       this._partyNoteDraft = null;
       this._supplyDraft = null;
       this._xpDraft = null;
+      await this.render({ force: true });
+    }
+
+    static async previewCoins(_event, target) {
+      this._captureCoinDraft({ target });
+      const service = partyCoinsProvider();
+      if (!this._coinDraft || typeof service?.requestPreview !== 'function') return;
+      const response = await service.requestPreview({
+        selectedActorUuids: this._coinDraft.selectedActorUuids,
+        splitCoins: this._coinDraft.splitCoins,
+      }, this._coinDraft.baseRevision);
+      if (response?.ok) this._coinDraft.preview = response.value;
+      else {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.coinPreviewFailed`,
+        );
+      }
       await this.render({ force: true });
     }
 
@@ -780,6 +803,24 @@ export function createFoundationApplications({
         share: row.querySelector('[data-field="follower-share"]')?.value ?? '',
         wageGp: row.querySelector('[data-field="follower-wage"]')?.value ?? '',
       });
+    }
+
+    _captureCoinDraft(event) {
+      const section = event.target?.closest?.('[data-party-coins]');
+      if (!section) return;
+      this._coinDraft = {
+        baseRevision: this._coinDraft?.baseRevision
+          ?? partyStoreProvider()?.getState()?.revision
+          ?? 0,
+        preview: null,
+        selectedActorUuids: Array.from(section.querySelectorAll(
+          '[data-coin-recipient]:checked',
+        )).map((element) => element.dataset.actorUuid),
+        splitCoins: Object.fromEntries(COIN_KEYS.map((coinKey) => [
+          coinKey,
+          section.querySelector(`[data-coin-split="${coinKey}"]`)?.value ?? '',
+        ])),
+      };
     }
 
     _captureMarchingNoteDraft(event) {
@@ -1283,6 +1324,38 @@ export function createFoundationApplications({
       const treasuryTransferDestinations = decision.allowed
         ? partyItemTransferUiProvider()?.getDestinationOptions?.(state) ?? []
         : [];
+      const canPreviewCoins =
+        decision.allowed
+        && lifecycleReady
+        && this._activeTab === 'treasure';
+      const coinService = canPreviewCoins ? partyCoinsProvider() : null;
+      const coinInput = this._coinDraft
+        ? {
+          selectedActorUuids: this._coinDraft.selectedActorUuids,
+          splitCoins: this._coinDraft.splitCoins,
+        }
+        : {};
+      const coinPreview = this._coinDraft?.preview ?? null;
+      const coinInputResponse =
+        coinPreview === null
+        && typeof coinService?.requestPreview === 'function'
+        ? await coinService.requestPreview(coinInput, state.revision)
+        : null;
+      const coinModel = coinPreview ?? (
+        coinInputResponse?.ok ? coinInputResponse.value : null
+      );
+      const coinPreviewStale =
+        this._coinDraft !== null
+        && this._coinDraft.baseRevision !== state.revision;
+      const coinDistributions = (coinModel?.distributions ?? []).map(
+        (distribution) => ({
+          ...distribution,
+          coinAwards: COIN_KEYS.map((coinKey) => ({
+            coinKey,
+            value: distribution.awards[coinKey],
+          })),
+        }),
+      );
       const canDistributeXp = game.user?.isGM === true;
       const xpService = canDistributeXp ? partyXpProvider() : null;
       const xpInput = this._xpDraft
@@ -1320,6 +1393,7 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        canPreviewCoins,
         canDistributeXp,
         canConfirmXp:
           xpPreview !== null
@@ -1337,6 +1411,7 @@ export function createFoundationApplications({
           ...(this._partyNoteDraft ? [this._partyNoteDraft] : []),
           ...(this._supplyDraft ? [this._supplyDraft] : []),
           ...(this._xpDraft ? [this._xpDraft] : []),
+          ...(this._coinDraft ? [this._coinDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
@@ -1345,6 +1420,7 @@ export function createFoundationApplications({
             || this._partyNoteDraft !== null
             || this._supplyDraft !== null
             || this._xpDraft !== null
+            || this._coinDraft !== null
           ),
         hasMembers: members.length > 0,
         members,
@@ -1372,6 +1448,20 @@ export function createFoundationApplications({
         xpPreviewReady: xpPreview !== null,
         xpPreviewStale,
         xpTotal: this._xpDraft?.totalXp ?? '',
+        coinDenominations: COIN_KEYS.map((coinKey) => ({
+          available: coinModel?.availableCoins?.[coinKey] ?? 0,
+          coinKey,
+          label: `${APP_NAMESPACE}.partySheet.coins.${coinKey}`,
+          remainder: coinModel?.splitRemainders?.[coinKey] ?? 0,
+          remaining: coinModel?.remainingTreasuryCoins?.[coinKey] ?? 0,
+          split: coinModel?.splitCoins?.[coinKey] ?? 0,
+        })),
+        coinDistributions,
+        coinPreview,
+        coinPreviewReady: coinPreview !== null,
+        coinPreviewStale,
+        coinTotalShares: coinModel?.totalShares ?? 0,
+        hasCoinRecipients: coinDistributions.length > 0,
       };
     }
 
@@ -1380,6 +1470,7 @@ export function createFoundationApplications({
       const dropZone = this.element?.querySelector?.(
         '[data-party-member-drop-zone]',
       );
+      const coinSection = this.element?.querySelector?.('[data-party-coins]');
       const followerDropZone = this.element?.querySelector?.(
         '[data-party-follower-drop-zone]',
       );
@@ -1395,6 +1486,12 @@ export function createFoundationApplications({
       this._restorePartySheetViewState();
       if (context.canDistributeXp === true) {
         xpSection?.addEventListener('input', this._captureXpDraft.bind(this));
+      }
+      if (context.canPreviewCoins === true) {
+        coinSection?.addEventListener(
+          'input',
+          this._captureCoinDraft.bind(this),
+        );
       }
       if (context.canEdit !== true) return;
       followerDropZone?.addEventListener(
@@ -1488,6 +1585,7 @@ export function createFoundationApplications({
       }
       this._partyHookSubscriptions = [];
       this._externalRefreshScheduled = false;
+      this._coinDraft = null;
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
       this._partyNoteDraft = null;

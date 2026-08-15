@@ -710,6 +710,97 @@
                   </dl>
                 {{/if}}
               </section>
+              {{#if canPreviewCoins}}
+                <section class="hyp3e-utilities__party-coins" data-party-coins>
+                  <h3>{{localize "hyp3e-utilities.applications.partySheet.coinDistributionHeading"}}</h3>
+                  <p>{{localize "hyp3e-utilities.applications.partySheet.coinDistributionHelp"}}</p>
+                  <fieldset class="hyp3e-utilities__party-coin-amounts">
+                    <legend>{{localize "hyp3e-utilities.applications.partySheet.coinSplitAmounts"}}</legend>
+                    {{#each coinDenominations}}
+                      <label>
+                        <span>{{localize label}}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="{{available}}"
+                          step="1"
+                          inputmode="numeric"
+                          value="{{split}}"
+                          data-coin-split="{{coinKey}}"
+                        >
+                        <small>{{localize "hyp3e-utilities.applications.partySheet.coinAvailable" available=available}}</small>
+                      </label>
+                    {{/each}}
+                  </fieldset>
+                  {{#if hasCoinRecipients}}
+                    <fieldset class="hyp3e-utilities__party-coin-recipients">
+                      <legend>{{localize "hyp3e-utilities.applications.partySheet.coinRecipients"}}</legend>
+                      {{#each coinDistributions}}
+                        <label>
+                          <input
+                            type="checkbox"
+                            data-coin-recipient
+                            data-actor-uuid="{{actorUuid}}"
+                            {{#if selected}}checked{{/if}}
+                            {{#if missing}}disabled{{/if}}
+                          >
+                          <span>{{name}}</span>
+                          <small>{{localize "hyp3e-utilities.applications.partySheet.xpShare" share=share}}</small>
+                        </label>
+                      {{/each}}
+                    </fieldset>
+                    <button type="button" data-action="previewCoins">
+                      {{localize "hyp3e-utilities.applications.partySheet.coinPreviewAction"}}
+                    </button>
+                  {{else}}
+                    <p role="status">{{localize "hyp3e-utilities.applications.partySheet.coinNoRecipients"}}</p>
+                  {{/if}}
+                  {{#if coinPreviewReady}}
+                    {{#if coinPreviewStale}}
+                      <p class="hyp3e-utilities__party-treasury-warning" role="status">
+                        {{localize "hyp3e-utilities.applications.partySheet.coinPreviewStale"}}
+                      </p>
+                    {{/if}}
+                    <p>{{localize "hyp3e-utilities.applications.partySheet.coinTotalShares" shares=coinTotalShares}}</p>
+                    <div class="hyp3e-utilities__party-coin-table-wrap">
+                      <table class="hyp3e-utilities__party-coin-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.coinRecipient"}}</th>
+                            {{#each coinDenominations}}
+                              <th scope="col">{{localize label}}</th>
+                            {{/each}}
+                            <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.coinWriteback"}}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {{#each coinDistributions}}
+                            {{#if included}}
+                              <tr>
+                                <th scope="row">{{name}}</th>
+                                {{#each coinAwards}}<td>{{value}}</td>{{/each}}
+                                <td>{{localize writebackLabel}}</td>
+                              </tr>
+                            {{/if}}
+                          {{/each}}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <th scope="row">{{localize "hyp3e-utilities.applications.partySheet.coinRemainder"}}</th>
+                            {{#each coinDenominations}}<td>{{remainder}}</td>{{/each}}
+                            <td></td>
+                          </tr>
+                          <tr>
+                            <th scope="row">{{localize "hyp3e-utilities.applications.partySheet.coinTreasuryRemaining"}}</th>
+                            {{#each coinDenominations}}<td>{{remaining}}</td>{{/each}}
+                            <td></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  {{/if}}
+                </section>
+              {{/if}}
               <section class="hyp3e-utilities__party-notes" data-party-notes>
                 <p>{{localize "hyp3e-utilities.applications.partySheet.treasureNotesHelp"}}</p>
                 <div class="hyp3e-utilities__party-note-grid">
