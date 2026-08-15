@@ -13,6 +13,7 @@ import {
   createMarchingOrderModel,
 } from '../../module/party/party-marching-order.mjs';
 import { createPartyStateDefault } from '../../module/party/party-state.mjs';
+import { PARTY_SUPPLY_OPERATIONS } from '../../module/party/party-supplies.mjs';
 
 class StubApplicationV2 {
   constructor() {
@@ -864,4 +865,78 @@ test('Party Sheet reports authoritative marching ranks without local note drafts
     ],
     revision: 9,
   }]);
+});
+
+test('Party Sheet Supplies preserves drafts and submits all counts at their base revision', async () => {
+  let state = createPartyStateDefault();
+  state.revision = 3;
+  state.supplies = {
+    torches: '10',
+    lanterns: '2',
+    oil: '4',
+    rations: '20',
+  };
+  const requests = [];
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        return { error: { code: 'staleRevision' }, ok: false };
+      },
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    partySuppliesProvider: () => ({
+      getSupplies: (currentState) => ({ ...currentState.supplies }),
+    }),
+    requestIdProvider: () => 'supplies-1',
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
+  await actions.selectTab.call(app, undefined, { dataset: { tab: 'supplies' } });
+  assert.equal((await app._prepareContext({})).showSupplies, true);
+
+  const values = {
+    torches: '8',
+    lanterns: '3',
+    oil: '6',
+    rations: '18',
+  };
+  app._captureSupplyDraft({
+    target: {
+      closest: () => ({
+        querySelector: (selector) => ({
+          value: values[selector.match(/"([^"]+)"/)[1]],
+        }),
+      }),
+    },
+  });
+  state = {
+    ...state,
+    revision: 4,
+    supplies: { torches: '7', lanterns: '1', oil: '2', rations: '16' },
+  };
+  const stale = await app._prepareContext({});
+  assert.deepEqual(stale.supplies, values);
+  assert.equal(stale.hasStaleDraft, true);
+
+  await actions.saveSupplies.call(app);
+
+  assert.deepEqual(requests, [{
+    operation: PARTY_SUPPLY_OPERATIONS.set,
+    envelope: {
+      expectedRevision: 3,
+      payload: values,
+      requestId: 'supplies-1',
+    },
+  }]);
+  assert.deepEqual((await app._prepareContext({})).supplies, values);
+  await actions.discardPartyDrafts.call(app);
+  assert.deepEqual((await app._prepareContext({})).supplies, state.supplies);
 });

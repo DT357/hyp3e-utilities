@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through MAR-003 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through MAR-003 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through SUP-001 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through SUP-001 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -377,9 +377,23 @@ Connected Players in both generations independently observed the same public
 message with all three ranks. The raw Foundry sender checks and the complete
 MAR-002 regression remained green, and neither diagnostic reported an error.
 
+### Manual supplies (SUP-001)
+
+Foundry 13.351 and 14.365 rendered four native non-negative whole-number inputs
+for torches, lanterns, oil, and rations. GM and explicitly authorized Player
+clients saved the complete set atomically through the production mutation
+path. Negative and fractional requests returned `invalidRequest` without
+advancing Party State.
+
+Both generations refreshed clean fields after an external save. With a local
+Player draft present, an unrelated GM-authoritative update preserved all four
+values, displayed the stale warning, and caused the original-revision save to
+fail without data loss. Discard restored authoritative counts, a fresh retry
+persisted, and the diagnostic restored its initial values during cleanup.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010 and MAR-001 through MAR-003 are complete. No compatibility
-finding contradicts the approved architecture. Milestones 1 and 2 are
-complete; Milestone 3 is active, with validated manual supply fields next.
+PAR-001 through PAR-010, MAR-001 through MAR-003, and SUP-001 are complete. No
+compatibility finding contradicts the approved architecture. Milestones 1 and
+2 are complete; Milestone 3 is active, with shared rich-text notes next.

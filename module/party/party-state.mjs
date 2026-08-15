@@ -83,9 +83,12 @@ function normalizeText(value) {
 }
 
 function normalizeSupply(value) {
-  if (typeof value === 'string') return value;
-  if (!Number.isFinite(value)) return '';
-  return String(Math.max(0, Math.trunc(value)));
+  if (value === '') return '';
+  if (typeof value !== 'string' && typeof value !== 'number') return '';
+  const count = Number(value);
+  if (!Number.isFinite(count) || count < 0) return '';
+  const wholeCount = Math.trunc(count);
+  return Number.isSafeInteger(wholeCount) ? String(wholeCount) : '';
 }
 
 function normalizeSupplies(value) {

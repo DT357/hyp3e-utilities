@@ -10,6 +10,7 @@ import { PARTY_FOLLOWER_OPERATIONS } from '../party/party-followers.mjs';
 import { evaluatePartyEditPermission } from '../party/party-permissions.mjs';
 import { PARTY_MARCHING_OPERATIONS } from '../party/party-marching-order.mjs';
 import { PARTY_MEMBER_OPERATIONS } from '../party/party-members.mjs';
+import { PARTY_SUPPLY_OPERATIONS } from '../party/party-supplies.mjs';
 import { createPartyStateDefault } from '../party/party-state.mjs';
 import {
   validateExplicitEditorUserIds,
@@ -46,6 +47,7 @@ export function createFoundationApplications({
   partyMembersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMembers,
   partyMutationsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMutations,
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
+  partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
   requestIdProvider = createRequestId,
 }) {
   const HandlebarsApplication = HandlebarsApplicationMixin(ApplicationV2);
@@ -206,6 +208,7 @@ export function createFoundationApplications({
       this._activeTab = 'overview';
       this._followerDrafts = new Map();
       this._marchingNoteDrafts = new Map();
+      this._supplyDraft = null;
       this._partyHookSubscriptions = [];
     }
 
@@ -237,6 +240,7 @@ export function createFoundationApplications({
         rollMemberSave: OpenPartySheetApplication.rollMemberSave,
         saveFollower: OpenPartySheetApplication.saveFollower,
         saveMarchingNote: OpenPartySheetApplication.saveMarchingNote,
+        saveSupplies: OpenPartySheetApplication.saveSupplies,
         selectTab: OpenPartySheetApplication.selectTab,
       },
     };
@@ -382,6 +386,7 @@ export function createFoundationApplications({
     static async discardPartyDrafts() {
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
+      this._supplyDraft = null;
       await this.render({ force: true });
     }
 
@@ -540,6 +545,21 @@ export function createFoundationApplications({
       return response;
     }
 
+    static async saveSupplies() {
+      const draft = this._supplyDraft;
+      if (!draft) return null;
+      const response = await this._requestPartyOperation(
+        PARTY_SUPPLY_OPERATIONS.set,
+        draft.values,
+        draft.baseRevision,
+        `${APP_NAMESPACE}.partySheet.supplyOperationFailed`,
+      );
+      if (!response?.ok) return response;
+      this._supplyDraft = null;
+      await this.render({ force: true });
+      return response;
+    }
+
     async _requestPartyOperation(
       operation,
       payload,
@@ -609,6 +629,25 @@ export function createFoundationApplications({
           ?? 0,
         text: event.target?.value ?? '',
       });
+    }
+
+    _captureSupplyDraft(event) {
+      const section = event.target?.closest?.('[data-party-supplies]');
+      if (!section) return;
+      this._supplyDraft = {
+        baseRevision: this._supplyDraft?.baseRevision
+          ?? partyStoreProvider()?.getState()?.revision
+          ?? 0,
+        values: Object.fromEntries([
+          'torches',
+          'lanterns',
+          'oil',
+          'rations',
+        ].map((key) => [
+          key,
+          section.querySelector(`[data-field="${key}"]`)?.value ?? '',
+        ])),
+      };
     }
 
     _handleMarchingDragStart(event) {
@@ -765,6 +804,10 @@ export function createFoundationApplications({
           })),
         };
       });
+      const supplies = decision.allowed && this._supplyDraft
+        ? { ...this._supplyDraft.values }
+        : partySuppliesProvider()?.getSupplies?.(state)
+          ?? { ...state.supplies };
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -793,11 +836,13 @@ export function createFoundationApplications({
         hasStaleDraft: decision.allowed && [
           ...this._followerDrafts.values(),
           ...this._marchingNoteDrafts.values(),
+          ...(this._supplyDraft ? [this._supplyDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
             this._followerDrafts.size > 0
             || this._marchingNoteDrafts.size > 0
+            || this._supplyDraft !== null
           ),
         hasMembers: members.length > 0,
         members,
@@ -807,7 +852,9 @@ export function createFoundationApplications({
         showOverview: this._activeTab === 'overview',
         showFollowers: this._activeTab === 'followers',
         showMarchingOrder: this._activeTab === 'marchingOrder',
+        showSupplies: this._activeTab === 'supplies',
         state,
+        supplies,
         tabs,
       };
     }
@@ -823,6 +870,7 @@ export function createFoundationApplications({
       const marchingOrder = this.element?.querySelector?.(
         '[data-party-marching-order]',
       );
+      const supplies = this.element?.querySelector?.('[data-party-supplies]');
       if (context.canEdit !== true) return;
       followerDropZone?.addEventListener(
         'input',
@@ -831,6 +879,10 @@ export function createFoundationApplications({
       marchingOrder?.addEventListener(
         'input',
         this._captureMarchingNoteDraft.bind(this),
+      );
+      supplies?.addEventListener(
+        'input',
+        this._captureSupplyDraft.bind(this),
       );
       marchingOrder?.addEventListener(
         'dragstart',
@@ -892,6 +944,7 @@ export function createFoundationApplications({
       this._partyHookSubscriptions = [];
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
+      this._supplyDraft = null;
       try {
         return await super.close(options);
       }

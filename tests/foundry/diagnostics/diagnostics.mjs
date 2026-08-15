@@ -33,6 +33,7 @@ const results = {
   par010: {},
   mar002: {},
   mar003: {},
+  sup001: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -2525,6 +2526,88 @@ async function testProductionMarchingOrder(character, npc) {
   }
 }
 
+async function testProductionSupplies() {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalSupplies = { ...api.partyStore.getState().supplies };
+  const request = (payload, suffix) => api.partyMutations.request(
+    'party.setSupplies',
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `sup001-gm-${game.user.id}-${suffix}`,
+    },
+  );
+  const savedValues = {
+    torches: '11',
+    lanterns: '2',
+    oil: '5',
+    rations: '30',
+  };
+  const refreshedValues = {
+    torches: '7',
+    lanterns: '',
+    oil: '3',
+    rations: '24',
+  };
+  const sheet = new api.applications.OpenPartySheetApplication();
+
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="supplies"]',
+    ).click();
+    const rendered = await waitUntil(() => (
+      sheet.element?.querySelectorAll('[data-party-supplies] input').length === 4
+    ));
+    const getInput = (key) => sheet.element?.querySelector(
+      `[data-party-supplies] [data-field="${key}"]`,
+    );
+    for (const [key, value] of Object.entries(savedValues)) {
+      getInput(key).value = value;
+    }
+    getInput('torches').dispatchEvent(new Event('input', { bubbles: true }));
+    const beforeSaveRevision = api.partyStore.getState().revision;
+    sheet.element.querySelector('[data-action="saveSupplies"]').click();
+    const persisted = await waitUntil(() => (
+      api.partyStore.getState().revision === beforeSaveRevision + 1
+      && Object.entries(savedValues).every(
+        ([key, value]) => api.partyStore.getState().supplies[key] === value,
+      )
+    ));
+    const beforeInvalidRevision = api.partyStore.getState().revision;
+    const invalidResult = await request(
+      { ...savedValues, torches: '-1' },
+      'invalid',
+    );
+    const invalidRejected = !invalidResult.ok
+      && invalidResult.error.code === 'invalidRequest'
+      && api.partyStore.getState().revision === beforeInvalidRevision;
+    const externalResult = await request(refreshedValues, 'refresh');
+    const externalRefreshRendered = await waitUntil(() => (
+      Object.entries(refreshedValues).every(
+        ([key, value]) => getInput(key)?.value === value,
+      )
+    ));
+
+    return {
+      rendered,
+      fourWholeNumberInputs: ['torches', 'lanterns', 'oil', 'rations'].every(
+        (key) => getInput(key)?.type === 'number'
+          && getInput(key)?.min === '0'
+          && getInput(key)?.step === '1',
+      ),
+      persisted,
+      invalidRejected,
+      externalMutationSucceeded: externalResult.ok,
+      externalRefreshRendered,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    await request(originalSupplies, 'restore');
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2585,6 +2668,10 @@ async function runGmDiagnostics() {
     };
     results.mar003 = {
       gm: marchingResults.mar003,
+      waitingForPlayer: true,
+    };
+    results.sup001 = {
+      gm: await testProductionSupplies(),
       waitingForPlayer: true,
     };
     results.par002 = {
@@ -2861,6 +2948,115 @@ async function testPlayerMarchingOrder(partyMutations, actorUuid) {
   }
 }
 
+async function testPlayerSupplies(partyMutations) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalSupplies = { ...api.partyStore.getState().supplies };
+  const draftValues = {
+    torches: '8',
+    lanterns: '3',
+    oil: '6',
+    rations: '18',
+  };
+  const finalValues = {
+    torches: '9',
+    lanterns: '4',
+    oil: '',
+    rations: '21',
+  };
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const sheet = new PartySheet();
+  const requestSupplies = (payload, suffix) => partyMutations.request(
+    'party.setSupplies',
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `sup001-${game.user.id}-${suffix}`,
+    },
+  );
+
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="supplies"]',
+    ).click();
+    const authorizedPlayerCanEdit = await waitUntil(() => (
+      sheet.element?.querySelectorAll('[data-party-supplies] input').length === 4
+    ));
+    const getInput = (key) => sheet.element?.querySelector(
+      `[data-party-supplies] [data-field="${key}"]`,
+    );
+    for (const [key, value] of Object.entries(draftValues)) {
+      getInput(key).value = value;
+    }
+    getInput('torches').dispatchEvent(new Event('input', { bubbles: true }));
+    const draftRevision = api.partyStore.getState().revision;
+    const externalResult = await partyMutations.request(
+      'party.compatibilityNotesMutation',
+      {
+        expectedRevision: draftRevision,
+        payload: { notes: `SUP-001 external ${game.user.id}` },
+        requestId: `sup001-${game.user.id}-external`,
+      },
+    );
+    const externalRevisionObserved = await waitUntil(() => (
+      api.partyStore.getState().revision === draftRevision + 1
+    ));
+    const draftPreserved = await waitUntil(() => Object.entries(draftValues)
+      .every(([key, value]) => getInput(key)?.value === value));
+    const staleWarningRendered = Boolean(sheet.element.querySelector(
+      '.hyp3e-utilities__party-draft-status strong',
+    ));
+    sheet.element.querySelector('[data-action="saveSupplies"]').click();
+    await wait(300);
+    const staleSaveRejected = api.partyStore.getState().revision
+        === draftRevision + 1
+      && Object.entries(originalSupplies).every(
+        ([key, value]) => api.partyStore.getState().supplies[key] === value,
+      );
+    sheet.element.querySelector('[data-action="discardPartyDrafts"]').click();
+    const discardRestoredAuthoritative = await waitUntil(() => (
+      Object.entries(originalSupplies).every(
+        ([key, value]) => getInput(key)?.value === value,
+      )
+    ));
+
+    for (const [key, value] of Object.entries(finalValues)) {
+      getInput(key).value = value;
+    }
+    getInput('torches').dispatchEvent(new Event('input', { bubbles: true }));
+    sheet.element.querySelector('[data-action="saveSupplies"]').click();
+    const validSavePersisted = await waitUntil(() => Object.entries(finalValues)
+      .every(([key, value]) => api.partyStore.getState().supplies[key] === value));
+    const beforeInvalidRevision = api.partyStore.getState().revision;
+    const invalidResult = await requestSupplies(
+      { ...finalValues, oil: '1.5' },
+      'invalid',
+    );
+    const invalidRejected = !invalidResult.ok
+      && invalidResult.error.code === 'invalidRequest'
+      && api.partyStore.getState().revision === beforeInvalidRevision;
+
+    return {
+      authorizedPlayerCanEdit,
+      externalMutationSucceeded: externalResult.ok,
+      externalRevisionObserved,
+      draftPreserved,
+      staleWarningRendered,
+      staleSaveRejected,
+      discardRestoredAuthoritative,
+      validSavePersisted,
+      invalidRejected,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    if (JSON.stringify(api.partyStore.getState().supplies)
+      !== JSON.stringify(originalSupplies)) {
+      await requestSupplies(originalSupplies, 'restore');
+    }
+  }
+}
+
 async function runPlayerSocketDiagnostic() {
   if (!diagnosticSocket) {
     results.pb008 = { error: 'SocketLib registration was unavailable.' };
@@ -3004,12 +3200,14 @@ async function runPlayerSocketDiagnostic() {
         marchingReportMessage?.content?.includes(`data-rank="${rank}"`)
       )),
     };
+    const supplyResult = await testPlayerSupplies(partyMutations);
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
     results.par009 = partyDraftResult;
     results.mar002 = marchingResult;
     results.mar003 = marchingReportResult;
+    results.sup001 = supplyResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3019,6 +3217,7 @@ async function runPlayerSocketDiagnostic() {
       par009: partyDraftResult,
       mar002: marchingResult,
       mar003: marchingReportResult,
+      sup001: supplyResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3101,6 +3300,14 @@ Hooks.once('ready', async () => {
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
       player: message.mar003,
+      waitingForPlayer: false,
+    };
+    results.sup001 = {
+      ...results.sup001,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.sup001,
       waitingForPlayer: false,
     };
     publishResults();

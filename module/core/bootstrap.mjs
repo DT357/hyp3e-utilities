@@ -17,6 +17,7 @@ import { createPartyMemberService } from '../party/party-members.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
 import { createPartyStore } from '../party/party-store.mjs';
+import { createPartySupplyService } from '../party/party-supplies.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -105,6 +106,7 @@ export function registerModuleLifecycle({
   let partyMembers;
   let partyMutations;
   let partyStore;
+  let partySupplies;
   let transport;
   let socketlibReady = false;
   let foundationInitialized = false;
@@ -157,6 +159,7 @@ export function registerModuleLifecycle({
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
       partyStoreProvider: () => partyStore,
+      partySuppliesProvider: () => partySupplies,
     });
     hooks.on(
       'activateActorDirectory',
@@ -225,6 +228,7 @@ export function registerModuleLifecycle({
     partyMarchingOrder = createPartyMarchingOrderService({
       store: partyStore,
     });
+    partySupplies = createPartySupplyService({ store: partyStore });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -245,6 +249,7 @@ export function registerModuleLifecycle({
       partyMutations,
       partyPermissions,
       partyStore,
+      partySupplies,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);

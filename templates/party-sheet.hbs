@@ -396,7 +396,52 @@
             </div>
           </section>
         {{else}}
-          <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+          {{#if showSupplies}}
+            <section class="hyp3e-utilities__supplies" data-party-supplies>
+              <p>{{localize "hyp3e-utilities.applications.partySheet.suppliesHelp"}}</p>
+              <div class="hyp3e-utilities__supply-grid">
+                <label>
+                  <span>{{localize "hyp3e-utilities.applications.partySheet.supplyFields.torches"}}</span>
+                  {{#if canEdit}}
+                    <input type="number" min="0" step="1" data-field="torches" value="{{supplies.torches}}">
+                  {{else}}
+                    <output>{{supplies.torches}}</output>
+                  {{/if}}
+                </label>
+                <label>
+                  <span>{{localize "hyp3e-utilities.applications.partySheet.supplyFields.lanterns"}}</span>
+                  {{#if canEdit}}
+                    <input type="number" min="0" step="1" data-field="lanterns" value="{{supplies.lanterns}}">
+                  {{else}}
+                    <output>{{supplies.lanterns}}</output>
+                  {{/if}}
+                </label>
+                <label>
+                  <span>{{localize "hyp3e-utilities.applications.partySheet.supplyFields.oil"}}</span>
+                  {{#if canEdit}}
+                    <input type="number" min="0" step="1" data-field="oil" value="{{supplies.oil}}">
+                  {{else}}
+                    <output>{{supplies.oil}}</output>
+                  {{/if}}
+                </label>
+                <label>
+                  <span>{{localize "hyp3e-utilities.applications.partySheet.supplyFields.rations"}}</span>
+                  {{#if canEdit}}
+                    <input type="number" min="0" step="1" data-field="rations" value="{{supplies.rations}}">
+                  {{else}}
+                    <output>{{supplies.rations}}</output>
+                  {{/if}}
+                </label>
+              </div>
+              {{#if canEdit}}
+                <button type="button" data-action="saveSupplies">
+                  {{localize "hyp3e-utilities.applications.partySheet.saveSupplies"}}
+                </button>
+              {{/if}}
+            </section>
+          {{else}}
+            <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+          {{/if}}
         {{/if}}
       {{/if}}
     {{/if}}

@@ -97,6 +97,15 @@
         "marchingNote": "Group note",
         "saveMarchingNote": "Save Note",
         "noMarchingActors": "No Actors in this group.",
+        "suppliesHelp": "Track shared expendable supplies manually. These counts are not derived from or consumed by Actor inventory.",
+        "saveSupplies": "Save Supplies",
+        "supplyOperationFailed": "The supply counts could not be saved.",
+        "supplyFields": {
+          "torches": "Torches",
+          "lanterns": "Lanterns",
+          "oil": "Oil",
+          "rations": "Rations"
+        },
         "moveUp": "Move Up",
         "moveDown": "Move Down",
         "movePrevious": "Previous Group",

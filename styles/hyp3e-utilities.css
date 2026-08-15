@@ -262,6 +262,27 @@
   font-style: italic;
 }
 
+.hyp3e-utilities .hyp3e-utilities__supplies {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__supply-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.hyp3e-utilities .hyp3e-utilities__supply-grid label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__supply-grid output {
+  min-height: 2rem;
+  padding: 0.35rem 0.5rem;
+}
+
 .hyp3e-utilities .hyp3e-utilities__marching-note textarea {
   min-height: 4rem;
   resize: vertical;

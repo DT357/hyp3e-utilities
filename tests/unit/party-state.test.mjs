@@ -172,3 +172,22 @@ test('revision advancement is monotonic, canonical, and does not mutate input', 
     /revision/i,
   );
 });
+
+test('supply normalization keeps blanks and canonical non-negative whole counts', () => {
+  const state = normalizePartyState({
+    ...createPartyStateDefault(),
+    supplies: {
+      torches: '003',
+      lanterns: '-1',
+      oil: 'not a number',
+      rations: 4.9,
+    },
+  });
+
+  assert.deepEqual(state.supplies, {
+    torches: '3',
+    lanterns: '',
+    oil: '',
+    rations: '4',
+  });
+});
