@@ -442,10 +442,30 @@ as GM-only without advancing Party State. Raw Foundry sender identity matched
 both Players, all earlier diagnostics remained green, and no diagnostic errors
 were recorded.
 
+### Treasury coin and inventory views (TRY-002)
+
+Foundry 13.351 and 14.365 returned a revision-bound production snapshot from
+the active GM and rendered CP, SP, EP, GP, and PP on the Treasure tab. The
+Supplies tab rendered weapon, armour, shield, and ordinary Item rows with their
+native quantity data, plus a spell row explicitly marked unsupported. Both
+generations also displayed the empty-inventory state before fixtures existed.
+
+The managed Actor retained default None ownership throughout. Connected
+authorized Players still received and rendered the same coins and five Item
+rows through the permission-checked snapshot operation. Foundry 13 normalized
+a blank weapon image to its native default icon, while Foundry 14 exercised the
+module's bag-image fallback; both produced a usable rendered image, and the
+pre-normalization fallback remains covered in unit tests.
+
+After both Players reported, the GM diagnostic deleted all five embedded test
+Items and restored the original five coin values in each disposable world. Raw
+Foundry sender identity matched both Players, the prior regression remained
+green, and no diagnostic errors were recorded.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
 PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
-and TRY-001 are complete. No compatibility finding contradicts the approved
-architecture. Milestones 1 through 3 are complete; Milestone 4 continues with
-treasury coin and inventory views in TRY-002.
+TRY-001, and TRY-002 are complete. No compatibility finding contradicts the
+approved architecture. Milestones 1 through 3 are complete; Milestone 4
+continues with transfer planning in ITM-001.

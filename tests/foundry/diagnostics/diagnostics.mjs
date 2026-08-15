@@ -12,6 +12,7 @@ const RUN_PREFIX = 'Hyp3e Utilities Compatibility';
 
 let diagnosticSocket;
 let productionMutationExecutions = 0;
+let treasuryViewCleanup = async () => {};
 
 const results = {
   status: 'initializing',
@@ -37,6 +38,7 @@ const results = {
   not001: {},
   ref001: {},
   try001: {},
+  try002: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -2962,6 +2964,137 @@ async function testProductionPartyTreasuryLifecycle() {
   }
 }
 
+async function testProductionPartyTreasuryViews() {
+  const api = game.modules.get(MODULE_ID).api;
+  const actor = api.partyTreasury.getStatus().actor;
+  if (!actor) throw new Error('TRY-002 requires the managed Party Treasury.');
+
+  const originalMoney = api.adapter.getMoney(actor);
+  const testMoney = { cp: 11, sp: 22, ep: 33, gp: 44, pp: 55 };
+  const createdItemIds = [];
+  const sheet = new api.applications.OpenPartySheetApplication();
+  treasuryViewCleanup = async () => {
+    const currentActor = game.actors.get(actor.id);
+    if (!currentActor) return;
+    const remainingIds = createdItemIds.filter(
+      (itemId) => currentActor.items.has(itemId),
+    );
+    if (remainingIds.length) {
+      await currentActor.deleteEmbeddedDocuments('Item', remainingIds);
+    }
+    await currentActor.update(api.adapter.buildMoneyUpdate(originalMoney));
+  };
+
+  await actor.update(api.adapter.buildMoneyUpdate(testMoney));
+  await sheet.render({ force: true });
+  sheet.element.querySelector(
+    '[data-action="selectTab"][data-tab="supplies"]',
+  )?.click();
+  const suppliesTabRendered = await waitUntil(() => (
+    sheet.element?.querySelector('[data-tab="supplies"]')
+      ?.getAttribute('aria-selected') === 'true'
+  ));
+  const emptyInventoryRendered = actor.items.size === 0
+    && Boolean(sheet.element?.querySelector('[data-empty-treasury-inventory]'));
+
+  const fixtures = await actor.createEmbeddedDocuments('Item', [
+    {
+      flags: { [DIAGNOSTIC_ID]: { try002: true } },
+      img: '',
+      name: `${RUN_PREFIX} TRY-002 Weapon`,
+      system: { quantity: { bundle: 2, max: 9, value: 3 } },
+      type: 'weapon',
+    },
+    {
+      flags: { [DIAGNOSTIC_ID]: { try002: true } },
+      name: `${RUN_PREFIX} TRY-002 Armour`,
+      system: { quantity: { value: 1 } },
+      type: 'armor',
+    },
+    {
+      flags: { [DIAGNOSTIC_ID]: { try002: true } },
+      name: `${RUN_PREFIX} TRY-002 Shield`,
+      system: { quantity: { value: 1 } },
+      type: 'shield',
+    },
+    {
+      flags: { [DIAGNOSTIC_ID]: { try002: true } },
+      name: `${RUN_PREFIX} TRY-002 Gear`,
+      system: { quantity: { bundle: 4, max: 20, value: 7 } },
+      type: 'item',
+    },
+    {
+      flags: { [DIAGNOSTIC_ID]: { try002: true } },
+      name: `${RUN_PREFIX} TRY-002 Unsupported`,
+      type: 'spell',
+    },
+  ]);
+  createdItemIds.push(...fixtures.map((item) => item.id));
+  const weaponFixture = fixtures.find((item) => item.type === 'weapon');
+  const unsupportedFixture = fixtures.find((item) => item.type === 'spell');
+  await sheet.render({ force: true });
+  const snapshotResponse = await api.partyTreasury.requestSnapshot();
+  const snapshot = snapshotResponse.value;
+  const fixtureSnapshots = snapshot.items.filter(
+    (item) => createdItemIds.includes(item.id),
+  );
+  const renderedRows = [...sheet.element.querySelectorAll(
+    '[data-treasury-item]',
+  )];
+  const missingImageRow = renderedRows.find(
+    (row) => row.dataset.itemId === weaponFixture?.id,
+  );
+  const unknownRow = renderedRows.find(
+    (row) => row.dataset.itemId === unsupportedFixture?.id,
+  );
+
+  sheet.element.querySelector(
+    '[data-action="selectTab"][data-tab="treasure"]',
+  )?.click();
+  const treasureTabRendered = await waitUntil(() => (
+    sheet.element?.querySelector('[data-tab="treasure"]')
+      ?.getAttribute('aria-selected') === 'true'
+  ));
+  const renderedCoins = Object.fromEntries(
+    [...sheet.element.querySelectorAll('[data-coin-key]')].map((row) => [
+      row.dataset.coinKey,
+      Number(row.querySelector('dd')?.textContent?.trim()),
+    ]),
+  );
+
+  if (sheet.rendered) await sheet.close();
+  return {
+    allFiveCoinsInSnapshot:
+      snapshotResponse.ok
+      && JSON.stringify(snapshot.coins) === JSON.stringify(testMoney),
+    allFiveCoinsRendered:
+      JSON.stringify(renderedCoins) === JSON.stringify(testMoney),
+    emptyInventoryRendered,
+    itemImageRendered: Boolean(
+      missingImageRow?.querySelector('img')?.getAttribute('src'),
+    ),
+    physicalTypesRendered: ['weapon', 'armor', 'shield', 'item'].every(
+      (type) => renderedRows.some((row) => row.dataset.itemType === type),
+    ),
+    quantitiesPreserved:
+      fixtureSnapshots.find((item) => item.id === weaponFixture?.id)
+        ?.quantity?.value === 3
+      && fixtureSnapshots.find((item) => item.id === weaponFixture?.id)
+        ?.quantity?.bundle === 2
+      && fixtureSnapshots.find((item) => item.id === weaponFixture?.id)
+        ?.quantity?.max === 9,
+    snapshotAuthorized: snapshotResponse.ok && snapshot.ready,
+    suppliesTabRendered,
+    treasureTabRendered,
+    unknownTypePreserved:
+      fixtureSnapshots.find((item) => item.id === unsupportedFixture?.id)
+        ?.supported === false,
+    unknownTypeRendered: Boolean(
+      unknownRow?.querySelector('.hyp3e-utilities__party-treasury-warning'),
+    ),
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -3040,6 +3173,10 @@ async function runGmDiagnostics() {
       gm: await testProductionPartyTreasuryLifecycle(),
       waitingForPlayer: true,
     };
+    results.try002 = {
+      gm: await testProductionPartyTreasuryViews(),
+      waitingForPlayer: true,
+    };
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,
@@ -3049,6 +3186,7 @@ async function runGmDiagnostics() {
     results.status = 'complete';
   }
   catch (error) {
+    await treasuryViewCleanup();
     results.errors.push(serializeError(error));
     results.status = 'failed';
     console.error(`${DIAGNOSTIC_ID} | Runtime diagnostic failed`, error);
@@ -3724,6 +3862,49 @@ async function runPlayerSocketDiagnostic() {
     finally {
       if (treasurySheet.rendered) await treasurySheet.close();
     }
+    const treasuryViewSnapshot = await api.partyTreasury.requestSnapshot();
+    const treasuryViewSheet = new api.applications.OpenPartySheetApplication();
+    let treasuryViewPlayerResult;
+    try {
+      await treasuryViewSheet.render({ force: true });
+      treasuryViewSheet.element.querySelector(
+        '[data-action="selectTab"][data-tab="supplies"]',
+      )?.click();
+      const suppliesTabRendered = await waitUntil(() => (
+        treasuryViewSheet.element?.querySelector('[data-tab="supplies"]')
+          ?.getAttribute('aria-selected') === 'true'
+      ));
+      const itemRows = [...treasuryViewSheet.element.querySelectorAll(
+        '[data-treasury-item]',
+      )];
+      treasuryViewSheet.element.querySelector(
+        '[data-action="selectTab"][data-tab="treasure"]',
+      )?.click();
+      const treasureTabRendered = await waitUntil(() => (
+        treasuryViewSheet.element?.querySelector('[data-tab="treasure"]')
+          ?.getAttribute('aria-selected') === 'true'
+      ));
+      treasuryViewPlayerResult = {
+        allFiveCoinsVisible:
+          treasuryViewSheet.element?.querySelectorAll('[data-coin-key]')
+            .length === 5,
+        allPhysicalTypesVisible: ['weapon', 'armor', 'shield', 'item'].every(
+          (type) => itemRows.some((row) => row.dataset.itemType === type),
+        ),
+        contentsReceived:
+          treasuryViewSnapshot.ok
+          && treasuryViewSnapshot.value?.ready
+          && treasuryViewSnapshot.value?.items?.length >= 5,
+        suppliesTabRendered,
+        treasureTabRendered,
+        unknownTypeVisible: itemRows.some(
+          (row) => row.dataset.itemType === 'spell',
+        ),
+      };
+    }
+    finally {
+      if (treasuryViewSheet.rendered) await treasuryViewSheet.close();
+    }
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
@@ -3734,6 +3915,7 @@ async function runPlayerSocketDiagnostic() {
     results.not001 = noteResult;
     results.ref001 = refreshResult;
     results.try001 = treasuryPlayerResult;
+    results.try002 = treasuryViewPlayerResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3747,6 +3929,7 @@ async function runPlayerSocketDiagnostic() {
       not001: noteResult,
       ref001: refreshResult,
       try001: treasuryPlayerResult,
+      try002: treasuryViewPlayerResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3793,7 +3976,7 @@ Hooks.once('ready', async () => {
   };
   registerProductionPartyDiagnostic();
 
-  game.socket.on(DIAGNOSTIC_SOCKET, (message, senderId) => {
+  game.socket.on(DIAGNOSTIC_SOCKET, async (message, senderId) => {
     if (!game.user.isGM || message?.type !== 'pb008-result') return;
     results.pb008 = {
       ...message.result,
@@ -3863,6 +4046,16 @@ Hooks.once('ready', async () => {
       player: message.try001,
       waitingForPlayer: false,
     };
+    results.try002 = {
+      ...results.try002,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.try002,
+      waitingForPlayer: false,
+    };
+    await treasuryViewCleanup();
+    treasuryViewCleanup = async () => {};
     publishResults();
   });
 

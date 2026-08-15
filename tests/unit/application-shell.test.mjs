@@ -1276,8 +1276,20 @@ test('Party Sheet Treasure tab exposes GM treasury recovery and selection action
       { actorUuid: primary.uuid, bound: false, name: primary.name },
       { actorUuid: secondary.uuid, bound: false, name: secondary.name },
     ],
+    coins: [
+      { id: 'cp', label: 'hyp3e-utilities.applications.partySheet.coins.cp', value: 0 },
+      { id: 'sp', label: 'hyp3e-utilities.applications.partySheet.coins.sp', value: 0 },
+      { id: 'ep', label: 'hyp3e-utilities.applications.partySheet.coins.ep', value: 0 },
+      { id: 'gp', label: 'hyp3e-utilities.applications.partySheet.coins.gp', value: 0 },
+      { id: 'pp', label: 'hyp3e-utilities.applications.partySheet.coins.pp', value: 0 },
+    ],
     configuredUuid: state.treasuryActorUuid,
+    contentsReady: false,
+    contentsRestricted: false,
+    contentsUnavailable: false,
     hasDuplicates: true,
+    hasItems: false,
+    items: [],
     kind: 'ambiguous',
     name: '',
     needsRecreation: false,
@@ -1305,4 +1317,126 @@ test('Party Sheet Treasure tab exposes GM treasury recovery and selection action
 
   game.user = { id: 'player', isGM: false, role: 1 };
   assert.equal((await app._prepareContext({})).canManageTreasury, false);
+});
+
+test('Party Sheet receives treasury coins and inventory through an authorized GM snapshot', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 21;
+  state.treasuryActorUuid = 'Actor.hidden-treasury';
+  let snapshotRequests = 0;
+  let explicitEditors = ['player'];
+  const game = {
+    settings: {
+      get: (_namespace, key) => key.includes('Minimum')
+        ? 4
+        : explicitEditors,
+    },
+    user: { id: 'player', isGM: false, role: 1 },
+    users: [],
+  };
+  const treasuryService = {
+    getStatus: () => ({
+      actor: null,
+      candidates: [],
+      configuredUuid: state.treasuryActorUuid,
+      hasDuplicates: false,
+      kind: 'missing',
+    }),
+    requestSnapshot: async () => {
+      snapshotRequests += 1;
+      return {
+        ok: true,
+        value: {
+          actorUuid: state.treasuryActorUuid,
+          coins: { cp: 1, sp: 2, ep: 3, gp: 4, pp: 5 },
+          items: [
+            {
+              category: 'weapon',
+              id: 'spear',
+              img: 'icons/svg/item-bag.svg',
+              name: 'Spear',
+              quantity: { bundle: 2, max: 8, value: 3 },
+              supported: true,
+              type: 'weapon',
+              uuid: `${state.treasuryActorUuid}.Item.spear`,
+            },
+            {
+              category: null,
+              id: 'unknown',
+              img: 'icons/svg/book.svg',
+              name: 'Unknown',
+              quantity: null,
+              supported: false,
+              type: 'spell',
+              uuid: `${state.treasuryActorUuid}.Item.unknown`,
+            },
+          ],
+          kind: 'ready',
+          name: 'Private Party Treasury',
+          ready: true,
+          revision: 21,
+        },
+      };
+    },
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game,
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyTreasuryProvider: () => treasuryService,
+  });
+  const app = new classes.OpenPartySheetApplication();
+
+  const context = await app._prepareContext({});
+
+  assert.equal(context.canEdit, true);
+  assert.equal(snapshotRequests, 1);
+  assert.equal(context.treasury.ready, true);
+  assert.equal(context.treasury.name, 'Private Party Treasury');
+  assert.equal(context.treasury.contentsReady, true);
+  assert.equal(context.treasury.contentsRestricted, false);
+  assert.deepEqual(context.treasury.coins, [
+    { id: 'cp', label: 'hyp3e-utilities.applications.partySheet.coins.cp', value: 1 },
+    { id: 'sp', label: 'hyp3e-utilities.applications.partySheet.coins.sp', value: 2 },
+    { id: 'ep', label: 'hyp3e-utilities.applications.partySheet.coins.ep', value: 3 },
+    { id: 'gp', label: 'hyp3e-utilities.applications.partySheet.coins.gp', value: 4 },
+    { id: 'pp', label: 'hyp3e-utilities.applications.partySheet.coins.pp', value: 5 },
+  ]);
+  assert.equal(context.treasury.hasItems, true);
+  assert.deepEqual(context.treasury.items, [
+    {
+      category: 'weapon',
+      hasBundle: true,
+      hasMaximum: true,
+      id: 'spear',
+      img: 'icons/svg/item-bag.svg',
+      name: 'Spear',
+      quantity: { bundle: 2, max: 8, value: 3 },
+      supported: true,
+      type: 'weapon',
+      typeLabel: 'hyp3e-utilities.applications.partySheet.itemTypes.weapon',
+      uuid: `${state.treasuryActorUuid}.Item.spear`,
+    },
+    {
+      category: null,
+      hasBundle: false,
+      hasMaximum: false,
+      id: 'unknown',
+      img: 'icons/svg/book.svg',
+      name: 'Unknown',
+      quantity: null,
+      supported: false,
+      type: 'spell',
+      typeLabel: '',
+      uuid: `${state.treasuryActorUuid}.Item.unknown`,
+    },
+  ]);
+
+  explicitEditors = [];
+  const restricted = await app._prepareContext({});
+  assert.equal(restricted.canEdit, false);
+  assert.equal(restricted.treasury.contentsRestricted, true);
+  assert.equal(restricted.treasury.contentsReady, false);
+  assert.equal(snapshotRequests, 1);
 });

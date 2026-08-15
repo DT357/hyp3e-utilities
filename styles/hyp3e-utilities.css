@@ -105,6 +105,71 @@
   justify-content: space-between;
 }
 
+.hyp3e-utilities .hyp3e-utilities__treasury-coins {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(3.5rem, 1fr));
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-coins div,
+.hyp3e-utilities .hyp3e-utilities__treasury-item-quantity div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-coins dt,
+.hyp3e-utilities .hyp3e-utilities__treasury-coins dd,
+.hyp3e-utilities .hyp3e-utilities__treasury-item-quantity dt,
+.hyp3e-utilities .hyp3e-utilities__treasury-item-quantity dd {
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-coins dd {
+  font-size: 1.2em;
+  font-weight: 700;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-inventory {
+  border-top: 1px solid var(--color-border-light-tertiary, #777);
+  margin-top: var(--hyp3e-utilities-gap);
+  padding-top: var(--hyp3e-utilities-gap);
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-items {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-items > li {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #777);
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 3rem minmax(8rem, 1fr) auto;
+  padding: 0.35rem 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-items img {
+  border: 0;
+  height: 3rem;
+  object-fit: contain;
+  width: 3rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-item-identity,
+.hyp3e-utilities .hyp3e-utilities__treasury-item-quantity {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__treasury-item-quantity {
+  grid-auto-flow: column;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-overview {
   display: grid;
   gap: var(--hyp3e-utilities-gap);
@@ -350,6 +415,14 @@
 }
 
 @media (max-width: 44rem) {
+  .hyp3e-utilities .hyp3e-utilities__treasury-items > li {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .hyp3e-utilities .hyp3e-utilities__treasury-item-quantity {
+    grid-column: 2 / -1;
+  }
+
   .hyp3e-utilities .hyp3e-utilities__party-member {
     grid-template-columns: 3rem 1fr auto;
   }

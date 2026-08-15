@@ -18,6 +18,7 @@ function createHarness({ state: suppliedState } = {}) {
   const actorCreates = [];
   const actors = [];
   const definitions = new Map();
+  const protocolDefinitions = new Map();
   const folderCreates = [];
   const folders = [];
   actors.get = (id) => actors.find((actor) => actor.id === id);
@@ -39,16 +40,21 @@ function createHarness({ state: suppliedState } = {}) {
     id = `treasury-${++actorSequence}`,
     name = 'Imported Treasury',
     ownership = {},
+    items = [],
+    system = {},
     type = 'treasure',
   } = {}) {
+    items.get = (id) => items.find((item) => item.id === id);
     const actor = {
       documentName: 'Actor',
       flags,
       folder,
       id,
       isToken: false,
+      items,
       name,
       ownership,
+      system,
       type,
       uuid: `Actor.${id}`,
       getFlag(namespace, key) {
@@ -91,10 +97,23 @@ function createHarness({ state: suppliedState } = {}) {
     },
   };
   const mutations = {
+    registerOperation(operation, definition) {
+      protocolDefinitions.set(operation, definition);
+    },
     async request(operation, envelope) {
-      const definition = definitions.get(operation);
+      const protocolDefinition = protocolDefinitions.get(operation);
+      const definition = protocolDefinition ?? definitions.get(operation);
       try {
         const payload = definition.validatePayload(envelope.payload);
+        if (protocolDefinition) {
+          const value = await definition.execute({
+            expectedRevision: envelope.expectedRevision,
+            payload,
+            requester,
+            requestId: envelope.requestId,
+          });
+          return { ok: true, value };
+        }
         const draft = structuredClone(state);
         await definition.mutate({ payload, requester, state: draft });
         state = { ...draft, revision: state.revision + 1 };
@@ -128,6 +147,7 @@ function createHarness({ state: suppliedState } = {}) {
     folders,
     game,
     getState: () => state,
+    protocolDefinitions,
     service,
     setActiveGmId: (id) => { activeGmId = id; },
     setRequester(nextRequester) {
@@ -289,4 +309,109 @@ test('treasury lifecycle rejects non-GM binding, invalid Actors, and inactive cr
   assert.equal(player.ok, false);
   assert.equal(player.error.code, PARTY_TREASURY_ERROR_CODES.gmRequired);
   assert.equal(harness.actorCreates.length, 0);
+});
+
+test('treasury snapshot returns every coin and preserves supported and unknown items', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 8;
+  state.treasuryActorUuid = 'Actor.snapshot';
+  const harness = createHarness({ state });
+  const weapon = {
+    id: 'weapon',
+    img: '',
+    name: 'Silver Spear',
+    system: { quantity: { bundle: 2, max: 9, value: 3 } },
+    type: 'weapon',
+    uuid: 'Actor.snapshot.Item.weapon',
+  };
+  const unknown = {
+    id: 'spell',
+    img: 'icons/svg/book.svg',
+    name: 'Unknown Embedded Type',
+    system: { quantity: { value: 12 } },
+    type: 'spell',
+    uuid: 'Actor.snapshot.Item.spell',
+  };
+  harness.addActor({
+    id: 'snapshot',
+    items: [weapon, unknown],
+    system: {
+      money: {
+        cp: { value: '1' },
+        sp: { value: '2' },
+        ep: { value: '3' },
+        gp: { value: '4' },
+        pp: { value: '5' },
+      },
+    },
+  });
+
+  const response = await harness.service.requestSnapshot();
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(response.value, {
+    actorUuid: 'Actor.snapshot',
+    coins: { cp: 1, sp: 2, ep: 3, gp: 4, pp: 5 },
+    items: [
+      {
+        category: 'weapon',
+        id: 'weapon',
+        img: 'icons/svg/item-bag.svg',
+        name: 'Silver Spear',
+        quantity: { bundle: 2, max: 9, value: 3 },
+        supported: true,
+        type: 'weapon',
+        uuid: 'Actor.snapshot.Item.weapon',
+      },
+      {
+        category: null,
+        id: 'spell',
+        img: 'icons/svg/book.svg',
+        name: 'Unknown Embedded Type',
+        quantity: null,
+        supported: false,
+        type: 'spell',
+        uuid: 'Actor.snapshot.Item.spell',
+      },
+    ],
+    kind: 'ready',
+    name: 'Imported Treasury',
+    ready: true,
+    revision: 8,
+  });
+});
+
+test('treasury snapshot distinguishes empty inventory, missing binding, and stale state', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 3;
+  state.treasuryActorUuid = 'Actor.empty';
+  const harness = createHarness({ state });
+  harness.addActor({ id: 'empty', items: [] });
+
+  const empty = await harness.service.requestSnapshot();
+  assert.equal(empty.ok, true);
+  assert.deepEqual(empty.value.items, []);
+  assert.equal(empty.value.ready, true);
+
+  harness.actors.splice(0);
+  const missing = await harness.service.requestSnapshot();
+  assert.equal(missing.ok, true);
+  assert.deepEqual(missing.value, {
+    actorUuid: '',
+    coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+    items: [],
+    kind: 'missing',
+    name: '',
+    ready: false,
+    revision: 3,
+  });
+
+  const snapshotOperation = harness.protocolDefinitions.get(
+    PARTY_TREASURY_OPERATIONS.snapshot,
+  );
+  assert.throws(
+    () => snapshotOperation.execute({ expectedRevision: 2 }),
+    (error) => error.code === 'staleRevision'
+      && error.details.state.revision === 3,
+  );
 });

@@ -238,7 +238,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
 | TRY-001 | `DONE` | PB-006, PAR-004 | Treasury Actor creation, flagging, binding, lookup, recovery, and duplicate warning | Rename, deletion, recreation, duplicate, import/export, and permission tests |
-| TRY-002 | `TODO` | TRY-001, FND-002 | Party Sheet treasury coins and item inventory views | All five coin types, missing images, unknown item types, and empty inventory |
+| TRY-002 | `DONE` | TRY-001, FND-002 | Party Sheet treasury coins and item inventory views | All five coin types, missing images, unknown item types, and empty inventory |
 | ITM-001 | `TODO` | PB-009, FND-002 | Pure transfer-plan builder for source, target, quantity, merge, and validation | Quantity/bundle/max, same-Actor, stale quantity, and unsupported type tests |
 | ITM-002 | `TODO` | TRY-001, ITM-001, PAR-002 | Character-to-treasury transfer operation | Full/partial transfer, ownership, stale state, and rollback checks |
 | ITM-003 | `TODO` | ITM-002 | Treasury-to-character transfer operation | Same matrix as ITM-002 with reversed authority and destination |
@@ -344,9 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 3 are complete. TRY-001 has established the managed
-treasury lifecycle; proceed next with treasury coin and inventory views in
-TRY-002.
+Milestones 0 through 3 are complete. TRY-001 and TRY-002 established the
+managed treasury and its read-only views; proceed next with the pure transfer
+planner in ITM-001.
 
 ## 15. Current Project Status
 
@@ -355,7 +355,7 @@ TRY-002.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 3 are complete.
-- Immediate next batch: Implement treasury coin and inventory views in TRY-002.
+- Immediate next batch: Implement the pure item transfer planner in ITM-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

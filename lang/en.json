@@ -112,6 +112,27 @@
         "treasuryOperationFailed": "The Party Treasury lifecycle action could not be completed.",
         "treasuryBound": "The selected Party Treasury is now bound.",
         "treasuryCreated": "The Party Treasury is ready.",
+        "treasuryContentsRestricted": "Treasury contents are available only to authorized Party Sheet editors.",
+        "treasuryContentsUnavailable": "The active GM could not provide the current treasury contents.",
+        "inventoryHeading": "Shared Equipment",
+        "emptyInventory": "The Party Treasury has no embedded items.",
+        "unsupportedItemType": "Unsupported item type: {type}",
+        "quantity": "Quantity",
+        "bundle": "Bundle",
+        "maximum": "Maximum",
+        "coins": {
+          "cp": "CP",
+          "sp": "SP",
+          "ep": "EP",
+          "gp": "GP",
+          "pp": "PP"
+        },
+        "itemTypes": {
+          "weapon": "Weapon",
+          "armor": "Armour",
+          "shield": "Shield",
+          "item": "Gear"
+        },
         "treasureNotesHelp": "Record descriptive treasure that is not represented by the shared treasury Actor. Gem and miscellaneous notes are saved together with the party notes.",
         "gemNotes": "Gems and Jewelry",
         "miscTreasureNotes": "Other Treasure",

@@ -145,6 +145,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
   assert.equal(typeof getApi().partyStore.getState, 'function');
   assert.equal(typeof getApi().partySupplies.getSupplies, 'function');
   assert.equal(typeof getApi().partyTreasury.getStatus, 'function');
+  assert.equal(typeof getApi().partyTreasury.requestSnapshot, 'function');
   assert.equal(subscriptions.size > 0, true);
   assert.equal(moduleRecord.api, getApi());
 });

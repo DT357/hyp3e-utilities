@@ -438,35 +438,105 @@
                   {{localize "hyp3e-utilities.applications.partySheet.saveSupplies"}}
                 </button>
               {{/if}}
+              <section class="hyp3e-utilities__treasury-inventory" data-treasury-inventory>
+                <h3>{{localize "hyp3e-utilities.applications.partySheet.inventoryHeading"}}</h3>
+                {{#if treasury.contentsReady}}
+                  {{#if treasury.hasItems}}
+                    <ol class="hyp3e-utilities__treasury-items">
+                      {{#each treasury.items}}
+                        <li data-treasury-item data-item-id="{{id}}" data-item-type="{{type}}">
+                          <img src="{{img}}" alt="" width="48" height="48">
+                          <div class="hyp3e-utilities__treasury-item-identity">
+                            <strong>{{name}}</strong>
+                            {{#if supported}}
+                              <span>{{localize typeLabel}}</span>
+                            {{else}}
+                              <span class="hyp3e-utilities__party-treasury-warning">
+                                {{localize "hyp3e-utilities.applications.partySheet.unsupportedItemType" type=type}}
+                              </span>
+                            {{/if}}
+                          </div>
+                          {{#if supported}}
+                            <dl class="hyp3e-utilities__treasury-item-quantity">
+                              <div>
+                                <dt>{{localize "hyp3e-utilities.applications.partySheet.quantity"}}</dt>
+                                <dd>{{quantity.value}}</dd>
+                              </div>
+                              {{#if hasBundle}}
+                                <div>
+                                  <dt>{{localize "hyp3e-utilities.applications.partySheet.bundle"}}</dt>
+                                  <dd>{{quantity.bundle}}</dd>
+                                </div>
+                              {{/if}}
+                              {{#if hasMaximum}}
+                                <div>
+                                  <dt>{{localize "hyp3e-utilities.applications.partySheet.maximum"}}</dt>
+                                  <dd>{{quantity.max}}</dd>
+                                </div>
+                              {{/if}}
+                            </dl>
+                          {{/if}}
+                        </li>
+                      {{/each}}
+                    </ol>
+                  {{else}}
+                    <p data-empty-treasury-inventory>{{localize "hyp3e-utilities.applications.partySheet.emptyInventory"}}</p>
+                  {{/if}}
+                {{else}}
+                  <p role="status">
+                    {{#if treasury.contentsRestricted}}
+                      {{localize "hyp3e-utilities.applications.partySheet.treasuryContentsRestricted"}}
+                    {{else}}
+                      {{#if treasury.contentsUnavailable}}
+                        {{localize "hyp3e-utilities.applications.partySheet.treasuryContentsUnavailable"}}
+                      {{else}}
+                        {{localize "hyp3e-utilities.applications.partySheet.treasuryMissing"}}
+                      {{/if}}
+                    {{/if}}
+                  </p>
+                {{/if}}
+              </section>
             </section>
           {{else}}
             {{#if showTreasure}}
               <section class="hyp3e-utilities__party-treasury" data-party-treasury>
                 <h3>{{localize "hyp3e-utilities.applications.partySheet.treasuryHeading"}}</h3>
-                {{#if treasury.ready}}
-                  <p>
-                    {{localize "hyp3e-utilities.applications.partySheet.treasuryReady" name=treasury.name}}
+                {{#if treasury.contentsRestricted}}
+                  <p role="status">
+                    {{localize "hyp3e-utilities.applications.partySheet.treasuryContentsRestricted"}}
                   </p>
-                  {{#if canManageTreasury}}
-                    <button type="button" data-action="openPartyTreasury">
-                      {{localize "hyp3e-utilities.applications.partySheet.openTreasury"}}
-                    </button>
-                  {{/if}}
                 {{else}}
-                  {{#if treasury.needsRecreation}}
+                  {{#if treasury.contentsUnavailable}}
                     <p role="status">
-                      {{localize "hyp3e-utilities.applications.partySheet.treasuryMissing"}}
+                      {{localize "hyp3e-utilities.applications.partySheet.treasuryContentsUnavailable"}}
                     </p>
-                    {{#if canManageTreasury}}
-                      <button type="button" data-action="recreatePartyTreasury">
-                        {{localize "hyp3e-utilities.applications.partySheet.recreateTreasury"}}
-                      </button>
+                  {{else}}
+                    {{#if treasury.ready}}
+                      <p>
+                        {{localize "hyp3e-utilities.applications.partySheet.treasuryReady" name=treasury.name}}
+                      </p>
+                      {{#if canManageTreasury}}
+                        <button type="button" data-action="openPartyTreasury">
+                          {{localize "hyp3e-utilities.applications.partySheet.openTreasury"}}
+                        </button>
+                      {{/if}}
+                    {{else}}
+                      {{#if treasury.needsRecreation}}
+                        <p role="status">
+                          {{localize "hyp3e-utilities.applications.partySheet.treasuryMissing"}}
+                        </p>
+                        {{#if canManageTreasury}}
+                          <button type="button" data-action="recreatePartyTreasury">
+                            {{localize "hyp3e-utilities.applications.partySheet.recreateTreasury"}}
+                          </button>
+                        {{/if}}
+                      {{/if}}
+                      {{#if treasury.needsSelection}}
+                        <p role="status">
+                          {{localize "hyp3e-utilities.applications.partySheet.treasurySelectionRequired"}}
+                        </p>
+                      {{/if}}
                     {{/if}}
-                  {{/if}}
-                  {{#if treasury.needsSelection}}
-                    <p role="status">
-                      {{localize "hyp3e-utilities.applications.partySheet.treasurySelectionRequired"}}
-                    </p>
                   {{/if}}
                 {{/if}}
                 {{#if treasury.hasDuplicates}}
@@ -493,6 +563,16 @@
                       </li>
                     {{/each}}
                   </ul>
+                {{/if}}
+                {{#if treasury.contentsReady}}
+                  <dl class="hyp3e-utilities__treasury-coins" data-treasury-coins>
+                    {{#each treasury.coins}}
+                      <div data-coin-key="{{id}}">
+                        <dt>{{localize label}}</dt>
+                        <dd>{{value}}</dd>
+                      </div>
+                    {{/each}}
+                  </dl>
                 {{/if}}
               </section>
               <section class="hyp3e-utilities__party-notes" data-party-notes>

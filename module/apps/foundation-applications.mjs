@@ -1,4 +1,5 @@
 import {
+  COIN_KEYS,
   CSS_NAMESPACE,
   HOOK_NAMES,
   MODULE_ID,
@@ -1095,32 +1096,76 @@ export function createFoundationApplications({
         notes: enrichedNotes,
         treasureNotes: { gems: enrichedGems, misc: enrichedMisc },
       };
-      const treasuryStatus = partyTreasuryProvider()?.getStatus?.(state) ?? {
+      const treasuryService = partyTreasuryProvider();
+      const treasuryStatus = treasuryService?.getStatus?.(state) ?? {
         actor: null,
         candidates: [],
         configuredUuid: state.treasuryActorUuid ?? '',
         hasDuplicates: false,
         kind: state.treasuryActorUuid ? 'missing' : 'unbound',
       };
+      const canManageTreasury = game.user?.isGM === true;
+      const snapshotResponse = decision.allowed
+        && typeof treasuryService?.requestSnapshot === 'function'
+        ? await treasuryService.requestSnapshot(state.revision)
+        : null;
+      const treasurySnapshot = snapshotResponse?.ok
+        ? snapshotResponse.value
+        : null;
+      const treasuryItems = (treasurySnapshot?.items ?? []).map((item) => ({
+        ...item,
+        hasBundle: item.quantity?.bundle != null,
+        hasMaximum: item.quantity?.max != null,
+        typeLabel: item.supported
+          ? `${APP_NAMESPACE}.partySheet.itemTypes.${item.category}`
+          : '',
+      }));
+      const contentsReady = treasurySnapshot?.ready === true;
+      const lifecycleReady = treasuryStatus.kind === 'ready' || contentsReady;
       const treasury = {
-        actorUuid: treasuryStatus.actor?.uuid ?? '',
-        candidates: treasuryStatus.candidates.map((actor) => ({
-          actorUuid: actor.uuid,
-          bound: actor.uuid === treasuryStatus.actor?.uuid,
-          name: actor.name,
-        })),
+        actorUuid:
+          treasurySnapshot?.actorUuid
+          ?? treasuryStatus.actor?.uuid
+          ?? '',
+        candidates: canManageTreasury
+          ? treasuryStatus.candidates.map((actor) => ({
+            actorUuid: actor.uuid,
+            bound: actor.uuid === treasuryStatus.actor?.uuid,
+            name: actor.name,
+          }))
+          : [],
         configuredUuid: treasuryStatus.configuredUuid,
-        hasDuplicates: treasuryStatus.hasDuplicates,
+        coins: COIN_KEYS.map((id) => ({
+          id,
+          label: `${APP_NAMESPACE}.partySheet.coins.${id}`,
+          value: treasurySnapshot?.coins?.[id] ?? 0,
+        })),
+        contentsReady,
+        contentsRestricted: !decision.allowed,
+        contentsUnavailable:
+          decision.allowed
+          && snapshotResponse !== null
+          && snapshotResponse.ok !== true,
+        hasDuplicates: canManageTreasury && treasuryStatus.hasDuplicates,
+        hasItems: treasuryItems.length > 0,
+        items: treasuryItems,
         kind: treasuryStatus.kind,
-        name: treasuryStatus.actor?.name ?? '',
-        needsRecreation: ['missing', 'unbound'].includes(treasuryStatus.kind),
-        needsSelection: ['ambiguous', 'recoverable'].includes(
-          treasuryStatus.kind,
-        ),
-        ready: treasuryStatus.kind === 'ready',
+        name: treasurySnapshot?.name ?? treasuryStatus.actor?.name ?? '',
+        needsRecreation:
+          decision.allowed
+          && snapshotResponse?.ok !== false
+          && !lifecycleReady
+          && ['missing', 'unbound'].includes(treasuryStatus.kind),
+        needsSelection:
+          canManageTreasury
+          && ['ambiguous', 'recoverable'].includes(treasuryStatus.kind),
+        ready: lifecycleReady,
         showCandidates:
-          treasuryStatus.hasDuplicates
-          || ['ambiguous', 'recoverable'].includes(treasuryStatus.kind),
+          canManageTreasury
+          && (
+            treasuryStatus.hasDuplicates
+            || ['ambiguous', 'recoverable'].includes(treasuryStatus.kind)
+          ),
       };
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
@@ -1143,7 +1188,7 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
-        canManageTreasury: game.user?.isGM === true,
+        canManageTreasury,
         canRollPartyActions: game.user?.isGM === true,
         followers,
         hasFollowers: followers.length > 0,

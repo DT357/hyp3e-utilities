@@ -14,7 +14,9 @@ supplies, and sanitized rich-text party/treasure notes are also implemented.
 Targeted refreshes now preserve local drafts, active tabs, and scroll positions
 while ignoring unrelated Actor and Item changes. The active GM also receives a
 managed, flagged Party Treasury with explicit missing-Actor recovery and
-duplicate selection. These features are validated on the supported Foundry and
+duplicate selection. Its five native coin denominations appear on Treasure and
+its physical embedded Items appear on Supplies through an authorized
+active-GM snapshot. These features are validated on the supported Foundry and
 `hyp3e` versions below; Milestone 4 is in progress.
 
 ## Compatibility

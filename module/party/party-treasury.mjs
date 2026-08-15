@@ -1,15 +1,18 @@
-import { FLAG_KEYS, MODULE_ID } from '../core/constants.mjs';
+import { COIN_KEYS, FLAG_KEYS, MODULE_ID } from '../core/constants.mjs';
 import {
   assertExactObject,
+  PARTY_MUTATION_ERROR_CODES,
   PartyMutationError,
 } from './party-mutation-protocol.mjs';
 
 const DEFAULT_TREASURY_NAME = 'Party Treasury';
 const MODULE_FOLDER_NAME = 'Hyp3e Utilities';
+const MISSING_ITEM_IMAGE = 'icons/svg/item-bag.svg';
 const WORLD_ACTOR_UUID_PATTERN = /^Actor\.([^\.\s]+)$/;
 
 export const PARTY_TREASURY_OPERATIONS = Object.freeze({
   bind: 'party.bindTreasury',
+  snapshot: 'party.getTreasurySnapshot',
 });
 
 export const PARTY_TREASURY_ERROR_CODES = Object.freeze({
@@ -44,6 +47,14 @@ function validateBindPayload(payload) {
   return { actorUuid: payload.actorUuid.trim() };
 }
 
+function validateSnapshotPayload(payload) {
+  assertExactObject(payload, {
+    allowedKeys: [],
+    label: 'Party treasury snapshot payload',
+  });
+  return {};
+}
+
 export function createPartyTreasuryService({
   ActorClass = globalThis.Actor,
   adapter,
@@ -63,6 +74,11 @@ export function createPartyTreasuryService({
   }
   if (typeof mutations?.request !== 'function') {
     throw new TypeError('Party treasury service requires Party mutations.');
+  }
+  if (typeof mutations?.registerOperation !== 'function') {
+    throw new TypeError(
+      'Party treasury service requires Party operation registration.',
+    );
   }
   if (typeof adapter?.isManagedTreasury !== 'function') {
     throw new TypeError('Party treasury service requires the hyp3e adapter.');
@@ -131,6 +147,63 @@ export function createPartyTreasuryService({
     };
   }
 
+  function createSnapshot(state = store.getState()) {
+    const status = getStatus(state);
+    const actor = status.actor;
+    const emptyCoins = Object.fromEntries(COIN_KEYS.map((key) => [key, 0]));
+    if (!actor) {
+      return {
+        actorUuid: '',
+        coins: emptyCoins,
+        items: [],
+        kind: status.kind,
+        name: '',
+        ready: false,
+        revision: state.revision,
+      };
+    }
+    const items = Array.from(actor.items ?? []).map((item) => {
+      const category = adapter.getItemCategory(item);
+      const img = typeof item?.img === 'string' && item.img.trim()
+        ? item.img.trim()
+        : MISSING_ITEM_IMAGE;
+      return {
+        category,
+        id: item?.id ?? '',
+        img,
+        name: typeof item?.name === 'string' ? item.name : '',
+        quantity: adapter.getItemQuantity(item),
+        supported: category !== null,
+        type: typeof item?.type === 'string' ? item.type : 'unknown',
+        uuid: item?.uuid ?? '',
+      };
+    });
+    return {
+      actorUuid: actor.uuid,
+      coins: adapter.getMoney(actor),
+      items,
+      kind: 'ready',
+      name: actor.name,
+      ready: true,
+      revision: state.revision,
+    };
+  }
+
+  mutations.registerOperation(PARTY_TREASURY_OPERATIONS.snapshot, {
+    validatePayload: validateSnapshotPayload,
+    execute({ expectedRevision }) {
+      const state = store.getState();
+      if (expectedRevision !== state.revision) {
+        throw new PartyMutationError(
+          PARTY_MUTATION_ERROR_CODES.staleRevision,
+          'The Party Sheet changed before its treasury could be read.',
+          { state },
+        );
+      }
+      return createSnapshot(state);
+    },
+  });
+
   store.registerMutation(PARTY_TREASURY_OPERATIONS.bind, {
     validatePayload: validateBindPayload,
     async mutate({ payload, requester, state }) {
@@ -165,6 +238,17 @@ export function createPartyTreasuryService({
       {
         expectedRevision: state.revision,
         payload: { actorUuid },
+        requestId: requestIdProvider(),
+      },
+    );
+  }
+
+  function requestSnapshot(expectedRevision = store.getState().revision) {
+    return mutations.request(
+      PARTY_TREASURY_OPERATIONS.snapshot,
+      {
+        expectedRevision,
+        payload: {},
         requestId: requestIdProvider(),
       },
     );
@@ -303,5 +387,6 @@ export function createPartyTreasuryService({
     getStatus,
     initialize,
     recreateTreasury,
+    requestSnapshot,
   });
 }
