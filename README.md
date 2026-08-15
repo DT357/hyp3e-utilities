@@ -4,11 +4,12 @@ Foundry Virtual Tabletop utilities for the [`hyp3e`](https://github.com/thuriank
 
 ## Status
 
-The module foundation and NPC reaction, save, and morale roll planners are
-implemented and validated. The foundation includes the `hyp3e` document
-adapter, settings and menus, authenticated SocketLib transport, ApplicationV2
-shells, localization, and runtime compatibility guards. GM-only chat output is
-the next NPC Action HUD batch.
+The module foundation and NPC Action HUD are under active development. The HUD
+currently tracks controlled NPC tokens, displays their core combat statistics,
+opens exact token Actor sheets, and sends GM-only reaction, five-category save,
+and morale results. Its draggable position is persisted per client, resettable
+from module settings, and clamped to the current viewport. These features are
+validated on the supported Foundry and `hyp3e` versions below.
 
 ## Compatibility
 

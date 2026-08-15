@@ -32,6 +32,7 @@ const results = {
   hud003: {},
   hud004: {},
   hud005: {},
+  hud006: {},
   errors: [],
 };
 
@@ -1047,6 +1048,203 @@ async function testProductionHudOverlay(npc) {
   }
 }
 
+async function testProductionHudPosition(npc) {
+  const originalScene = game.scenes.active;
+  const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const originalPosition = game.settings.get(
+    MODULE_ID,
+    'npcActionHudPosition',
+  );
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} HUD Position`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+
+  const approximately = (actual, expected) => Math.abs(actual - expected) <= 1;
+  const getOverlay = () => document.getElementById(
+    'hyp3e-utilities-npc-action-hud',
+  );
+
+  try {
+    const [tokenDocument] = await scene.createEmbeddedDocuments('Token', [{
+      name: `${RUN_PREFIX} Position Target`,
+      actorId: npc.id,
+      actorLink: false,
+      x: 100,
+      y: 100,
+    }]);
+    await game.settings.set(MODULE_ID, 'npcActionHudPosition', {});
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    if (!canvasActivated) throw new Error('HUD-006 scene did not activate.');
+
+    const token = canvas.tokens.get(tokenDocument.id);
+    canvas.tokens.releaseAll();
+    token.control({ releaseOthers: true });
+    const overlayReady = await waitUntil(() => Boolean(getOverlay()));
+    if (!overlayReady) throw new Error('HUD-006 overlay did not render.');
+
+    if (new URLSearchParams(window.location.search).has('hudPositionPreview')) {
+      await wait(12000);
+    }
+
+    const initialOverlay = getOverlay();
+    const initialRect = initialOverlay.getBoundingClientRect();
+    const defaultPosition =
+      approximately(initialRect.left, (window.innerWidth - initialRect.width) / 2)
+      && approximately(initialRect.top, 12)
+      && initialRect.width <= 704;
+    const pointerHandlePresent = Boolean(
+      initialOverlay.querySelector('[data-drag-handle]'),
+    );
+
+    await game.settings.set(MODULE_ID, 'npcActionHudPosition', {
+      left: 99999,
+      top: 99999,
+      width: 99999,
+    });
+    const offscreenRecovered = await waitUntil(() => {
+      const rect = getOverlay()?.getBoundingClientRect();
+      return Boolean(
+        rect
+        && rect.left >= 12
+        && rect.top >= 12
+        && rect.right <= window.innerWidth - 11
+        && rect.bottom <= window.innerHeight - 11
+        && rect.width <= 704,
+      );
+    });
+
+    const persistedPosition = { left: 40, top: 60, width: 500 };
+    await game.settings.set(
+      MODULE_ID,
+      'npcActionHudPosition',
+      persistedPosition,
+    );
+    const positioned = await waitUntil(() => {
+      const rect = getOverlay()?.getBoundingClientRect();
+      return Boolean(
+        rect
+        && approximately(rect.left, persistedPosition.left)
+        && approximately(rect.top, persistedPosition.top)
+        && approximately(rect.width, persistedPosition.width),
+      );
+    });
+
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', false);
+    const removed = await waitUntil(() => getOverlay() == null);
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    const restoredAfterRecreate = await waitUntil(() => {
+      const rect = getOverlay()?.getBoundingClientRect();
+      return Boolean(
+        rect
+        && approximately(rect.left, persistedPosition.left)
+        && approximately(rect.top, persistedPosition.top)
+        && approximately(rect.width, persistedPosition.width),
+      );
+    });
+
+    const dragOverlay = getOverlay();
+    const dragRect = dragOverlay.getBoundingClientRect();
+    const dragHandle = dragOverlay.querySelector('[data-drag-handle] h2');
+    const pointerId = 61;
+    const start = { x: dragRect.left + 20, y: dragRect.top + 20 };
+    const finish = { x: start.x + 80, y: start.y + 50 };
+    dragHandle.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true,
+      button: 0,
+      clientX: start.x,
+      clientY: start.y,
+      isPrimary: true,
+      pointerId,
+    }));
+    dragOverlay.dispatchEvent(new PointerEvent('pointermove', {
+      bubbles: true,
+      clientX: finish.x,
+      clientY: finish.y,
+      isPrimary: true,
+      pointerId,
+    }));
+    dragOverlay.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true,
+      button: 0,
+      clientX: finish.x,
+      clientY: finish.y,
+      isPrimary: true,
+      pointerId,
+    }));
+    const dragPersisted = await waitUntil(() => {
+      const position = game.settings.get(MODULE_ID, 'npcActionHudPosition');
+      return approximately(position.left, persistedPosition.left + 80)
+        && approximately(position.top, persistedPosition.top + 50)
+        && approximately(position.width, persistedPosition.width);
+    });
+
+    await game.settings.set(MODULE_ID, 'npcActionHudPosition', {});
+    const resetApplied = await waitUntil(() => {
+      const rect = getOverlay()?.getBoundingClientRect();
+      return Boolean(
+        rect
+        && approximately(rect.left, (window.innerWidth - rect.width) / 2)
+        && approximately(rect.top, 12)
+        && rect.width <= 704,
+      );
+    });
+    window.dispatchEvent(new Event('resize'));
+    await wait(50);
+    const resizedRect = getOverlay()?.getBoundingClientRect();
+    const resizeRemainsClamped = Boolean(
+      resizedRect
+      && resizedRect.left >= 12
+      && resizedRect.top >= 12
+      && resizedRect.right <= window.innerWidth - 11
+      && resizedRect.bottom <= window.innerHeight - 11,
+    );
+
+    return {
+      canvasActivated,
+      overlayReady,
+      defaultPosition,
+      pointerHandlePresent,
+      offscreenRecovered,
+      positioned,
+      removed,
+      restoredAfterRecreate,
+      dragPersisted,
+      resetApplied,
+      resizeRemainsClamped,
+    };
+  }
+  finally {
+    canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'npcActionHudPosition',
+      originalPosition,
+    );
+    await game.settings.set(
+      MODULE_ID,
+      'enableNpcActionHud',
+      originalEnabled,
+    );
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1091,6 +1289,7 @@ async function runGmDiagnostics() {
     results.hud003 = await testProductionHudChat(npc);
     results.hud004 = await testProductionHudSelection(character, npc);
     results.hud005 = await testProductionHudOverlay(npc);
+    results.hud006 = await testProductionHudPosition(npc);
     results.status = 'complete';
   }
   catch (error) {

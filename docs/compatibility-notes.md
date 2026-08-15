@@ -150,8 +150,23 @@ message while the missing-morale target was skipped and reported once. Visual
 inspection at the automated 1280-by-720 viewport confirmed the desktop layout,
 responsive row wrapping, readable health bars, and long-name ellipsis.
 
+### NPC Action HUD position lifecycle (HUD-006)
+
+Foundry 13.351 and 14.365 applied the client-scoped `left`, `top`, and `width`
+setting to the production overlay. Both generations verified the centered
+default, Pointer Events drag handle, persisted position after overlay removal
+and recreation, immediate reset behavior, resize clamping, and recovery from
+deliberately oversized off-screen coordinates.
+
+The live diagnostic ran at the constrained 1280-by-720 browser viewport and
+confirmed a 704-pixel default width with a 12-pixel safe margin. Visual
+inspection confirmed the positioned HUD remained readable after Foundry's own
+minimum-window warning was dismissed. The overlay removed its resize listener
+when hidden, and the HUD service removed its settings hook when destroyed.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-005 are
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-006 are
 complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is HUD-006 drag, persistence, and viewport behavior.
+next compatibility gate is HUD-007 synchronization debounce and lifecycle
+cleanup.

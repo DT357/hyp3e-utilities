@@ -69,11 +69,19 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
     [false, true, false],
   );
   byKey.enableNpcActionHud.onChange(true);
-  assert.deepEqual(harness.hookCalls, [[
-    HOOK_NAMES.settingsChanged,
-    SETTING_KEYS.enableNpcActionHud,
-    true,
-  ]]);
+  byKey.npcActionHudPosition.onChange({ left: 10, top: 20, width: 360 });
+  assert.deepEqual(harness.hookCalls, [
+    [
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.enableNpcActionHud,
+      true,
+    ],
+    [
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.npcActionHudPosition,
+      { left: 10, top: 20, width: 360 },
+    ],
+  ]);
 });
 
 test('party state defaults are independent complete values', () => {

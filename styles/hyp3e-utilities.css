@@ -83,10 +83,23 @@
 
 .hyp3e-utilities-npc-action-hud__header {
   align-items: center;
+  cursor: move;
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
   justify-content: space-between;
+  touch-action: none;
+  user-select: none;
+}
+
+.hyp3e-utilities-npc-action-hud-overlay--dragging,
+.hyp3e-utilities-npc-action-hud-overlay--dragging * {
+  cursor: grabbing !important;
+}
+
+.hyp3e-utilities-npc-action-hud__header :is(button, select) {
+  cursor: auto;
+  user-select: auto;
 }
 
 .hyp3e-utilities-npc-action-hud__header h2 {

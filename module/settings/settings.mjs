@@ -80,6 +80,11 @@ export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) 
     config: false,
     type: Object,
     default: {},
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.npcActionHudPosition,
+      value,
+    ),
   });
   register(SETTING_KEYS.partyState, {
     name: `${SETTING_NAMESPACE}.partyState.name`,
