@@ -14,6 +14,9 @@ import {
   createPartyItemTransferService,
 } from '../party/party-item-transfer.mjs';
 import {
+  createItemTransferUiController,
+} from '../party/item-transfer-ui.mjs';
+import {
   createPartyMarchingOrderService,
 } from '../party/party-marching-order.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
@@ -112,6 +115,7 @@ export function registerModuleLifecycle({
   let partyCleanup;
   let partyFollowers;
   let partyItemTransfers;
+  let partyItemTransferUi;
   let partyMarchingOrder;
   let partyMembers;
   let partyMutations;
@@ -167,6 +171,7 @@ export function registerModuleLifecycle({
       notifications,
       partyActionsProvider: () => partyActions,
       partyFollowersProvider: () => partyFollowers,
+      partyItemTransferUiProvider: () => partyItemTransferUi,
       partyMarchingOrderProvider: () => partyMarchingOrder,
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
@@ -254,7 +259,7 @@ export function registerModuleLifecycle({
       game: currentGame,
       logger,
       mutations: partyMutations,
-      ownerLevel: ownershipLevels?.OWNER,
+      ownershipLevels,
       store: partyStore,
     });
     partyItemTransfers = createPartyItemTransferService({
@@ -262,9 +267,22 @@ export function registerModuleLifecycle({
       game: currentGame,
       logger,
       mutations: partyMutations,
-      ownershipLevels,
+      ownerLevel: ownershipLevels?.OWNER,
       store: partyStore,
     });
+    partyItemTransferUi = createItemTransferUiController({
+      adapter: hyp3eAdapter,
+      dialog: foundryApi.DialogV2,
+      game: currentGame,
+      hooks,
+      itemTransfers: partyItemTransfers,
+      logger,
+      notifications,
+      ownerLevel: ownershipLevels?.OWNER,
+      store: partyStore,
+      treasury: partyTreasury,
+    });
+    partyItemTransferUi.start();
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -281,6 +299,7 @@ export function registerModuleLifecycle({
       partyCleanup,
       partyFollowers,
       partyItemTransfers,
+      partyItemTransferUi,
       partyMarchingOrder,
       partyMembers,
       partyMutations,

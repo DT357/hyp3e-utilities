@@ -243,7 +243,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 | ITM-002 | `DONE` | TRY-001, ITM-001, PAR-002 | Character-to-treasury transfer operation | Full/partial transfer, ownership, stale state, and rollback checks |
 | ITM-003 | `DONE` | ITM-002 | Treasury-to-character transfer operation | Same matrix as ITM-002 with reversed authority and destination |
 | ITM-004 | `DONE` | ITM-002, ITM-003 | Correct quantity, bundle, maximum, and merge semantics | Verified fixtures for weapon, armor, shield, and item types |
-| ITM-005 | `TODO` | ITM-002, ITM-003, PB-007 | Supported drag/drop entry points on Party and Actor sheets | Valid drop, unauthorized drop, cancelled dialog, and invalid payload |
+| ITM-005 | `DONE` | ITM-002, ITM-003, PB-007 | Supported drag/drop entry points on Party and Actor sheets | Valid drop, unauthorized drop, cancelled dialog, and invalid payload |
 | ITM-006 | `TODO` | ITM-001 | Explicit container and unsupported-item rejection | Non-empty container causes no document mutation and a clear notice |
 | ITM-007 | `TODO` | ITM-002, ITM-003 | Transfer audit chat/report and compensating rollback | Injected failure at each write boundary leaves consistent documents |
 
@@ -348,7 +348,7 @@ Milestones 0 through 3 are complete. TRY-001 and TRY-002 established the
 managed treasury and its read-only views; ITM-001 now provides the pure,
 immutable transfer planner, and ITM-002 provides the authoritative
 character-to-treasury operation, and ITM-003 provides its reverse. Proceed
-next with the Party and Actor Sheet entry points in ITM-005.
+next with explicit container and unsupported-item rejection in ITM-006.
 
 ## 15. Current Project Status
 
@@ -357,7 +357,7 @@ next with the Party and Actor Sheet entry points in ITM-005.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 3 are complete.
-- Immediate next batch: Add transfer UI entry points in ITM-005.
+- Immediate next batch: Add explicit transfer rejection in ITM-006.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

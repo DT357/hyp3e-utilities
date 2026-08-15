@@ -438,13 +438,44 @@
                   {{localize "hyp3e-utilities.applications.partySheet.saveSupplies"}}
                 </button>
               {{/if}}
-              <section class="hyp3e-utilities__treasury-inventory" data-treasury-inventory>
+              <section
+                class="hyp3e-utilities__treasury-inventory"
+                data-treasury-inventory
+                data-party-treasury-drop-zone
+              >
                 <h3>{{localize "hyp3e-utilities.applications.partySheet.inventoryHeading"}}</h3>
+                {{#if canEdit}}
+                  <p>{{localize "hyp3e-utilities.applications.partySheet.itemTransferDropHelp"}}</p>
+                  {{#if hasTreasuryTransferDestinations}}
+                    <label class="hyp3e-utilities__treasury-transfer-destination">
+                      <span>{{localize "hyp3e-utilities.applications.partySheet.itemTransferDestination"}}</span>
+                      <select data-treasury-transfer-destination>
+                        {{#each treasuryTransferDestinations}}
+                          <option value="{{actorUuid}}">{{name}}</option>
+                        {{/each}}
+                      </select>
+                    </label>
+                  {{/if}}
+                {{/if}}
                 {{#if treasury.contentsReady}}
                   {{#if treasury.hasItems}}
                     <ol class="hyp3e-utilities__treasury-items">
                       {{#each treasury.items}}
-                        <li data-treasury-item data-item-id="{{id}}" data-item-type="{{type}}">
+                        <li
+                          data-treasury-item
+                          data-item-id="{{id}}"
+                          data-item-name="{{name}}"
+                          data-item-quantity="{{quantity.value}}"
+                          data-item-type="{{type}}"
+                          data-item-uuid="{{uuid}}"
+                          data-source-name="{{@root.treasury.name}}"
+                          {{#if supported}}
+                            {{#if @root.canEdit}}
+                              draggable="true"
+                              title="{{localize 'hyp3e-utilities.applications.partySheet.itemTransferDragHelp'}}"
+                            {{/if}}
+                          {{/if}}
+                        >
                           <img src="{{img}}" alt="" width="48" height="48">
                           <div class="hyp3e-utilities__treasury-item-identity">
                             <strong>{{name}}</strong>
@@ -475,6 +506,14 @@
                                 </div>
                               {{/if}}
                             </dl>
+                            {{#if @root.canEdit}}
+                              <button
+                                type="button"
+                                data-action="takeTreasuryItem"
+                                data-item-uuid="{{uuid}}"
+                                {{#unless @root.hasTreasuryTransferDestinations}}disabled{{/unless}}
+                              >{{localize "hyp3e-utilities.applications.partySheet.takeTreasuryItem"}}</button>
+                            {{/if}}
                           {{/if}}
                         </li>
                       {{/each}}

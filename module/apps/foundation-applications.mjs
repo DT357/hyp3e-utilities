@@ -14,6 +14,7 @@ import { PARTY_MEMBER_OPERATIONS } from '../party/party-members.mjs';
 import { PARTY_NOTE_OPERATIONS } from '../party/party-notes.mjs';
 import { PARTY_SUPPLY_OPERATIONS } from '../party/party-supplies.mjs';
 import { createPartyStateDefault } from '../party/party-state.mjs';
+import { ITEM_TRANSFER_MIME_TYPE } from '../party/item-transfer-ui.mjs';
 import {
   validateExplicitEditorUserIds,
   validateMinimumEditRole,
@@ -45,6 +46,7 @@ export function createFoundationApplications({
   chatCardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.chatCards,
   partyActionsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyActions,
   partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
+  partyItemTransferUiProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyItemTransferUi,
   partyMarchingOrderProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMarchingOrder,
   partyMembersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMembers,
   partyMutationsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMutations,
@@ -259,6 +261,7 @@ export function createFoundationApplications({
         savePartyNotes: OpenPartySheetApplication.savePartyNotes,
         saveSupplies: OpenPartySheetApplication.saveSupplies,
         selectTab: OpenPartySheetApplication.selectTab,
+        takeTreasuryItem: OpenPartySheetApplication.takeTreasuryItem,
       },
     };
 
@@ -408,6 +411,22 @@ export function createFoundationApplications({
       }
       await actor.sheet?.render?.(true);
       return actor;
+    }
+
+    static async takeTreasuryItem(_event, target) {
+      const destinationActorUuid = this.element?.querySelector?.(
+        '[data-treasury-transfer-destination]',
+      )?.value;
+      const row = target?.closest?.('[data-treasury-item]');
+      return partyItemTransferUiProvider()?.transferFromTreasury?.(
+        {
+          expectedSourceQuantity: Number(row?.dataset?.itemQuantity),
+          itemName: row?.dataset?.itemName,
+          itemUuid: row?.dataset?.itemUuid ?? target?.dataset?.itemUuid,
+          sourceName: row?.dataset?.sourceName,
+        },
+        destinationActorUuid,
+      ) ?? null;
     }
 
     static async openFollower(_event, target) {
@@ -995,6 +1014,29 @@ export function createFoundationApplications({
       );
     }
 
+    _handleTreasuryDragStart(event) {
+      const row = event.target?.closest?.('[data-treasury-item]');
+      const itemUuid = row?.dataset?.itemUuid;
+      const controller = partyItemTransferUiProvider();
+      if (!itemUuid || !controller?.createTreasuryDragData) return;
+      const dragData = controller.createTreasuryDragData({
+        expectedSourceQuantity: Number(row.dataset.itemQuantity),
+        itemName: row.dataset.itemName,
+        itemUuid,
+        sourceName: row.dataset.sourceName,
+      });
+      event.dataTransfer?.setData?.('text/plain', JSON.stringify(dragData));
+      event.dataTransfer?.setData?.(
+        ITEM_TRANSFER_MIME_TYPE,
+        'true',
+      );
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    }
+
+    async _handleTreasuryDrop(event) {
+      return partyItemTransferUiProvider()?.handlePartyDrop?.(event) ?? null;
+    }
+
     async _prepareContext(options) {
       const context = await super._prepareContext?.(options) ?? {};
       const decision = evaluatePartyEditPermission({
@@ -1167,6 +1209,9 @@ export function createFoundationApplications({
             || ['ambiguous', 'recoverable'].includes(treasuryStatus.kind)
           ),
       };
+      const treasuryTransferDestinations = decision.allowed
+        ? partyItemTransferUiProvider()?.getDestinationOptions?.(state) ?? []
+        : [];
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -1223,6 +1268,9 @@ export function createFoundationApplications({
         supplies,
         tabs,
         treasury,
+        treasuryTransferDestinations,
+        hasTreasuryTransferDestinations:
+          treasuryTransferDestinations.length > 0,
       };
     }
 
@@ -1238,6 +1286,9 @@ export function createFoundationApplications({
         '[data-party-marching-order]',
       );
       const supplies = this.element?.querySelector?.('[data-party-supplies]');
+      const treasuryInventory = this.element?.querySelector?.(
+        '[data-party-treasury-drop-zone]',
+      );
       this._mountPartyNoteEditors(context);
       this._restorePartySheetViewState();
       if (context.canEdit !== true) return;
@@ -1253,6 +1304,19 @@ export function createFoundationApplications({
         'input',
         this._captureSupplyDraft.bind(this),
       );
+      treasuryInventory?.addEventListener(
+        'dragstart',
+        this._handleTreasuryDragStart.bind(this),
+      );
+      treasuryInventory?.addEventListener(
+        'dragover',
+        (event) => event.preventDefault(),
+      );
+      treasuryInventory?.addEventListener('drop', (event) => {
+        void this._handleTreasuryDrop(event).catch((error) => {
+          logger.warn?.('Party Sheet item transfer drop failed.', error);
+        });
+      });
       marchingOrder?.addEventListener(
         'dragstart',
         this._handleMarchingDragStart.bind(this),

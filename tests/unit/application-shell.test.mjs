@@ -1440,3 +1440,115 @@ test('Party Sheet receives treasury coins and inventory through an authorized GM
   assert.equal(restricted.treasury.contentsReady, false);
   assert.equal(snapshotRequests, 1);
 });
+
+test('Party Sheet routes treasury button, drag, and drop entry points', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 22;
+  state.treasuryActorUuid = 'Actor.treasury';
+  const calls = [];
+  const transferUi = {
+    createTreasuryDragData: (reference) => ({
+      ...reference,
+      type: 'Hyp3eUtilitiesTreasuryItem',
+    }),
+    getDestinationOptions: () => [{
+      actorUuid: 'Actor.hero',
+      name: 'Hero',
+    }],
+    handlePartyDrop: async (event) => {
+      calls.push(['drop', event]);
+      return { ok: true };
+    },
+    transferFromTreasury: async (reference, actorUuid) => {
+      calls.push(['take', reference, actorUuid]);
+      return { ok: true };
+    },
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyItemTransferUiProvider: () => transferUi,
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyTreasuryProvider: () => ({
+      getStatus: () => ({
+        actor: { name: 'Party Treasury', uuid: state.treasuryActorUuid },
+        candidates: [],
+        configuredUuid: state.treasuryActorUuid,
+        hasDuplicates: false,
+        kind: 'ready',
+      }),
+      requestSnapshot: async () => ({
+        ok: true,
+        value: {
+          actorUuid: state.treasuryActorUuid,
+          coins: {},
+          items: [],
+          kind: 'ready',
+          name: 'Party Treasury',
+          ready: true,
+          revision: 22,
+        },
+      }),
+    }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const context = await app._prepareContext({});
+  assert.deepEqual(context.treasuryTransferDestinations, [{
+    actorUuid: 'Actor.hero',
+    name: 'Hero',
+  }]);
+  assert.equal(context.hasTreasuryTransferDestinations, true);
+
+  const row = {
+    dataset: {
+      itemName: 'Rope',
+      itemQuantity: '3',
+      itemUuid: 'Actor.treasury.Item.rope',
+      sourceName: 'Party Treasury',
+    },
+  };
+  app.element = {
+    querySelector: (selector) => selector === '[data-treasury-transfer-destination]'
+      ? { value: 'Actor.hero' }
+      : null,
+  };
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions
+    .takeTreasuryItem.call(app, undefined, {
+      closest: () => row,
+      dataset: { itemUuid: row.dataset.itemUuid },
+    });
+
+  const dragWrites = [];
+  app._handleTreasuryDragStart({
+    dataTransfer: {
+      setData: (...args) => dragWrites.push(args),
+    },
+    target: { closest: () => row },
+  });
+  const dropEvent = {};
+  await app._handleTreasuryDrop(dropEvent);
+
+  assert.deepEqual(calls, [
+    ['take', {
+      expectedSourceQuantity: 3,
+      itemName: 'Rope',
+      itemUuid: 'Actor.treasury.Item.rope',
+      sourceName: 'Party Treasury',
+    }, 'Actor.hero'],
+    ['drop', dropEvent],
+  ]);
+  assert.equal(dragWrites[0][0], 'text/plain');
+  assert.equal(
+    JSON.parse(dragWrites[0][1]).type,
+    'Hyp3eUtilitiesTreasuryItem',
+  );
+  assert.deepEqual(dragWrites[1], [
+    'application/x-hyp3e-utilities-item',
+    'true',
+  ]);
+});

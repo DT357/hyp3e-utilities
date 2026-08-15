@@ -166,6 +166,30 @@
   gap: 0.2rem;
 }
 
+.hyp3e-utilities .hyp3e-utilities__treasury-transfer-destination {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  margin-block: 0.5rem;
+}
+
+.hyp3e-utilities [data-party-treasury-drop-zone] {
+  border: 1px dashed transparent;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+}
+
+.hyp3e-utilities [data-party-treasury-drop-zone]:focus-within,
+.hyp3e-utilities [data-party-treasury-drop-zone]:hover {
+  border-color: var(--color-border-highlight, currentColor);
+}
+
+.hyp3e-utilities__send-item {
+  flex: 0 0 auto;
+  margin-inline-start: 0.25rem;
+  width: auto;
+}
+
 .hyp3e-utilities .hyp3e-utilities__treasury-item-quantity {
   grid-auto-flow: column;
 }
