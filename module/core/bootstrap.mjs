@@ -7,6 +7,7 @@ import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
+import * as partyPermissions from '../party/party-permissions.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -170,6 +171,7 @@ export function registerModuleLifecycle({
       npcActionHud,
       npcRolls,
       npcSelection,
+      partyPermissions,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);

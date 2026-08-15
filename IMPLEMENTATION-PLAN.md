@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Milestone 1 complete; Milestone 2 Party Core next
+Status: Milestone 2 Party Core in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -203,7 +203,7 @@ M1 is complete when all FND and HUD items are `DONE`, `npm run check` passes, th
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| PAR-001 | `TODO` | PB-009 | Pure permission policy for GM, minimum role, explicit grants, and denial | Matrix tests for every role/grant combination |
+| PAR-001 | `DONE` | PB-009 | Pure permission policy for GM, minimum role, explicit grants, and denial | Matrix tests for every role/grant combination |
 | PAR-002 | `TODO` | PB-008, PAR-001 | Authenticated named mutation operations with schema validation | Spoofing, malformed payload, unauthorized, no-GM, and duplicate-request tests |
 | PAR-003 | `TODO` | PB-006 | Versioned party-state defaults, normalization, migration, and revision model | Round-trip, missing field, unknown field, and old-version tests |
 | PAR-004 | `TODO` | PAR-002, PAR-003 | GM-authoritative party store with serialized writes and stale-revision rejection | Concurrent-edit and rollback tests |
@@ -356,7 +356,7 @@ are complete. Proceed next with the Party Core permission policy in PAR-001.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 and 1 are complete.
-- Immediate next batch: Implement the pure Party Sheet permission policy in PAR-001.
+- Immediate next batch: Implement authenticated named mutation operations and payload validation in PAR-002.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

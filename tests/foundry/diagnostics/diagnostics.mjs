@@ -407,6 +407,7 @@ async function testProductionFoundation(character, npc) {
     adapterPublished: Boolean(api?.adapter),
     applicationsPublished: Boolean(api?.applications),
     chatCardsPublished: Boolean(api?.chatCards),
+    partyPermissionsPublished: Boolean(api?.partyPermissions),
     socketPublished: Boolean(api?.socket),
   };
 
