@@ -1,0 +1,10 @@
+module.json
+README.md
+CHANGELOG.md
+LICENSE
+THIRD_PARTY_NOTICES.md
+module
+styles
+lang
+templates
+docs/user-guide.md

@@ -17,6 +17,7 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
   assert.equal(manifest.title, 'Hyp3e Utilities');
   assert.equal(packageMetadata.name, manifest.id);
   assert.equal(packageMetadata.version, manifest.version);
+  assert.equal(manifest.version, '1.0.0');
   assert.equal(packageMetadata.license, 'MIT');
   assert.equal(manifest.license, 'LICENSE');
   assert.equal(manifest.socket, true);
@@ -66,17 +67,56 @@ test('release URLs use the current repository and artifact names', async () => {
   );
 });
 
-test('release archive includes every runtime asset directory', async () => {
+test('release archive uses the canonical payload list', async () => {
+  const releaseFiles = (
+    await readFile(projectFileUrl('scripts/release-files.txt'), 'utf8')
+  )
+    .split(/\r?\n/u)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  assert.deepEqual(releaseFiles, [
+    'module.json',
+    'README.md',
+    'CHANGELOG.md',
+    'LICENSE',
+    'THIRD_PARTY_NOTICES.md',
+    'module',
+    'styles',
+    'lang',
+    'templates',
+    'docs/user-guide.md',
+  ]);
+
+  await Promise.all(
+    releaseFiles.map((relativePath) => access(projectFileUrl(relativePath))),
+  );
+});
+
+test('release workflow publishes only the validated artifact set', async () => {
   const workflow = await readFile(
     projectFileUrl('.github/workflows/validate-and-release.yml'),
     'utf8',
   );
-  const packageCommand = workflow.match(
-    /zip -r hyp3e-utilities\.zip[^\r\n]+/,
-  )?.[0] ?? '';
 
-  for (const requiredPath of ['module', 'styles', 'lang', 'templates']) {
-    assert.match(packageCommand, new RegExp(`(?:^|\\s)${requiredPath}(?:\\s|$)`));
+  assert.match(workflow, /mapfile -t release_paths < scripts\/release-files\.txt/);
+  assert.match(
+    workflow,
+    /zip -X -r hyp3e-utilities\.zip "\$\{release_paths\[@\]\}"/,
+  );
+  assert.match(
+    workflow,
+    /sha256sum module\.json hyp3e-utilities\.zip > SHA256SUMS\.txt/,
+  );
+  assert.match(workflow, /uses: actions\/upload-artifact@v7/);
+  assert.match(workflow, /uses: actions\/download-artifact@v8/);
+  assert.match(workflow, /sha256sum --check SHA256SUMS\.txt/);
+  for (const releaseAsset of [
+    'hyp3e-utilities.zip',
+    'module.json',
+    'SHA256SUMS.txt',
+  ]) {
+    assert.match(workflow, new RegExp(`release-artifacts/${releaseAsset.replace('.', '\\.')}`));
   }
 });
 

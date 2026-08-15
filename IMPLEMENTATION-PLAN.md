@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Milestone 6 hardening in progress
+Status: Milestone 6 final acceptance in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -284,10 +284,22 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 | HRD-004 | `DONE` | M1–M5 | Performance and hook-lifecycle pass | Large party, large treasury, rapid selection, scene change, and repeated app open/close |
 | HRD-005 | `DONE` | PB-003, PB-007, M1–M5 | Final Foundry 13/14 and current `hyp3e` compatibility matrix | Clean-world installation and full smoke suite on each supported combination |
 | DOC-001 | `DONE` | M1–M5 | GM/player usage, setup, permissions, recovery, and limitation documentation | A new tester can install and complete core workflows unaided |
-| PKG-001 | `TODO` | PB-001, PB-010, HRD-005 | Release manifest, zip contents, checksums, URLs, and GitHub release workflow | Install and update from published manifest in a clean Foundry data directory |
+| PKG-001 | `DONE` | PB-001, PB-010, HRD-005 | Release manifest, zip contents, checksums, URLs, and GitHub release workflow | Exact 1.0.0 candidate installs in a clean Foundry data directory; public-URL install/update moved to REL-001 because publication is not authorized |
 | QA-001 | `TODO` | HRD-001–PKG-001 | Full acceptance and regression run with defect disposition | No unresolved critical/high defects; lower-severity deferrals documented |
 
-The 1.0.0 release is ready only when all M6 items are `DONE`, the repository is clean, the release artifact matches the tagged source, and install/update testing succeeds using the public release URLs.
+Milestone 6 may prepare the unpublished 1.0.0 source release candidate when all
+M6 items are `DONE`, the repository is clean, and the validated artifact matches
+the committed source. Public release readiness additionally requires REL-001.
+
+### Post-authorization publication gate
+
+| ID | Status | Depends on | Deliverable | Verification |
+| --- | --- | --- | --- | --- |
+| REL-001 | `AUTHORIZATION REQUIRED` | QA-001, explicit publication authorization | Create the signed-off `v1.0.0` tag and GitHub release from the validated workflow artifact | Verify published checksums, then install and update from the live manifest URL in a new disposable Foundry data directory |
+
+REL-001 is deliberately outside Milestone 6 because its external publication
+effects require separate authorization. Until it passes, the repository may be
+release-candidate complete but no public release is claimed.
 
 ## 11. Planned Automated Test Map
 
@@ -344,8 +356,8 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 5, HRD-001 through HRD-005, and DOC-001 are complete.
-Proceed next with final release preparation in PKG-001.
+Milestones 0 through 5, HRD-001 through HRD-005, DOC-001, and PKG-001 are
+complete. Proceed next with the final acceptance and regression run in QA-001.
 
 ## 15. Current Project Status
 
@@ -354,7 +366,7 @@ Proceed next with final release preparation in PKG-001.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 5 are complete.
-- Immediate next batch: Complete final release preparation in PKG-001.
+- Immediate next batch: Complete final acceptance and regression in QA-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

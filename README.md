@@ -58,6 +58,13 @@ matching `v<module.json version>` creates a GitHub release containing:
 
 - `module.json`, used by Foundry's manifest installer and updater
 - `hyp3e-utilities.zip`, containing the installable module
+- `SHA256SUMS.txt`, covering both published assets
+
+Every push and pull request also builds the same three-file release candidate
+as a private workflow artifact. The release job downloads that validated
+artifact rather than rebuilding it, so published bytes are the bytes that
+passed validation. The ZIP payload is defined by `scripts/release-files.txt`
+and includes this changelog and the user guide.
 
 Release tags publish externally. Create one only after the acceptance gate has
 passed and publication has been explicitly authorized. After changing both
