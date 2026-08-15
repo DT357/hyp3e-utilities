@@ -35,6 +35,7 @@ const results = {
   mar003: {},
   sup001: {},
   not001: {},
+  ref001: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -2693,6 +2694,132 @@ async function testProductionNotes() {
   }
 }
 
+async function testProductionPartyRefreshPolicy(character, untrackedActor) {
+  const api = game.modules.get(MODULE_ID).api;
+  const initialState = api.partyStore.getState();
+  const memberWasTracked = initialState.memberActorUuids.includes(
+    character.uuid,
+  );
+  const request = (operation, payload, suffix) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `ref001-gm-${game.user.id}-${suffix}-${foundry.utils.randomID()}`,
+    },
+  );
+  const originalCharacterHp = character.system.hp.value;
+  const originalUntrackedHp = untrackedActor.system.hp.value;
+  let diagnosticItem;
+  const sheet = new api.applications.OpenPartySheetApplication();
+  const productionRender = sheet.render.bind(sheet);
+  let renderCount = 0;
+  sheet.render = async (...args) => {
+    renderCount += 1;
+    return productionRender(...args);
+  };
+
+  try {
+    if (!memberWasTracked) {
+      await request(
+        'party.addMember',
+        { actorUuid: character.uuid },
+        'add-member',
+      );
+    }
+    const trackedMemberAdded = api.partyStore.getState().memberActorUuids
+      .includes(character.uuid);
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="notes"]',
+    ).click();
+    const notesTabRendered = await waitUntil(() => (
+      sheet.element?.querySelector('[data-tab="notes"]')
+        ?.getAttribute('aria-selected') === 'true'
+    ));
+    const baseline = renderCount;
+
+    await untrackedActor.update({
+      'system.hp.value': originalUntrackedHp + 1,
+    });
+    await wait(250);
+    const unrelatedActorIgnored = renderCount === baseline;
+
+    const draftMarker = `<p>REF-001 draft ${game.user.id}</p>`;
+    sheet._capturePartyNoteDraft(
+      'notes',
+      draftMarker,
+      api.partyStore.getState().revision,
+    );
+    Hooks.callAll('updateActor', character, {}, {}, game.user.id);
+    Hooks.callAll('updateActor', character, {}, {}, game.user.id);
+    const burstRendered = await waitUntil(() => renderCount === baseline + 1);
+    await wait(150);
+    const actorBurstCoalesced = burstRendered && renderCount === baseline + 1;
+    const draftPreservedAfterBurst = sheet._partyNoteDraft?.values?.notes
+      === draftMarker;
+
+    await character.update({
+      'system.hp.value': originalCharacterHp + 1,
+    });
+    const actualActorUpdateRendered = await waitUntil(
+      () => renderCount === baseline + 2,
+    );
+
+    [diagnosticItem] = await character.createEmbeddedDocuments('Item', [{
+      name: `${RUN_PREFIX} REF-001 Item`,
+      type: 'weapon',
+    }]);
+    const embeddedItemCreateRendered = await waitUntil(
+      () => renderCount === baseline + 3,
+    );
+
+    Hooks.callAll(`${MODULE_ID}.partyStateUpdated`, api.partyStore.getState());
+    Hooks.callAll(
+      `${MODULE_ID}.partyPermissionsUpdated`,
+      'partySheetMinimumEditRole',
+      game.user.role,
+    );
+    const statePermissionBurstRendered = await waitUntil(
+      () => renderCount === baseline + 4,
+    );
+    await wait(150);
+
+    return {
+      trackedMemberAdded,
+      notesTabRendered,
+      unrelatedActorIgnored,
+      actorBurstCoalesced,
+      actualActorUpdateRendered,
+      embeddedItemCreateRendered,
+      statePermissionBurstCoalesced:
+        statePermissionBurstRendered && renderCount === baseline + 4,
+      draftPreserved:
+        draftPreservedAfterBurst
+        && sheet._partyNoteDraft?.values?.notes === draftMarker,
+      activeTabPreserved:
+        sheet.element?.querySelector('[data-tab="notes"]')
+          ?.getAttribute('aria-selected') === 'true',
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    if (diagnosticItem) {
+      await character.deleteEmbeddedDocuments('Item', [diagnosticItem.id]);
+    }
+    await character.update({ 'system.hp.value': originalCharacterHp });
+    await untrackedActor.update({ 'system.hp.value': originalUntrackedHp });
+    if (!memberWasTracked
+      && api.partyStore.getState().memberActorUuids.includes(character.uuid)) {
+      await request(
+        'party.removeMember',
+        { actorUuid: character.uuid },
+        'cleanup-member',
+      );
+    }
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2761,6 +2888,10 @@ async function runGmDiagnostics() {
     };
     results.not001 = {
       gm: await testProductionNotes(),
+      waitingForPlayer: true,
+    };
+    results.ref001 = {
+      gm: await testProductionPartyRefreshPolicy(character, npc),
       waitingForPlayer: true,
     };
     results.par002 = {
@@ -3249,6 +3380,9 @@ async function testPlayerNotes(partyMutations) {
       staleSaveRejected,
       discardRestoredAuthoritative,
       validSavePersisted,
+      activeTabPreserved:
+        sheet.element?.querySelector('[data-tab="notes"]')
+          ?.getAttribute('aria-selected') === 'true',
     };
   }
   finally {
@@ -3402,6 +3536,11 @@ async function runPlayerSocketDiagnostic() {
     };
     const supplyResult = await testPlayerSupplies(partyMutations);
     const noteResult = await testPlayerNotes(partyMutations);
+    const refreshResult = {
+      stateUpdatePreservedDraft: noteResult.draftPreserved,
+      activeTabPreserved: noteResult.activeTabPreserved,
+      staleStateRejected: noteResult.staleSaveRejected,
+    };
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
@@ -3410,6 +3549,7 @@ async function runPlayerSocketDiagnostic() {
     results.mar003 = marchingReportResult;
     results.sup001 = supplyResult;
     results.not001 = noteResult;
+    results.ref001 = refreshResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3421,6 +3561,7 @@ async function runPlayerSocketDiagnostic() {
       mar003: marchingReportResult,
       sup001: supplyResult,
       not001: noteResult,
+      ref001: refreshResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3519,6 +3660,14 @@ Hooks.once('ready', async () => {
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
       player: message.not001,
+      waitingForPlayer: false,
+    };
+    results.ref001 = {
+      ...results.ref001,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.ref001,
       waitingForPlayer: false,
     };
     publishResults();

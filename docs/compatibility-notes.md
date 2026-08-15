@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through NOT-001 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through NOT-001 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through REF-001 / M3 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through REF-001 / M3 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -407,9 +407,23 @@ content. A fresh three-field save synchronized to the GM client, and a full
 Player reload retained both treasure values. Raw Foundry sender identity and
 the complete earlier regression matrix remained green.
 
+### Targeted Party Sheet rerenders (REF-001)
+
+Foundry 13.351 and 14.365 ignored an actual update to an untracked Actor while
+the Party Sheet was open. Two synchronous hooks for a tracked Actor coalesced
+into one ApplicationV2 rerender; an actual tracked-Actor update and actual
+embedded Item creation each produced the expected refresh. A Party State and
+permission hook burst also coalesced into one render.
+
+The active Notes tab and a dirty note draft survived every relevant refresh.
+Connected authorized Players in both generations retained their draft through
+a real external Party State mutation, rejected a stale save, and reported the
+result to the GM with a matching raw Foundry sender ID. All prior Milestone 3
+diagnostics remained green, with no recorded diagnostic errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, and NOT-001 are complete. No
-compatibility finding contradicts the approved architecture. Milestones 1 and
-2 are complete; Milestone 3 is active, with targeted rerenders next.
+PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, and REF-001
+are complete. No compatibility finding contradicts the approved architecture.
+Milestones 1 through 3 are complete; managed treasury work begins in TRY-001.

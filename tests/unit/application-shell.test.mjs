@@ -127,6 +127,7 @@ test('setting menu actions persist only their validated values', async () => {
 test('Party Sheet is a focused singleton with cleaned external-update hooks', async () => {
   const subscriptions = new Map();
   const removed = [];
+  const scheduledRefreshes = [];
   let hookId = 0;
   const hooks = {
     on: (name, callback) => {
@@ -155,6 +156,7 @@ test('Party Sheet is a focused singleton with cleaned external-update hooks', as
     game,
     hooks,
     partyStoreProvider: () => ({ getState: () => state }),
+    scheduleExternalRefresh: (callback) => scheduledRefreshes.push(callback),
   });
 
   const first = new classes.OpenPartySheetApplication();
@@ -168,8 +170,14 @@ test('Party Sheet is a focused singleton with cleaned external-update hooks', as
   assert.deepEqual(
     [...subscriptions.values()].map(({ name }) => name).sort(),
     [
+      'createActor',
+      'createItem',
+      'deleteActor',
+      'deleteItem',
       'hyp3e-utilities.partyPermissionsUpdated',
       'hyp3e-utilities.partyStateUpdated',
+      'updateActor',
+      'updateItem',
     ],
   );
 
@@ -183,14 +191,110 @@ test('Party Sheet is a focused singleton with cleaned external-update hooks', as
 
   const renderCount = first.renderCount;
   for (const { callback } of subscriptions.values()) callback();
-  await new Promise((resolve) => setTimeout(resolve));
-  assert.equal(first.renderCount, renderCount + 2);
+  assert.equal(scheduledRefreshes.length, 1);
+  await scheduledRefreshes.shift()();
+  assert.equal(first.renderCount, renderCount + 1);
 
   await first.close();
   assert.equal(subscriptions.size, 0);
-  assert.equal(removed.length, 2);
+  assert.equal(removed.length, 8);
   const replacement = new classes.OpenPartySheetApplication();
   assert.notEqual(replacement, first);
+});
+
+test('Party Sheet external refreshes target tracked documents and retain local view state', async () => {
+  const subscriptions = new Map();
+  const scheduledRefreshes = [];
+  const state = createPartyStateDefault();
+  state.revision = 5;
+  state.memberActorUuids = ['Actor.hero'];
+  state.followerActorUuids = ['Actor.follower'];
+  state.treasuryActorUuid = 'Actor.treasury';
+  state.notes = '<p>Saved notes</p>';
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    hooks: {
+      on: (name, callback) => {
+        subscriptions.set(name, callback);
+        return name;
+      },
+      off: (name) => subscriptions.delete(name),
+    },
+    partyNotesProvider: () => ({
+      getNotes: (currentState) => ({
+        notes: currentState.notes,
+        treasureNotes: { ...currentState.treasureNotes },
+      }),
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    scheduleExternalRefresh: (callback) => scheduledRefreshes.push(callback),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  app.rendered = true;
+  await app._onFirstRender({}, {});
+
+  const editor = {
+    isDirty: () => true,
+    value: '<p>Unsaved notes</p>',
+  };
+  const originalPanel = { scrollLeft: 7, scrollTop: 93 };
+  app.element = {
+    querySelector: (selector) => selector === '.hyp3e-utilities__party-panel'
+      ? originalPanel
+      : null,
+    querySelectorAll: (selector) => selector === '[data-party-note-editor]'
+      ? [{
+        dataset: { partyNoteField: 'notes', partyNoteRevision: '5' },
+        querySelector: () => editor,
+      }]
+      : [],
+  };
+
+  subscriptions.get('updateActor')({ uuid: 'Actor.untracked' });
+  subscriptions.get('updateItem')({
+    parent: { documentName: 'Actor', uuid: 'Actor.untracked' },
+  });
+  assert.equal(scheduledRefreshes.length, 0);
+
+  subscriptions.get('updateActor')({ uuid: 'Actor.hero' });
+  subscriptions.get('updateActor')({ uuid: 'Actor.follower' });
+  subscriptions.get('updateItem')({
+    parent: { documentName: 'Actor', uuid: 'Actor.treasury' },
+  });
+  assert.equal(scheduledRefreshes.length, 1);
+  assert.deepEqual(app._partyNoteDraft, {
+    baseRevision: 5,
+    values: {
+      notes: '<p>Unsaved notes</p>',
+      treasureNotes: { gems: '', misc: '' },
+    },
+  });
+
+  await scheduledRefreshes.shift()();
+  assert.equal(app.renderCount, 1);
+  const replacementPanel = { scrollLeft: 0, scrollTop: 0 };
+  app.element = {
+    querySelector: (selector) => selector === '.hyp3e-utilities__party-panel'
+      ? replacementPanel
+      : null,
+    querySelectorAll: () => [],
+  };
+  app._restorePartySheetViewState();
+  assert.deepEqual(replacementPanel, { scrollLeft: 7, scrollTop: 93 });
+
+  subscriptions.get('deleteItem')({
+    parent: { documentName: 'Actor', uuid: 'Actor.hero' },
+  });
+  assert.equal(scheduledRefreshes.length, 1);
+  await app.close();
+  await scheduledRefreshes.shift()();
+  assert.equal(app.renderCount, 1);
 });
 
 test('Party Sheet Overview renders member rows and routes member actions through mutations', async () => {

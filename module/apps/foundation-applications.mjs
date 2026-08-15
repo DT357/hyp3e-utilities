@@ -53,6 +53,8 @@ export function createFoundationApplications({
   proseMirrorElementClass = globalThis.foundry?.applications?.elements
     ?.HTMLProseMirrorElement,
   requestIdProvider = createRequestId,
+  scheduleExternalRefresh = globalThis.queueMicrotask
+    ?? ((callback) => void Promise.resolve().then(callback)),
   textEditorProvider = () => globalThis.foundry?.applications?.ux?.TextEditor
     ?.implementation,
 }) {
@@ -215,7 +217,9 @@ export function createFoundationApplications({
       this._followerDrafts = new Map();
       this._marchingNoteDrafts = new Map();
       this._partyNoteDraft = null;
+      this._partyTabScrollPositions = new Map();
       this._supplyDraft = null;
+      this._externalRefreshScheduled = false;
       this._partyHookSubscriptions = [];
     }
 
@@ -260,6 +264,7 @@ export function createFoundationApplications({
     static async selectTab(_event, target) {
       const tab = target?.dataset?.tab;
       if (!['overview', 'followers', 'marchingOrder', 'supplies', 'treasure', 'notes'].includes(tab)) return;
+      this._capturePartySheetViewState();
       await this._flushPartyNoteEditors();
       this._activeTab = tab;
       await this.render({ force: true });
@@ -282,7 +287,9 @@ export function createFoundationApplications({
       button.innerHTML = '<i class="fa-solid fa-users" aria-hidden="true"></i>';
       button.addEventListener('click', (event) => {
         event.preventDefault();
-        void new OpenPartySheetApplication().render({ force: true });
+        const partySheet = new OpenPartySheetApplication();
+        if (partySheet.rendered) partySheet._requestExternalRefresh();
+        else void partySheet.render({ force: true });
       });
       const searchModeButton = element.querySelector('.toggle-search-mode');
       if (searchModeButton?.parentNode) {
@@ -738,6 +745,71 @@ export function createFoundationApplications({
       await Promise.resolve();
     }
 
+    _capturePartySheetViewState() {
+      this._captureMountedPartyNoteEditors({ dirtyOnly: true });
+      const panel = this.element?.querySelector?.(
+        `.${CSS_NAMESPACE}__party-panel`,
+      );
+      if (!panel) return;
+      this._partyTabScrollPositions.set(this._activeTab, {
+        left: panel.scrollLeft,
+        top: panel.scrollTop,
+      });
+    }
+
+    _restorePartySheetViewState() {
+      const position = this._partyTabScrollPositions.get(this._activeTab);
+      if (!position) return;
+      const panel = this.element?.querySelector?.(
+        `.${CSS_NAMESPACE}__party-panel`,
+      );
+      if (!panel) return;
+      panel.scrollLeft = position.left;
+      panel.scrollTop = position.top;
+    }
+
+    _isRelevantPartyActor(actor) {
+      const actorUuid = actor?.uuid;
+      if (!actorUuid) return false;
+      const state = partyStoreProvider()?.getState?.()
+        ?? createPartyStateDefault();
+      return actorUuid === state.treasuryActorUuid
+        || state.memberActorUuids.includes(actorUuid)
+        || state.followerActorUuids.includes(actorUuid);
+    }
+
+    _isRelevantPartyItem(item) {
+      const actor = item?.parent?.documentName === 'Actor'
+        ? item.parent
+        : item?.actor;
+      return this._isRelevantPartyActor(actor);
+    }
+
+    _requestExternalRefresh() {
+      if (!this.rendered || this._externalRefreshScheduled) return false;
+      this._capturePartySheetViewState();
+      this._externalRefreshScheduled = true;
+      try {
+        scheduleExternalRefresh(async () => {
+          if (!this._externalRefreshScheduled) return;
+          this._externalRefreshScheduled = false;
+          if (!this.rendered) return;
+          try {
+            await this.render({ force: true });
+          }
+          catch (error) {
+            logger.warn?.('Party Sheet refresh failed.', error);
+          }
+        });
+      }
+      catch (error) {
+        this._externalRefreshScheduled = false;
+        logger.warn?.('Party Sheet refresh could not be scheduled.', error);
+        return false;
+      }
+      return true;
+    }
+
     _mountPartyNoteEditors(context) {
       const hosts = Array.from(this.element?.querySelectorAll?.(
         '[data-party-note-editor]',
@@ -1035,6 +1107,7 @@ export function createFoundationApplications({
       );
       const supplies = this.element?.querySelector?.('[data-party-supplies]');
       this._mountPartyNoteEditors(context);
+      this._restorePartySheetViewState();
       if (context.canEdit !== true) return;
       followerDropZone?.addEventListener(
         'input',
@@ -1078,20 +1151,26 @@ export function createFoundationApplications({
     async _onFirstRender(context, options) {
       await super._onFirstRender?.(context, options);
       if (this._partyHookSubscriptions.length) return;
-      const rerender = () => {
-        if (!this.rendered) return;
-        this._captureMountedPartyNoteEditors({ dirtyOnly: true });
-        void this.render({ force: true }).catch((error) => {
-          logger.warn?.('Party Sheet refresh failed.', error);
-        });
+      const rerender = () => this._requestExternalRefresh();
+      const rerenderForActor = (actor) => {
+        if (this._isRelevantPartyActor(actor)) rerender();
       };
-      for (const hookName of [
-        HOOK_NAMES.partyStateUpdated,
-        HOOK_NAMES.partyPermissionsUpdated,
+      const rerenderForItem = (item) => {
+        if (this._isRelevantPartyItem(item)) rerender();
+      };
+      for (const [hookName, callback] of [
+        [HOOK_NAMES.partyStateUpdated, rerender],
+        [HOOK_NAMES.partyPermissionsUpdated, rerender],
+        ['createActor', rerenderForActor],
+        ['updateActor', rerenderForActor],
+        ['deleteActor', rerenderForActor],
+        ['createItem', rerenderForItem],
+        ['updateItem', rerenderForItem],
+        ['deleteItem', rerenderForItem],
       ]) {
         this._partyHookSubscriptions.push([
           hookName,
-          hooks.on(hookName, rerender),
+          hooks.on(hookName, callback),
         ]);
       }
     }
@@ -1107,9 +1186,11 @@ export function createFoundationApplications({
         hooks.off(hookName, hookId);
       }
       this._partyHookSubscriptions = [];
+      this._externalRefreshScheduled = false;
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
       this._partyNoteDraft = null;
+      this._partyTabScrollPositions.clear();
       this._supplyDraft = null;
       try {
         return await super.close(options);
