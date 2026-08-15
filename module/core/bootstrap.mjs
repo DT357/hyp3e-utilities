@@ -11,6 +11,9 @@ import { createPartyActionService } from '../party/party-actions.mjs';
 import { createPartyCleanupService } from '../party/party-cleanup.mjs';
 import { createPartyFollowerService } from '../party/party-followers.mjs';
 import {
+  createPartyItemTransferService,
+} from '../party/party-item-transfer.mjs';
+import {
   createPartyMarchingOrderService,
 } from '../party/party-marching-order.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
@@ -108,6 +111,7 @@ export function registerModuleLifecycle({
   let partyActions;
   let partyCleanup;
   let partyFollowers;
+  let partyItemTransfers;
   let partyMarchingOrder;
   let partyMembers;
   let partyMutations;
@@ -250,6 +254,14 @@ export function registerModuleLifecycle({
       game: currentGame,
       logger,
       mutations: partyMutations,
+      ownerLevel: ownershipLevels?.OWNER,
+      store: partyStore,
+    });
+    partyItemTransfers = createPartyItemTransferService({
+      adapter: hyp3eAdapter,
+      game: currentGame,
+      logger,
+      mutations: partyMutations,
       ownershipLevels,
       store: partyStore,
     });
@@ -268,6 +280,7 @@ export function registerModuleLifecycle({
       partyActions,
       partyCleanup,
       partyFollowers,
+      partyItemTransfers,
       partyMarchingOrder,
       partyMembers,
       partyMutations,

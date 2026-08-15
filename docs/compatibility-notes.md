@@ -466,6 +466,6 @@ green, and no diagnostic errors were recorded.
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
 PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
-TRY-001, TRY-002, and ITM-001 are complete. No compatibility finding
+TRY-001, TRY-002, ITM-001, and ITM-002 are complete. No compatibility finding
 contradicts the approved architecture. Milestones 1 through 3 are complete;
-Milestone 4 continues with the authoritative transfer operation in ITM-002.
+Milestone 4 continues with the reverse transfer operation in ITM-003.

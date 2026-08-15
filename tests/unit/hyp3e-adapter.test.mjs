@@ -106,6 +106,16 @@ test('adapter classifies physical item types and reads quantity contracts', () =
     'system.quantity.max': 8,
     'system.quantity.bundle': 2,
   });
+  assert.deepEqual(hyp3eAdapter.buildItemTransferCreateUpdate({
+    value: 3,
+    max: 8,
+    bundle: 2,
+  }), {
+    'system.quantity.value': 3,
+    'system.quantity.max': 8,
+    'system.quantity.bundle': 2,
+    'system.containerId': '',
+  });
 
   assert.equal(
     hyp3eAdapter.isSupportedPhysicalItem({ type: 'container', system: {} }),
