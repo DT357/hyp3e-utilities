@@ -497,10 +497,24 @@ path separators, and extracted into a clean directory with all nine directly
 required runtime/manifest/template files present. No tag or public release was
 created.
 
+### Final clean-world compatibility matrix (HRD-005)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with `hyp3e` 4.1.0 each
+passed the final clean-world matrix using a release-shaped Hyp3e Utilities
+0.5.0 archive. Each combination used a newly created disposable world, one GM,
+one Player on a separate browser origin, SocketLib v1.1.4, and the complete
+runtime diagnostic companion.
+
+All 37 GM/Player result groups completed with empty diagnostic error arrays.
+The Milestone 5 XP, coin, and wage matrix then repeated successfully, including
+idempotency, audit, conservation, and exact cleanup restoration. The final
+runs produced no unexpected module or core exception. Full evidence, package
+hash, and console disposition are recorded in
+`docs/test-runs/2026-08-15-hrd005-clean-matrix.md`.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
-TRY-001, TRY-002, and ITM-001 through ITM-007 are complete. No compatibility
-finding contradicts the approved architecture. Milestones 1 through 4 are
-complete and the validated package version is 0.4.0.
+Milestones 1 through 5 and HRD-001 through HRD-005 are complete. No
+compatibility finding contradicts the approved architecture. The validated
+package version is 0.5.0; final 1.0.0 documentation, packaging, and acceptance
+remain in DOC-001, PKG-001, and QA-001.

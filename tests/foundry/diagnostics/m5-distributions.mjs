@@ -9,6 +9,10 @@ function clone(value) {
   return foundry.utils.deepClone(value);
 }
 
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 function getApi() {
   const api = game.modules.get(MODULE_ID)?.api;
   if (!api) throw new Error('Hyp3e Utilities API is unavailable.');
@@ -279,6 +283,9 @@ async function cleanup() {
     && [...fixtureUuids].some((uuid) => message.content?.includes(uuid))
   ));
   if (messages.length) {
+    // Foundry animates chat notifications asynchronously. Give each new card
+    // time to mount before deleting the diagnostic messages it represents.
+    await wait(500);
     await ChatMessage.deleteDocuments(messages.map((message) => message.id));
   }
   const treasury = await fromUuid(snapshot.treasuryUuid);

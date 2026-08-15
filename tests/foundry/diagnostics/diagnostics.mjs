@@ -3140,6 +3140,9 @@ async function cleanupItemTransferFixtures() {
       );
   }).map((message) => message.id);
   if (auditMessageIds.length) {
+    // Foundry animates chat notifications asynchronously. Give each new card
+    // time to mount before deleting the diagnostic messages it represents.
+    await wait(500);
     await ChatMessage.deleteDocuments(auditMessageIds);
   }
 }
@@ -3470,9 +3473,9 @@ async function testPlayerDraftConflict(partyMutations) {
         `[data-follower-row][data-actor-uuid="${actorUuid}"] [data-field="follower-share"]`,
       )?.value === '1.5'
     ));
-    const staleWarningRendered = Boolean(
+    const staleWarningRendered = await waitUntil(() => Boolean(
       sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
-    );
+    ));
 
     sheet.element.querySelector(
       `[data-action="saveFollower"][data-actor-uuid="${actorUuid}"]`,
@@ -3583,8 +3586,8 @@ async function testPlayerMarchingOrder(partyMutations, actorUuid) {
         '[data-marching-rank="front"] [data-field="marching-note"]',
       )?.value === `MAR-002 draft ${game.user.id}`
     ));
-    const staleWarningRendered = Boolean(sheet.element.querySelector(
-      '.hyp3e-utilities__party-draft-status strong',
+    const staleWarningRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
     ));
     sheet.element.querySelector(
       '[data-action="saveMarchingNote"][data-marching-rank="front"]',
@@ -3722,8 +3725,8 @@ async function testPlayerSupplies(partyMutations) {
     ));
     const draftPreserved = await waitUntil(() => Object.entries(draftValues)
       .every(([key, value]) => getInput(key)?.value === value));
-    const staleWarningRendered = Boolean(sheet.element.querySelector(
-      '.hyp3e-utilities__party-draft-status strong',
+    const staleWarningRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
     ));
     sheet.element.querySelector('[data-action="saveSupplies"]').click();
     await wait(300);
@@ -3833,8 +3836,8 @@ async function testPlayerNotes(partyMutations) {
     const draftPreserved = await waitUntil(() => (
       sheet.element?.textContent?.includes(draftNotes)
     ));
-    const staleWarningRendered = Boolean(sheet.element?.querySelector(
-      '.hyp3e-utilities__party-draft-status strong',
+    const staleWarningRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
     ));
     sheet.element.querySelector('[data-action="savePartyNotes"]').click();
     await wait(300);
