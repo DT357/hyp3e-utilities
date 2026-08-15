@@ -3311,11 +3311,20 @@ async function testPlayerItemTransfers() {
   if (!actor || !item) throw new Error('ITM-007 Player fixtures are unavailable.');
 
   await actor.sheet.render(true);
-  const actorSheetControlRendered = await waitUntil(() => Boolean(
-    actor.sheet.element?.querySelector?.(
+  let actorSheetControl = null;
+  const actorSheetControlRendered = await waitUntil(() => {
+    actorSheetControl = actor.sheet.element?.querySelector?.(
       `.${MODULE_ID}__send-item[data-item-uuid="${item.uuid}"]`,
-    ),
-  ));
+    );
+    return Boolean(actorSheetControl);
+  });
+  const actorSheetControlIntegrated = Boolean(
+    actorSheetControl?.parentElement?.classList?.contains('item-controls')
+    && actorSheetControl.querySelector?.('.fa-dolly')
+    && actorSheetControl.getAttribute?.('role') === 'button'
+    && actorSheetControl.getAttribute?.('aria-label')
+    && actorSheetControl.textContent.trim() === '',
+  );
   if (actor.sheet.rendered) await actor.sheet.close();
 
   const toTreasury = await api.partyItemTransfers.transferToTreasury({
@@ -3361,6 +3370,7 @@ async function testPlayerItemTransfers() {
   });
 
   return {
+    actorSheetControlIntegrated,
     actorSheetControlRendered,
     auditCardsCreated:
       playerAuditMessages.length === 2

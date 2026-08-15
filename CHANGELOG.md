@@ -21,6 +21,8 @@ All notable changes to Hyp3e Utilities are documented here.
 
 ### Changed
 
+- Replaced the full-width character-sheet **To Party** controls with accessible
+  dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft
   warning while preserving their dedicated confirmation and stale-preview flow.
 - Prevented Foundry's default list-item margin from making the final compact

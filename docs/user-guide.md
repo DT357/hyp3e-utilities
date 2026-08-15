@@ -229,8 +229,9 @@ Foundry ownership of the character side of the transfer.
 
 ### Character to treasury
 
-- On an owned durable world `character` sheet, use the injected **To Party**
-  control next to an eligible Item; or
+- On an owned durable world `character` sheet, use the dolly icon in an
+  eligible Item's right-side action cluster. Its tooltip reads **Move to Party
+  Treasury**; or
 - drag an eligible Item from that sheet to the shared-equipment area on
   Supplies.
 

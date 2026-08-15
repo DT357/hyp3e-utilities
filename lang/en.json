@@ -192,7 +192,7 @@
         "itemTransferDragHelp": "Drag this item onto an owned character sheet, or use Take.",
         "itemTransferDestination": "Take item for",
         "takeTreasuryItem": "Take",
-        "sendItemToTreasury": "To Party",
+        "sendItemToTreasury": "Move to Party Treasury",
         "coins": {
           "cp": "CP",
           "sp": "SP",

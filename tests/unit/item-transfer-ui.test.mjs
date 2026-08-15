@@ -322,10 +322,17 @@ test('destination options include only owned party characters', () => {
 test('Actor sheet activation adds owned-character controls and custom drop capture', () => {
   const harness = createHarness();
   const listeners = new Map();
-  const buttons = [];
+  const controls = [];
+  const controlClasses = [];
+  const createdTags = [];
+  const itemControls = {
+    classList: { add: (value) => controlClasses.push(value) },
+    prepend(control) { controls.unshift(control); },
+  };
   const row = {
-    append(button) { buttons.push(button); },
-    querySelector: () => null,
+    querySelector: (selector) => (
+      selector === '.item-controls' ? itemControls : null
+    ),
     dataset: { itemId: harness.characterItem.id },
   };
   const root = {
@@ -333,10 +340,15 @@ test('Actor sheet activation adds owned-character controls and custom drop captu
       listeners.set(name, { capture, handler });
     },
     ownerDocument: {
-      createElement: () => ({
-        addEventListener(name, handler) { this[name] = handler; },
-        dataset: {},
-      }),
+      createElement: (tagName) => {
+        createdTags.push(tagName);
+        return {
+          addEventListener(name, handler) { this[name] = handler; },
+          attributes: {},
+          dataset: {},
+          setAttribute(name, value) { this.attributes[name] = value; },
+        };
+      },
     },
     querySelectorAll: () => [row],
   };
@@ -345,8 +357,26 @@ test('Actor sheet activation adds owned-character controls and custom drop captu
     actor: harness.character,
     element: root,
   }), true);
-  assert.equal(buttons.length, 1);
-  assert.equal(buttons[0].dataset.itemUuid, harness.characterItem.uuid);
+  assert.deepEqual(createdTags, ['a']);
+  assert.equal(controls.length, 1);
+  assert.equal(controls[0].dataset.itemUuid, harness.characterItem.uuid);
+  assert.equal(controls[0].tabIndex, 0);
+  assert.equal(
+    controls[0].attributes['aria-label'],
+    'hyp3e-utilities.applications.partySheet.sendItemToTreasury',
+  );
+  assert.equal(controls[0].attributes.role, 'button');
+  assert.equal(
+    controls[0].dataset.tooltip,
+    'hyp3e-utilities.applications.partySheet.sendItemToTreasury',
+  );
+  assert.equal(
+    controls[0].title,
+    'hyp3e-utilities.applications.partySheet.sendItemToTreasury',
+  );
+  assert.equal(typeof controls[0].keydown, 'function');
+  assert.match(controls[0].innerHTML, /fa-solid fa-dolly/);
+  assert.deepEqual(controlClasses, ['hyp3e-utilities__item-controls']);
   assert.equal(listeners.get('drop').capture, true);
   assert.equal(listeners.get('dragover').capture, true);
 });

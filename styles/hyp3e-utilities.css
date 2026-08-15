@@ -191,10 +191,18 @@
   border-color: var(--color-border-highlight, currentColor);
 }
 
+.hyp3e .items-list .item-entry
+  .item-controls.hyp3e-utilities__item-controls a {
+  margin-inline: 3px;
+}
+
 .hyp3e-utilities__send-item {
-  flex: 0 0 auto;
-  margin-inline-start: 0.25rem;
-  width: auto;
+  cursor: pointer;
+}
+
+.hyp3e-utilities__send-item:focus-visible {
+  outline: 2px solid var(--color-border-highlight, currentColor);
+  outline-offset: 2px;
 }
 
 .hyp3e-utilities .hyp3e-utilities__treasury-item-quantity {

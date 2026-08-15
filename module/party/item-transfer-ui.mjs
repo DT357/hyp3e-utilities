@@ -372,28 +372,40 @@ export function createItemTransferUiController({
     }
     for (const row of root.querySelectorAll?.('.item-entry[data-item-id]') ?? []) {
       const item = actor.items?.get?.(row.dataset?.itemId);
+      const controls = row.querySelector?.('.item-controls');
       if (
         !canTransferItem(item)
+        || !controls
         || row.querySelector?.(`.${MODULE_ID}__send-item`)
       ) continue;
-      const button = root.ownerDocument?.createElement?.('button');
-      if (!button) continue;
-      button.type = 'button';
-      button.className = `${MODULE_ID}__send-item`;
-      button.dataset.itemUuid = item.uuid;
-      button.textContent = game.i18n.localize(
+      const control = root.ownerDocument?.createElement?.('a');
+      if (!control) continue;
+      const label = game.i18n.localize(
         `${APP_NAMESPACE}.sendItemToTreasury`,
       );
-      button.title = button.textContent;
-      button.addEventListener('click', (event) => {
+      control.className = `${MODULE_ID}__send-item`;
+      control.dataset.itemUuid = item.uuid;
+      control.dataset.tooltip = label;
+      control.innerHTML = '<i class="fa-solid fa-dolly" aria-hidden="true"></i>';
+      control.tabIndex = 0;
+      control.title = label;
+      control.setAttribute('aria-label', label);
+      control.setAttribute('role', 'button');
+      const activate = (event) => {
         event.preventDefault?.();
         event.stopPropagation?.();
         void transferToTreasury(item.uuid).catch((error) => {
           logger.warn?.('Actor Sheet item transfer action failed.', error);
           notify(notifications, 'error', `${APP_NAMESPACE}.itemTransferFailed`);
         });
+      };
+      control.addEventListener('click', activate);
+      control.addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        activate(event);
       });
-      row.append(button);
+      controls.classList?.add(`${MODULE_ID}__item-controls`);
+      controls.prepend(control);
     }
     return true;
   }
