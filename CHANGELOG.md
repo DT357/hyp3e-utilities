@@ -21,6 +21,8 @@ All notable changes to Hyp3e Utilities are documented here.
 
 ### Changed
 
+- Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft
+  warning while preserving their dedicated confirmation and stale-preview flow.
 - Prevented Foundry's default list-item margin from making the final compact
   NPC HUD card taller than its siblings.
 - Added a per-client, default-on **Display Detailed NPC Information** option

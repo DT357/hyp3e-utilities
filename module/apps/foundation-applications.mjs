@@ -1599,9 +1599,6 @@ export function createFoundationApplications({
           ...this._marchingNoteDrafts.values(),
           ...(this._partyNoteDraft ? [this._partyNoteDraft] : []),
           ...(this._supplyDraft ? [this._supplyDraft] : []),
-          ...(this._xpDraft ? [this._xpDraft] : []),
-          ...(this._coinDraft ? [this._coinDraft] : []),
-          ...(this._wageDraft ? [this._wageDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
@@ -1609,9 +1606,6 @@ export function createFoundationApplications({
             || this._marchingNoteDrafts.size > 0
             || this._partyNoteDraft !== null
             || this._supplyDraft !== null
-            || this._xpDraft !== null
-            || this._coinDraft !== null
-            || this._wageDraft !== null
           ),
         hasMembers: members.length > 0,
         members,

@@ -180,7 +180,8 @@ inputs, movement controls, and editors are keyboard focusable.
 
 Every distribution uses a preview tied to the current Party State revision. If
 the party, shares, treasury, or Actor values change, preview again before
-confirming.
+confirming. Distribution inputs are temporary transaction values rather than
+editable Party Sheet data, so they do not require a separate save action.
 
 ### Experience
 

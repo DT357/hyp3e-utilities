@@ -1674,6 +1674,8 @@ test('Party Sheet GM XP preview preserves calculator output and local selection'
   const previewed = await app._prepareContext({});
 
   assert.equal(previewed.xpPreviewReady, true);
+  assert.equal(previewed.hasUnsavedChanges, false);
+  assert.equal(previewed.hasStaleDraft, false);
   assert.equal(previewed.xpPreview.baseRemainderXp, 2);
   assert.equal(previewed.xpPreview.distributions[0].finalAwardXp, 441);
   assert.deepEqual(calls.at(-1), {
@@ -1783,6 +1785,8 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
   const previewed = await app._prepareContext({});
 
   assert.equal(previewed.coinPreviewReady, true);
+  assert.equal(previewed.hasUnsavedChanges, false);
+  assert.equal(previewed.hasStaleDraft, false);
   assert.equal(previewed.coinPreview.totalShares, 1.5);
   assert.deepEqual(calls.at(-1), [{
     selectedActorUuids: ['Actor.hero'],
@@ -1883,6 +1887,8 @@ test('Party Sheet wage preview and settlement preserve active-GM output and stab
   const previewed = await app._prepareContext({});
 
   assert.equal(previewed.wagePreviewReady, true);
+  assert.equal(previewed.hasUnsavedChanges, false);
+  assert.equal(previewed.hasStaleDraft, false);
   assert.equal(previewed.wagePreview.canSettle, true);
   assert.equal(previewed.canConfirmWages, true);
   assert.deepEqual(calls.at(-1), [
