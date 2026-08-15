@@ -1389,11 +1389,18 @@ export function createFoundationApplications({
       const enrich = typeof enrichHtml === 'function'
         ? (html) => enrichHtml.call(textEditor, html, { async: true })
         : async () => '';
-      const [enrichedNotes, enrichedGems, enrichedMisc] = await Promise.all([
-        enrich(partyNotes.notes),
-        enrich(partyNotes.treasureNotes.gems),
-        enrich(partyNotes.treasureNotes.misc),
-      ]);
+      let enrichedNotes = '';
+      let enrichedGems = '';
+      let enrichedMisc = '';
+      if (this._activeTab === 'notes') {
+        enrichedNotes = await enrich(partyNotes.notes);
+      }
+      else if (this._activeTab === 'treasure') {
+        [enrichedGems, enrichedMisc] = await Promise.all([
+          enrich(partyNotes.treasureNotes.gems),
+          enrich(partyNotes.treasureNotes.misc),
+        ]);
+      }
       const enrichedPartyNotes = {
         notes: enrichedNotes,
         treasureNotes: { gems: enrichedGems, misc: enrichedMisc },
@@ -1407,7 +1414,13 @@ export function createFoundationApplications({
         kind: state.treasuryActorUuid ? 'missing' : 'unbound',
       };
       const canManageTreasury = game.user?.isGM === true;
+      const needsTreasuryContents = [
+        'followers',
+        'supplies',
+        'treasure',
+      ].includes(this._activeTab);
       const snapshotResponse = decision.allowed
+        && needsTreasuryContents
         && typeof treasuryService?.requestSnapshot === 'function'
         ? await treasuryService.requestSnapshot(state.revision)
         : null;

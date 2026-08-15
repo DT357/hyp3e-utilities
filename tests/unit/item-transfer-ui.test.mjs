@@ -351,14 +351,26 @@ test('Actor sheet activation adds owned-character controls and custom drop captu
   assert.equal(listeners.get('dragover').capture, true);
 });
 
-test('controller lifecycle registers and removes the hyp3e ActorSheetV2 hook', () => {
+test('controller lifecycle remains balanced across repeated start and stop cycles', () => {
   const harness = createHarness();
-  assert.equal(harness.controller.start(), true);
-  assert.equal(harness.controller.start(), false);
+
+  for (let cycle = 1; cycle <= 100; cycle += 1) {
+    assert.equal(harness.controller.start(), true);
+    assert.equal(harness.controller.start(), false);
+    assert.equal(
+      typeof harness.hooks.handlers.get('renderActorSheetV2'),
+      'function',
+    );
+    assert.equal(harness.controller.stop(), true);
+    assert.deepEqual(
+      harness.calls.at(-1),
+      ['hookOff', 'renderActorSheetV2', cycle],
+    );
+  }
+
+  assert.equal(harness.controller.stop(), false);
   assert.equal(
-    typeof harness.hooks.handlers.get('renderActorSheetV2'),
-    'function',
+    harness.calls.filter(([kind]) => kind === 'hookOff').length,
+    100,
   );
-  assert.equal(harness.controller.stop(), true);
-  assert.deepEqual(harness.calls.at(-1), ['hookOff', 'renderActorSheetV2', 1]);
 });

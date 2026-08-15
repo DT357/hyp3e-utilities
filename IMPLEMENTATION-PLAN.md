@@ -281,7 +281,7 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 | HRD-001 | `DONE` | M1–M5 | Party-state and treasury migration coverage for every released schema | Upgrade fixtures from each released version |
 | HRD-002 | `DONE` | M1–M5 | Authorization and payload-validation audit | All player-triggerable handlers reviewed and adversarial tests pass |
 | HRD-003 | `DONE` | M1–M5 | Accessibility and localization pass | Keyboard-only flow, labels, focus, contrast, and missing-key scan |
-| HRD-004 | `TODO` | M1–M5 | Performance and hook-lifecycle pass | Large party, large treasury, rapid selection, scene change, and repeated app open/close |
+| HRD-004 | `DONE` | M1–M5 | Performance and hook-lifecycle pass | Large party, large treasury, rapid selection, scene change, and repeated app open/close |
 | HRD-005 | `TODO` | PB-003, PB-007, M1–M5 | Final Foundry 13/14 and current `hyp3e` compatibility matrix | Clean-world installation and full smoke suite on each supported combination |
 | DOC-001 | `TODO` | M1–M5 | GM/player usage, setup, permissions, recovery, and limitation documentation | A new tester can install and complete core workflows unaided |
 | PKG-001 | `TODO` | PB-001, PB-010, HRD-005 | Release manifest, zip contents, checksums, URLs, and GitHub release workflow | Install and update from published manifest in a clean Foundry data directory |
@@ -344,8 +344,8 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 5 and HRD-001 through HRD-003 are complete. Proceed next
-with performance and hook-lifecycle hardening in HRD-004.
+Milestones 0 through 5 and HRD-001 through HRD-004 are complete. Proceed next
+with the clean Foundry 13/14 compatibility matrix in HRD-005.
 
 ## 15. Current Project Status
 
@@ -354,7 +354,7 @@ with performance and hook-lifecycle hardening in HRD-004.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 5 are complete.
-- Immediate next batch: Complete performance and lifecycle hardening in HRD-004.
+- Immediate next batch: Complete the final clean Foundry 13/14 compatibility matrix in HRD-005.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

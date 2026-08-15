@@ -1163,7 +1163,6 @@ test('Party Sheet rich-text notes preserve drafts and save all fields atomically
     },
   });
   assert.deepEqual(enrichmentCalls, [
-    { html: '<p>Saved party note</p>', options: { async: true } },
     { html: '<p>Saved gems</p>', options: { async: true } },
     { html: '<p>Saved curios</p>', options: { async: true } },
   ]);
@@ -1430,6 +1429,12 @@ test('Party Sheet receives treasury coins and inventory through an authorized GM
     partyTreasuryProvider: () => treasuryService,
   });
   const app = new classes.OpenPartySheetApplication();
+
+  const overview = await app._prepareContext({});
+  assert.equal(snapshotRequests, 0);
+  assert.equal(overview.treasury.contentsReady, false);
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
+    .call(app, undefined, { dataset: { tab: 'supplies' } });
 
   const context = await app._prepareContext({});
 
