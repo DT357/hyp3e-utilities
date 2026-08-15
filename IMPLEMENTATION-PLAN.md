@@ -253,7 +253,7 @@ M4 is complete when all TRY and ITM items are `DONE`; no tested failure path dup
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| XP-001 | `TODO` | PB-009, FND-002 | Pure XP allocation calculator with shares, rounding, signed character adjustment, and NPC consumption | Positive/zero/negative bonus, mixed Actor types, remainder, zero shares, and large values |
+| XP-001 | `DONE` | PB-009, FND-002 | Pure XP allocation calculator with shares, rounding, signed character adjustment, and NPC consumption | Positive/zero/negative bonus, mixed Actor types, remainder, zero shares, and large values |
 | XP-002 | `TODO` | XP-001, PAR-005 | XP preview showing base share, adjustment, final award, NPC non-persistence, and remainder | Preview exactly matches calculation output |
 | XP-003 | `TODO` | XP-002, PAR-002 | Transactional XP writeback to `character` Actors plus final chat report | Character totals update once; `npc.system.xp` never changes; failures roll back/report |
 | COIN-001 | `TODO` | PB-009, FND-002 | Pure five-denomination coin allocation with share and remainder accounting | cp/sp/ep/gp/pp, mixed Actor types, zero shares, and large values |
