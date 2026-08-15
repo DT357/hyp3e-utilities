@@ -100,15 +100,10 @@ export function createPartyCoinPreviewService({
     throw new TypeError('Party coin preview requires Party mutations.');
   }
 
-  function execute({ expectedRevision, payload }) {
-    const state = store.getState();
-    if (expectedRevision !== state.revision) {
-      throw new PartyMutationError(
-        PARTY_MUTATION_ERROR_CODES.staleRevision,
-        'The Party Sheet changed before the coin preview was calculated.',
-        { state },
-      );
-    }
+  function getPreview(
+    { selectedActorUuids = null, splitCoins = null } = {},
+    state = store.getState(),
+  ) {
     const treasury = resolveActor(game, state.treasuryActorUuid);
     if (!adapter.isManagedTreasury(treasury)) {
       throw new PartyMutationError(
@@ -135,8 +130,8 @@ export function createPartyCoinPreviewService({
     const allocation = allocateCoins({
       availableCoins: adapter.getMoney(treasury),
       recipients: recipientRows,
-      selectedActorUuids: payload.selectedActorUuids ?? undefined,
-      splitCoins: payload.splitCoins ?? undefined,
+      selectedActorUuids: selectedActorUuids ?? undefined,
+      splitCoins: splitCoins ?? undefined,
     });
     return {
       ...allocation,
@@ -153,6 +148,18 @@ export function createPartyCoinPreviewService({
       treasuryActorUuid: treasury.uuid,
       treasuryName: treasury.name ?? '',
     };
+  }
+
+  function execute({ expectedRevision, payload }) {
+    const state = store.getState();
+    if (expectedRevision !== state.revision) {
+      throw new PartyMutationError(
+        PARTY_MUTATION_ERROR_CODES.staleRevision,
+        'The Party Sheet changed before the coin preview was calculated.',
+        { state },
+      );
+    }
+    return getPreview(payload, state);
   }
 
   mutations.registerOperation(PARTY_COIN_PREVIEW_OPERATIONS.preview, {
@@ -176,5 +183,5 @@ export function createPartyCoinPreviewService({
     });
   }
 
-  return Object.freeze({ requestPreview });
+  return Object.freeze({ getPreview, requestPreview });
 }

@@ -1650,6 +1650,7 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
   state.revision = 40;
   state.treasuryActorUuid = 'Actor.treasury';
   const calls = [];
+  const awardCalls = [];
   const makePreview = (input = {}) => ({
     availableCoins: { cp: 10, sp: 20, ep: 30, gp: 40, pp: 50 },
     distributions: [
@@ -1687,6 +1688,12 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
       user: { id: 'trusted', isGM: false, role: 2 },
       users: [],
     },
+    partyCoinAwardsProvider: () => ({
+      distribute: async (...args) => {
+        awardCalls.push(args);
+        return { ok: true, value: { remainingTreasuryCoins: {} } };
+      },
+    }),
     partyCoinsProvider: () => coinService,
     partyStoreProvider: () => ({ getState: () => state }),
     partyTreasuryProvider: () => ({
@@ -1702,6 +1709,7 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
         },
       }),
     }),
+    requestIdProvider: () => 'coin-confirm-id',
   });
   const app = new classes.OpenPartySheetApplication();
   await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
@@ -1738,4 +1746,9 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
     selectedActorUuids: ['Actor.hero'],
     splitCoins: values,
   });
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions
+    .distributeCoins.call(app);
+  assert.deepEqual(awardCalls, [[previewed.coinPreview, 40, 'coin-confirm-id']]);
+  assert.equal(app._coinDraft, null);
 });

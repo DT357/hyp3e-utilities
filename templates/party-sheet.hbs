@@ -798,6 +798,11 @@
                         </tfoot>
                       </table>
                     </div>
+                    <button
+                      type="button"
+                      data-action="distributeCoins"
+                      {{#unless canConfirmCoins}}disabled{{/unless}}
+                    >{{localize "hyp3e-utilities.applications.partySheet.coinConfirmAction"}}</button>
                   {{/if}}
                 </section>
               {{/if}}

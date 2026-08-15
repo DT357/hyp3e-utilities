@@ -1,4 +1,4 @@
-import { MODULE_ID } from '../core/constants.mjs';
+import { COIN_KEYS, MODULE_ID } from '../core/constants.mjs';
 import { evaluateCheckRoll } from '../hud/npc-rolls.mjs';
 import { getReactionOutcome } from '../hud/reaction-table.mjs';
 
@@ -228,6 +228,96 @@ function renderXpDistributionCard(report, localize) {
   ].join('');
 }
 
+function validateCoinValues(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError(`${label} must contain all five denominations.`);
+  }
+  for (const coinKey of COIN_KEYS) {
+    if (!Number.isSafeInteger(value[coinKey]) || value[coinKey] < 0) {
+      throw new TypeError(`${label} ${coinKey} is invalid.`);
+    }
+  }
+}
+
+function validateCoinDistributionReport(report) {
+  for (const key of [
+    'requestId',
+    'requesterName',
+    'requesterUserId',
+    'treasuryActorUuid',
+    'treasuryName',
+  ]) {
+    if (typeof report?.[key] !== 'string') {
+      throw new TypeError(`Coin distribution ${key} must be a string.`);
+    }
+  }
+  if (!Number.isSafeInteger(report.revision) || report.revision < 0) {
+    throw new TypeError('Coin distribution revision is invalid.');
+  }
+  if (
+    !Number.isFinite(report.totalShares)
+    || report.totalShares < 0
+    || !Number.isInteger(report.totalShares * 4)
+  ) {
+    throw new TypeError('Coin distribution totalShares must use quarter shares.');
+  }
+  validateCoinValues(report.remainingTreasuryCoins, 'Treasury remainder');
+  validateCoinValues(report.splitRemainders, 'Split remainder');
+  if (!Array.isArray(report.recipients) || report.recipients.length === 0) {
+    throw new TypeError('Coin distribution requires at least one recipient.');
+  }
+  for (const recipient of report.recipients) {
+    if (
+      typeof recipient?.actorUuid !== 'string'
+      || typeof recipient?.name !== 'string'
+      || !['character', 'npc'].includes(recipient?.actorType)
+      || typeof recipient?.writeback !== 'boolean'
+    ) {
+      throw new TypeError('Coin distribution recipient identity is invalid.');
+    }
+    validateCoinValues(recipient.awards, 'Coin recipient award');
+  }
+}
+
+function renderCoinBreakdown(coins) {
+  return COIN_KEYS.map((coinKey) => (
+    `${coinKey.toUpperCase()} ${coins[coinKey]}`
+  )).join(' Â· ');
+}
+
+function renderCoinDistributionCard(report, localize) {
+  const key = `${MODULE_ID}.chat.coinDistribution`;
+  const summary = [
+    renderRow(localize(`${key}.treasury`), report.treasuryName),
+    renderRow(localize(`${key}.shares`), report.totalShares),
+    renderRow(
+      localize(`${key}.remainder`),
+      renderCoinBreakdown(report.splitRemainders),
+    ),
+    renderRow(
+      localize(`${key}.remaining`),
+      renderCoinBreakdown(report.remainingTreasuryCoins),
+    ),
+    renderRow(localize(`${key}.requester`), report.requesterName),
+  ];
+  const recipients = report.recipients.map((recipient) => [
+    `<section class="${MODULE_ID}-chat-card__coin-recipient" data-actor-uuid="${escapeHtml(recipient.actorUuid)}">`,
+    `<h4>${escapeHtml(recipient.name)}</h4>`,
+    `<p>${escapeHtml(renderCoinBreakdown(recipient.awards))}</p>`,
+    `<p class="${MODULE_ID}-chat-card__note">${escapeHtml(localize(
+      `${key}.${recipient.writeback ? 'character' : 'npc'}`,
+    ))}</p>`,
+    '</section>',
+  ].join(''));
+  return [
+    `<section class="${MODULE_ID} ${MODULE_ID}-chat-card" data-action="coinDistribution">`,
+    `<h3 class="${MODULE_ID}-chat-card__title">${escapeHtml(localize(`${key}.title`))}</h3>`,
+    `<dl class="${MODULE_ID}-chat-card__details">${summary.join('')}</dl>`,
+    recipients.join(''),
+    '</section>',
+  ].join('');
+}
+
 function renderNpcRollCard(instruction, evaluation, localize) {
   const actionLabel = localize(ACTION_LABEL_KEYS[instruction.kind]);
   let note = '';
@@ -398,6 +488,31 @@ export function createChatCardService({
     return Object.freeze({ message, revision: report.revision });
   }
 
+  async function createCoinDistributionReport(report) {
+    validateCoinDistributionReport(report);
+    if (typeof ChatMessageClass?.create !== 'function') {
+      throw new Error('Foundry chat APIs are unavailable.');
+    }
+    const message = await ChatMessageClass.create({
+      author: game?.user?.id,
+      content: renderCoinDistributionCard(
+        report,
+        (key) => game.i18n.localize(key),
+      ),
+      flags: {
+        [MODULE_ID]: {
+          action: 'coinDistribution',
+          feature: 'partySheet',
+          requestId: report.requestId,
+          requesterUserId: report.requesterUserId,
+          revision: report.revision,
+          treasuryActorUuid: report.treasuryActorUuid,
+        },
+      },
+    });
+    return Object.freeze({ message });
+  }
+
   async function createXpDistributionReport(report) {
     validateXpDistributionReport(report);
     if (typeof ChatMessageClass?.create !== 'function') {
@@ -514,6 +629,7 @@ export function createChatCardService({
   }
 
   return Object.freeze({
+    createCoinDistributionReport,
     createItemTransferReport,
     createMarchingOrderReport,
     createNpcRollBatch,

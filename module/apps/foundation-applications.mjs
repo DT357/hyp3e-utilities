@@ -45,6 +45,7 @@ export function createFoundationApplications({
   canvasProvider = () => globalThis.canvas,
   chatCardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.chatCards,
   partyActionsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyActions,
+  partyCoinAwardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyCoinAwards,
   partyCoinsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyCoins,
   partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
   partyItemTransferUiProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyItemTransferUi,
@@ -246,6 +247,7 @@ export function createFoundationApplications({
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
         bindPartyTreasury: OpenPartySheetApplication.bindPartyTreasury,
         discardPartyDrafts: OpenPartySheetApplication.discardPartyDrafts,
+        distributeCoins: OpenPartySheetApplication.distributeCoins,
         distributeXp: OpenPartySheetApplication.distributeXp,
         moveMarchingActor: OpenPartySheetApplication.moveMarchingActor,
         openFollower: OpenPartySheetApplication.openFollower,
@@ -512,6 +514,39 @@ export function createFoundationApplications({
         );
       }
       await this.render({ force: true });
+    }
+
+    static async distributeCoins() {
+      const state = partyStoreProvider()?.getState?.();
+      if (
+        !this._coinDraft?.preview
+        || this._coinDraft.baseRevision !== state?.revision
+      ) return null;
+      const service = partyCoinAwardsProvider();
+      if (typeof service?.distribute !== 'function') return null;
+      this._coinDraft.requestId ??= requestIdProvider();
+      const response = await service.distribute(
+        this._coinDraft.preview,
+        this._coinDraft.baseRevision,
+        this._coinDraft.requestId,
+      );
+      if (response?.ok) {
+        this._coinDraft = null;
+        notify(
+          notifications,
+          'info',
+          `${APP_NAMESPACE}.partySheet.coinDistributionComplete`,
+        );
+      }
+      else {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.coinDistributionFailed`,
+        );
+      }
+      await this.render({ force: true });
+      return response;
     }
 
     static async previewXp(_event, target) {
@@ -1393,6 +1428,13 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        canConfirmCoins:
+          coinPreview !== null
+          && !coinPreviewStale
+          && coinPreview.distributions.some((entry) => (
+            entry.included
+            && COIN_KEYS.some((coinKey) => entry.awards[coinKey] > 0)
+          )),
         canPreviewCoins,
         canDistributeXp,
         canConfirmXp:

@@ -58,6 +58,14 @@ const TRANSLATIONS = {
   'hyp3e-utilities.chat.xpDistribution.final': 'Final',
   'hyp3e-utilities.chat.xpDistribution.character': 'Added to character sheet',
   'hyp3e-utilities.chat.xpDistribution.npc': 'NPC allocation consumed; no writeback',
+  'hyp3e-utilities.chat.coinDistribution.title': 'Party Coin Distribution',
+  'hyp3e-utilities.chat.coinDistribution.treasury': 'Treasury',
+  'hyp3e-utilities.chat.coinDistribution.shares': 'Selected Shares',
+  'hyp3e-utilities.chat.coinDistribution.remainder': 'Split Remainder',
+  'hyp3e-utilities.chat.coinDistribution.remaining': 'Treasury Remaining',
+  'hyp3e-utilities.chat.coinDistribution.requester': 'Distributed By',
+  'hyp3e-utilities.chat.coinDistribution.character': 'Added to character purse',
+  'hyp3e-utilities.chat.coinDistribution.npc': 'NPC allocation consumed; no writeback',
 };
 
 function createHarness({
@@ -406,4 +414,51 @@ test('XP distribution audit is public, escaped, and distinguishes character and 
   assert.match(content, /Added to character sheet/);
   assert.match(content, /NPC allocation consumed; no writeback/);
   assert.equal(content.includes('<Hero>'), false);
+});
+
+test('coin distribution audit is public, escaped, and reports all five denominations', async () => {
+  const harness = createHarness();
+  const report = await harness.service.createCoinDistributionReport({
+    recipients: [
+      {
+        actorType: 'character', actorUuid: 'Actor.hero',
+        awards: { cp: 1, sp: 2, ep: 3, gp: 4, pp: 5 },
+        name: '<Hero>', writeback: true,
+      },
+      {
+        actorType: 'npc', actorUuid: 'Actor.npc',
+        awards: { cp: 5, sp: 4, ep: 3, gp: 2, pp: 1 },
+        name: 'NPC & Mule', writeback: false,
+      },
+    ],
+    remainingTreasuryCoins: { cp: 9, sp: 8, ep: 7, gp: 6, pp: 5 },
+    requestId: 'coin-request-id',
+    requesterName: 'Trusted <Player>',
+    requesterUserId: 'trusted',
+    revision: 9,
+    splitRemainders: { cp: 0, sp: 1, ep: 0, gp: 1, pp: 0 },
+    totalShares: 1.5,
+    treasuryActorUuid: 'Actor.treasury',
+    treasuryName: 'Party & Treasury',
+  });
+
+  assert.equal(report.message.id, 'message-1');
+  assert.deepEqual(harness.messages[0].flags['hyp3e-utilities'], {
+    action: 'coinDistribution',
+    feature: 'partySheet',
+    requestId: 'coin-request-id',
+    requesterUserId: 'trusted',
+    revision: 9,
+    treasuryActorUuid: 'Actor.treasury',
+  });
+  const { content } = harness.messages[0];
+  assert.match(content, /Party Coin Distribution/);
+  assert.match(content, /CP 1.*SP 2.*EP 3.*GP 4.*PP 5/);
+  assert.match(content, /&lt;Hero&gt;/);
+  assert.match(content, /NPC &amp; Mule/);
+  assert.match(content, /Party &amp; Treasury/);
+  assert.match(content, /Trusted &lt;Player&gt;/);
+  assert.match(content, /Added to character purse/);
+  assert.match(content, /NPC allocation consumed; no writeback/);
+  assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
 });

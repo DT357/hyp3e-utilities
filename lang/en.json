@@ -138,6 +138,9 @@
         "coinAvailable": "{available} available",
         "coinRecipients": "Recipients",
         "coinPreviewAction": "Preview Coin Distribution",
+        "coinConfirmAction": "Confirm Coin Distribution",
+        "coinDistributionComplete": "Coins were distributed and reported to chat.",
+        "coinDistributionFailed": "Coins could not be distributed. No successful distribution was reported.",
         "coinNoRecipients": "Add a party member or follower before distributing coins.",
         "coinPreviewFailed": "The active GM could not calculate the coin preview.",
         "coinPreviewStale": "The Party Sheet changed after this preview. Preview again before confirming.",
@@ -300,6 +303,16 @@
         "adjustment": "Adjustment",
         "final": "Final",
         "character": "Added to character sheet",
+        "npc": "NPC allocation consumed; no writeback"
+      },
+      "coinDistribution": {
+        "title": "Party Coin Distribution",
+        "treasury": "Treasury",
+        "shares": "Selected Shares",
+        "remainder": "Split Remainder",
+        "remaining": "Treasury Remaining",
+        "requester": "Distributed By",
+        "character": "Added to character purse",
         "npc": "NPC allocation consumed; no writeback"
       },
       "actions": {
