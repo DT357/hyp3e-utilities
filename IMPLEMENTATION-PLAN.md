@@ -261,7 +261,7 @@ M4 is complete when all TRY and ITM items are `DONE`; no tested failure path dup
 | COIN-003 | `DONE` | COIN-002, TRY-001, PAR-002 | Transactional character/treasury coin writeback plus final chat report | NPC receives no write; totals conserve input; failures roll back/report |
 | WAGE-001 | `DONE` | PAR-007, PB-009 | Pure GP wage calculator and preview | Due/partial/zero wages, invalid rates, and insufficient treasury GP |
 | WAGE-002 | `DONE` | WAGE-001, TRY-001, PAR-002 | Transactional GP wage settlement and chat report | Only GP changes; NPC/character follower metadata remains consistent |
-| DST-001 | `TODO` | XP-003, COIN-003, WAGE-002 | Shared preflight, mutation journal, rollback, idempotency, and audit behavior | Injected failures and duplicate request IDs at every boundary |
+| DST-001 | `DONE` | XP-003, COIN-003, WAGE-002 | Shared preflight, mutation journal, rollback, idempotency, and audit behavior | Injected failures and duplicate request IDs at every boundary |
 
 ### Distribution invariants
 

@@ -1,9 +1,12 @@
 import { COIN_KEYS } from '../core/constants.mjs';
 import {
-  PARTY_MUTATION_ERROR_CODES,
   PartyMutationError,
   assertExactObject,
 } from './party-mutation-protocol.mjs';
+import {
+  assertDistributionPreflight,
+  createDistributionTransaction,
+} from './distribution-transaction.mjs';
 
 const WORLD_ACTOR_UUID_PATTERN = /^Actor\.([^\.\s]+)$/;
 
@@ -134,40 +137,26 @@ export function createPartyCoinAwardService({
     return pending;
   }
 
-  async function rollback(journal) {
-    try {
-      for (const entry of [...journal].reverse()) {
-        await entry.actor.update(adapter.buildMoneyUpdate(entry.beforeCoins));
-      }
-    }
-    catch (error) {
-      logger.warn?.('Coin distribution rollback failed.', error);
-      throw new PartyMutationError(
-        PARTY_COIN_AWARD_ERROR_CODES.rollbackFailed,
-        'The coin distribution failed and a purse rollback also failed.',
-      );
-    }
-  }
-
   async function execute({ expectedRevision, payload, requester, requestId }) {
     const state = store.getState();
-    if (expectedRevision !== state.revision) {
-      throw new PartyMutationError(
-        PARTY_MUTATION_ERROR_CODES.staleRevision,
-        'The Party Sheet changed before coin distribution was confirmed.',
-        { state },
-      );
-    }
-    const preview = previewService.getPreview({
-      selectedActorUuids: payload.selectedActorUuids,
-      splitCoins: payload.splitCoins,
-    }, state);
-    if (previewFingerprint(preview) !== payload.expectedFingerprint) {
-      throw new PartyMutationError(
-        PARTY_COIN_AWARD_ERROR_CODES.previewChanged,
-        'The treasury, recipients, shares, or split changed after preview.',
-      );
-    }
+    let preview;
+    assertDistributionPreflight({
+      actualFingerprint: () => {
+        preview = previewService.getPreview({
+          selectedActorUuids: payload.selectedActorUuids,
+          splitCoins: payload.splitCoins,
+        }, state);
+        return previewFingerprint(preview);
+      },
+      changedError: {
+        code: PARTY_COIN_AWARD_ERROR_CODES.previewChanged,
+        message: 'The treasury, recipients, shares, or split changed after preview.',
+      },
+      expectedFingerprint: payload.expectedFingerprint,
+      expectedRevision,
+      staleMessage: 'The Party Sheet changed before coin distribution was confirmed.',
+      state,
+    });
     if (!hasCoins(preview.distributedTotals)) {
       throw new PartyMutationError(
         PARTY_COIN_AWARD_ERROR_CODES.invalidPreview,
@@ -182,9 +171,24 @@ export function createPartyCoinAwardService({
       );
     }
 
-    const journal = [];
+    const transaction = createDistributionTransaction({
+      auditError: {
+        code: PARTY_COIN_AWARD_ERROR_CODES.auditFailed,
+        message: 'The coin audit could not be created; purse balances were restored.',
+      },
+      label: 'Coin distribution',
+      logger,
+      rollbackError: {
+        code: PARTY_COIN_AWARD_ERROR_CODES.rollbackFailed,
+        message: 'The coin distribution failed and a purse rollback also failed.',
+      },
+      writeError: {
+        code: PARTY_COIN_AWARD_ERROR_CODES.writeFailed,
+        message: 'The coin distribution failed; prior purse balances were restored.',
+      },
+    });
     const recipientReports = [];
-    try {
+    await transaction.runWrites(async ({ write }) => {
       for (const distribution of preview.distributions.filter(
         (entry) => entry.included,
       )) {
@@ -218,8 +222,10 @@ export function createPartyCoinAwardService({
           return [coinKey, amount];
         }));
         if (hasCoins(distribution.awards)) {
-          await actor.update(adapter.buildMoneyUpdate(afterCoins));
-          journal.push({ actor, beforeCoins });
+          await write(
+            () => actor.update(adapter.buildMoneyUpdate(afterCoins)),
+            () => actor.update(adapter.buildMoneyUpdate(beforeCoins)),
+          );
         }
         recipientReports.push({
           ...distribution,
@@ -228,23 +234,16 @@ export function createPartyCoinAwardService({
         });
       }
       const treasuryBeforeCoins = adapter.getMoney(treasury);
-      await treasury.update(
-        adapter.buildMoneyUpdate(preview.remainingTreasuryCoins),
+      await write(
+        () => treasury.update(
+          adapter.buildMoneyUpdate(preview.remainingTreasuryCoins),
+        ),
+        () => treasury.update(adapter.buildMoneyUpdate(treasuryBeforeCoins)),
       );
-      journal.push({ actor: treasury, beforeCoins: treasuryBeforeCoins });
-    }
-    catch (error) {
-      await rollback(journal);
-      if (error instanceof PartyMutationError) throw error;
-      logger.warn?.('Coin distribution document write failed.', error);
-      throw new PartyMutationError(
-        PARTY_COIN_AWARD_ERROR_CODES.writeFailed,
-        'The coin distribution failed; prior purse balances were restored.',
-      );
-    }
+    });
 
-    try {
-      await chatCards.createCoinDistributionReport({
+    await transaction.runAudit(() => (
+      chatCards.createCoinDistributionReport({
         recipients: recipientReports,
         remainingTreasuryCoins: preview.remainingTreasuryCoins,
         requestId,
@@ -255,16 +254,8 @@ export function createPartyCoinAwardService({
         totalShares: preview.totalShares,
         treasuryActorUuid: preview.treasuryActorUuid,
         treasuryName: preview.treasuryName,
-      });
-    }
-    catch (error) {
-      logger.warn?.('Coin distribution audit chat failed.', error);
-      await rollback(journal);
-      throw new PartyMutationError(
-        PARTY_COIN_AWARD_ERROR_CODES.auditFailed,
-        'The coin audit could not be created; purse balances were restored.',
-      );
-    }
+      })
+    ));
 
     return {
       consumedNpcTotals: preview.consumedNpcTotals,

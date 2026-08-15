@@ -1,8 +1,11 @@
 import {
-  PARTY_MUTATION_ERROR_CODES,
   PartyMutationError,
   assertExactObject,
 } from './party-mutation-protocol.mjs';
+import {
+  assertDistributionPreflight,
+  createDistributionTransaction,
+} from './distribution-transaction.mjs';
 
 const WORLD_ACTOR_UUID_PATTERN = /^Actor\.([^\.\s]+)$/;
 
@@ -194,23 +197,6 @@ export function createPartyXpAwardService({
     return pending;
   }
 
-  async function rollback(journal) {
-    try {
-      for (const entry of [...journal].reverse()) {
-        await entry.actor.update(
-          adapter.buildCharacterExperienceUpdate(entry.beforeXp),
-        );
-      }
-    }
-    catch (error) {
-      logger.warn?.('XP distribution rollback failed.', error);
-      throw new PartyMutationError(
-        PARTY_XP_AWARD_ERROR_CODES.rollbackFailed,
-        'The XP distribution failed and an Actor rollback also failed.',
-      );
-    }
-  }
-
   async function execute({ expectedRevision, payload, requester, requestId }) {
     if (requester?.isGM !== true) {
       throw new PartyMutationError(
@@ -219,23 +205,24 @@ export function createPartyXpAwardService({
       );
     }
     const state = store.getState();
-    if (expectedRevision !== state.revision) {
-      throw new PartyMutationError(
-        PARTY_MUTATION_ERROR_CODES.staleRevision,
-        'The Party Sheet changed before XP distribution was confirmed.',
-        { state },
-      );
-    }
-    const preview = previewService.getPreview({
-      selectedActorUuids: payload.selectedActorUuids,
-      totalXp: payload.totalXp,
-    }, state);
-    if (JSON.stringify(previewFingerprint(preview)) !== JSON.stringify(payload.expectedPreview)) {
-      throw new PartyMutationError(
-        PARTY_XP_AWARD_ERROR_CODES.previewChanged,
-        'The XP inputs or recipient Actors changed after the preview.',
-      );
-    }
+    let preview;
+    assertDistributionPreflight({
+      actualFingerprint: () => {
+        preview = previewService.getPreview({
+          selectedActorUuids: payload.selectedActorUuids,
+          totalXp: payload.totalXp,
+        }, state);
+        return JSON.stringify(previewFingerprint(preview));
+      },
+      changedError: {
+        code: PARTY_XP_AWARD_ERROR_CODES.previewChanged,
+        message: 'The XP inputs or recipient Actors changed after the preview.',
+      },
+      expectedFingerprint: JSON.stringify(payload.expectedPreview),
+      expectedRevision,
+      staleMessage: 'The Party Sheet changed before XP distribution was confirmed.',
+      state,
+    });
     const included = preview.distributions.filter((entry) => entry.included);
     if (payload.totalXp <= 0 || included.length === 0) {
       throw new PartyMutationError(
@@ -244,9 +231,24 @@ export function createPartyXpAwardService({
       );
     }
 
-    const journal = [];
+    const transaction = createDistributionTransaction({
+      auditError: {
+        code: PARTY_XP_AWARD_ERROR_CODES.auditFailed,
+        message: 'The XP audit could not be created; character totals were restored.',
+      },
+      label: 'XP distribution',
+      logger,
+      rollbackError: {
+        code: PARTY_XP_AWARD_ERROR_CODES.rollbackFailed,
+        message: 'The XP distribution failed and an Actor rollback also failed.',
+      },
+      writeError: {
+        code: PARTY_XP_AWARD_ERROR_CODES.writeFailed,
+        message: 'The XP distribution failed; prior character totals were restored.',
+      },
+    });
     const recipientReports = [];
-    try {
+    await transaction.runWrites(async ({ write }) => {
       for (const distribution of included) {
         if (!distribution.writeback) {
           recipientReports.push({
@@ -272,24 +274,17 @@ export function createPartyXpAwardService({
           );
         }
         if (distribution.finalAwardXp > 0) {
-          await actor.update(adapter.buildCharacterExperienceUpdate(afterXp));
-          journal.push({ actor, beforeXp });
+          await write(
+            () => actor.update(adapter.buildCharacterExperienceUpdate(afterXp)),
+            () => actor.update(adapter.buildCharacterExperienceUpdate(beforeXp)),
+          );
         }
         recipientReports.push({ ...distribution, afterXp, beforeXp });
       }
-    }
-    catch (error) {
-      await rollback(journal);
-      if (error instanceof PartyMutationError) throw error;
-      logger.warn?.('XP distribution Actor write failed.', error);
-      throw new PartyMutationError(
-        PARTY_XP_AWARD_ERROR_CODES.writeFailed,
-        'The XP distribution failed; prior character totals were restored.',
-      );
-    }
+    });
 
-    try {
-      await chatCards.createXpDistributionReport({
+    await transaction.runAudit(() => (
+      chatCards.createXpDistributionReport({
         baseRemainderXp: preview.baseRemainderXp,
         recipients: recipientReports,
         requestId,
@@ -298,16 +293,8 @@ export function createPartyXpAwardService({
         revision: state.revision,
         totalShares: preview.totalShares,
         totalXp: preview.totalXp,
-      });
-    }
-    catch (error) {
-      logger.warn?.('XP distribution audit chat failed.', error);
-      await rollback(journal);
-      throw new PartyMutationError(
-        PARTY_XP_AWARD_ERROR_CODES.auditFailed,
-        'The XP audit could not be created; character totals were restored.',
-      );
-    }
+      })
+    ));
 
     return {
       baseRemainderXp: preview.baseRemainderXp,

@@ -1,8 +1,11 @@
 import {
-  PARTY_MUTATION_ERROR_CODES,
   PartyMutationError,
   assertExactObject,
 } from './party-mutation-protocol.mjs';
+import {
+  assertDistributionPreflight,
+  createDistributionTransaction,
+} from './distribution-transaction.mjs';
 
 const WORLD_ACTOR_UUID_PATTERN = /^Actor\.([^\.\s]+)$/;
 
@@ -106,37 +109,25 @@ export function createPartyWageSettlementService({
   }
   let executionQueue = Promise.resolve();
 
-  async function restoreTreasury(treasury, beforeCoins) {
-    try {
-      await treasury.update(adapter.buildMoneyUpdate(beforeCoins));
-    }
-    catch (error) {
-      logger.warn?.('Wage settlement rollback failed.', error);
-      throw new PartyMutationError(
-        PARTY_WAGE_SETTLEMENT_ERROR_CODES.rollbackFailed,
-        'The wage settlement failed and the treasury rollback also failed.',
-      );
-    }
-  }
-
   async function execute({ expectedRevision, payload, requester, requestId }) {
     const state = store.getState();
-    if (expectedRevision !== state.revision) {
-      throw new PartyMutationError(
-        PARTY_MUTATION_ERROR_CODES.staleRevision,
-        'The Party Sheet changed before wage settlement was confirmed.',
-        { state },
-      );
-    }
-    const preview = previewService.getPreview({
-      selectedActorUuids: payload.selectedActorUuids,
-    }, state);
-    if (previewFingerprint(preview) !== payload.expectedFingerprint) {
-      throw new PartyMutationError(
-        PARTY_WAGE_SETTLEMENT_ERROR_CODES.previewChanged,
-        'The treasury, followers, or wage rates changed after preview.',
-      );
-    }
+    let preview;
+    assertDistributionPreflight({
+      actualFingerprint: () => {
+        preview = previewService.getPreview({
+          selectedActorUuids: payload.selectedActorUuids,
+        }, state);
+        return previewFingerprint(preview);
+      },
+      changedError: {
+        code: PARTY_WAGE_SETTLEMENT_ERROR_CODES.previewChanged,
+        message: 'The treasury, followers, or wage rates changed after preview.',
+      },
+      expectedFingerprint: payload.expectedFingerprint,
+      expectedRevision,
+      staleMessage: 'The Party Sheet changed before wage settlement was confirmed.',
+      state,
+    });
     if (!preview.canSettle) {
       throw new PartyMutationError(
         PARTY_WAGE_SETTLEMENT_ERROR_CODES.invalidPreview,
@@ -153,16 +144,26 @@ export function createPartyWageSettlementService({
 
     const beforeCoins = adapter.getMoney(treasury);
     const afterCoins = { ...beforeCoins, gp: preview.remainingGp };
-    try {
-      await treasury.update(adapter.buildMoneyUpdate(afterCoins));
-    }
-    catch (error) {
-      logger.warn?.('Wage settlement treasury write failed.', error);
-      throw new PartyMutationError(
-        PARTY_WAGE_SETTLEMENT_ERROR_CODES.writeFailed,
-        'The wage settlement failed before the treasury could be updated.',
-      );
-    }
+    const transaction = createDistributionTransaction({
+      auditError: {
+        code: PARTY_WAGE_SETTLEMENT_ERROR_CODES.auditFailed,
+        message: 'The wage audit could not be created; treasury GP was restored.',
+      },
+      label: 'Wage settlement',
+      logger,
+      rollbackError: {
+        code: PARTY_WAGE_SETTLEMENT_ERROR_CODES.rollbackFailed,
+        message: 'The wage settlement failed and the treasury rollback also failed.',
+      },
+      writeError: {
+        code: PARTY_WAGE_SETTLEMENT_ERROR_CODES.writeFailed,
+        message: 'The wage settlement failed before the treasury could be updated.',
+      },
+    });
+    await transaction.runWrites(({ write }) => write(
+      () => treasury.update(adapter.buildMoneyUpdate(afterCoins)),
+      () => treasury.update(adapter.buildMoneyUpdate(beforeCoins)),
+    ));
 
     const payments = preview.followers
       .filter((follower) => follower.selected && follower.paymentGp > 0)
@@ -171,8 +172,8 @@ export function createPartyWageSettlementService({
         name: follower.name,
         paymentGp: follower.paymentGp,
       }));
-    try {
-      await chatCards.createWageSettlementReport({
+    await transaction.runAudit(() => (
+      chatCards.createWageSettlementReport({
         payments,
         remainingGp: preview.remainingGp,
         requestId,
@@ -182,16 +183,8 @@ export function createPartyWageSettlementService({
         totalPaidGp: preview.totalDueGp,
         treasuryActorUuid: preview.treasuryActorUuid,
         treasuryName: preview.treasuryName,
-      });
-    }
-    catch (error) {
-      logger.warn?.('Wage settlement audit chat failed.', error);
-      await restoreTreasury(treasury, beforeCoins);
-      throw new PartyMutationError(
-        PARTY_WAGE_SETTLEMENT_ERROR_CODES.auditFailed,
-        'The wage audit could not be created; treasury GP was restored.',
-      );
-    }
+      })
+    ));
 
     return {
       payments,
