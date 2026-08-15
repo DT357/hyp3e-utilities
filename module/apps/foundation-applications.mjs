@@ -1156,8 +1156,11 @@ export function createFoundationApplications({
         : null;
       const treasuryItems = (treasurySnapshot?.items ?? []).map((item) => ({
         ...item,
+        container: item.container === true,
         hasBundle: item.quantity?.bundle != null,
         hasMaximum: item.quantity?.max != null,
+        transferable:
+          item.transferable ?? (item.supported && item.container !== true),
         typeLabel: item.supported
           ? `${APP_NAMESPACE}.partySheet.itemTypes.${item.category}`
           : '',

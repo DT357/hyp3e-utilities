@@ -190,6 +190,18 @@ test('adapter merges only intrinsically identical ordinary items', () => {
     ),
     false,
   );
+  assert.equal(hyp3eAdapter.isContainerItem(source), false);
+  assert.equal(
+    hyp3eAdapter.isContainerItem({
+      ...source,
+      system: { ...source.system, isContainer: true },
+    }),
+    true,
+  );
+  assert.equal(
+    hyp3eAdapter.isContainerItem({ ...source, type: 'container' }),
+    true,
+  );
 });
 
 test('adapter normalizes invalid numeric storage safely', () => {

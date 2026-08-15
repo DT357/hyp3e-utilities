@@ -126,6 +126,8 @@
         "itemTransferComplete": "The item transfer is complete.",
         "itemTransferFailed": "The item transfer could not be completed.",
         "itemTransferInvalid": "That drop does not identify a supported transferable item.",
+        "itemTransferContainerUnsupported": "Containers cannot be transferred. Remove their contents and move the individual items instead.",
+        "itemTransferUnsupportedType": "That Item type cannot be transferred to or from the Party Treasury.",
         "itemTransferUnauthorized": "You are not authorized to transfer that item.",
         "itemTransferDropHelp": "Drop a supported item from an owned character sheet here to move it into the Party Treasury.",
         "itemTransferDragHelp": "Drag this item onto an owned character sheet, or use Take.",

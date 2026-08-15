@@ -80,7 +80,10 @@ export function createPartyTreasuryService({
       'Party treasury service requires Party operation registration.',
     );
   }
-  if (typeof adapter?.isManagedTreasury !== 'function') {
+  if (
+    typeof adapter?.isManagedTreasury !== 'function'
+    || typeof adapter?.isContainerItem !== 'function'
+  ) {
     throw new TypeError('Party treasury service requires the hyp3e adapter.');
   }
   let creationQueue = Promise.resolve();
@@ -164,16 +167,19 @@ export function createPartyTreasuryService({
     }
     const items = Array.from(actor.items ?? []).map((item) => {
       const category = adapter.getItemCategory(item);
+      const container = adapter.isContainerItem(item);
       const img = typeof item?.img === 'string' && item.img.trim()
         ? item.img.trim()
         : MISSING_ITEM_IMAGE;
       return {
         category,
+        container,
         id: item?.id ?? '',
         img,
         name: typeof item?.name === 'string' ? item.name : '',
         quantity: adapter.getItemQuantity(item),
         supported: category !== null,
+        transferable: category !== null && !container,
         type: typeof item?.type === 'string' ? item.type : 'unknown',
         uuid: item?.uuid ?? '',
       };

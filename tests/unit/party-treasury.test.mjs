@@ -332,9 +332,19 @@ test('treasury snapshot returns every coin and preserves supported and unknown i
     type: 'spell',
     uuid: 'Actor.snapshot.Item.spell',
   };
+  const container = {
+    id: 'container',
+    name: 'Loaded Backpack',
+    system: {
+      isContainer: true,
+      quantity: { bundle: 0, max: 1, value: 1 },
+    },
+    type: 'item',
+    uuid: 'Actor.snapshot.Item.container',
+  };
   harness.addActor({
     id: 'snapshot',
-    items: [weapon, unknown],
+    items: [weapon, unknown, container],
     system: {
       money: {
         cp: { value: '1' },
@@ -355,23 +365,39 @@ test('treasury snapshot returns every coin and preserves supported and unknown i
     items: [
       {
         category: 'weapon',
+        container: false,
         id: 'weapon',
         img: 'icons/svg/item-bag.svg',
         name: 'Silver Spear',
         quantity: { bundle: 2, max: 9, value: 3 },
         supported: true,
+        transferable: true,
         type: 'weapon',
         uuid: 'Actor.snapshot.Item.weapon',
       },
       {
         category: null,
+        container: false,
         id: 'spell',
         img: 'icons/svg/book.svg',
         name: 'Unknown Embedded Type',
         quantity: null,
         supported: false,
+        transferable: false,
         type: 'spell',
         uuid: 'Actor.snapshot.Item.spell',
+      },
+      {
+        category: 'item',
+        container: true,
+        id: 'container',
+        img: 'icons/svg/item-bag.svg',
+        name: 'Loaded Backpack',
+        quantity: { bundle: 0, max: 1, value: 1 },
+        supported: true,
+        transferable: false,
+        type: 'item',
+        uuid: 'Actor.snapshot.Item.container',
       },
     ],
     kind: 'ready',

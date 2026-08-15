@@ -1407,6 +1407,7 @@ test('Party Sheet receives treasury coins and inventory through an authorized GM
   assert.deepEqual(context.treasury.items, [
     {
       category: 'weapon',
+      container: false,
       hasBundle: true,
       hasMaximum: true,
       id: 'spear',
@@ -1414,12 +1415,14 @@ test('Party Sheet receives treasury coins and inventory through an authorized GM
       name: 'Spear',
       quantity: { bundle: 2, max: 8, value: 3 },
       supported: true,
+      transferable: true,
       type: 'weapon',
       typeLabel: 'hyp3e-utilities.applications.partySheet.itemTypes.weapon',
       uuid: `${state.treasuryActorUuid}.Item.spear`,
     },
     {
       category: null,
+      container: false,
       hasBundle: false,
       hasMaximum: false,
       id: 'unknown',
@@ -1427,6 +1430,7 @@ test('Party Sheet receives treasury coins and inventory through an authorized GM
       name: 'Unknown',
       quantity: null,
       supported: false,
+      transferable: false,
       type: 'spell',
       typeLabel: '',
       uuid: `${state.treasuryActorUuid}.Item.unknown`,

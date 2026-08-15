@@ -469,7 +469,7 @@
                           data-item-type="{{type}}"
                           data-item-uuid="{{uuid}}"
                           data-source-name="{{@root.treasury.name}}"
-                          {{#if supported}}
+                          {{#if transferable}}
                             {{#if @root.canEdit}}
                               draggable="true"
                               title="{{localize 'hyp3e-utilities.applications.partySheet.itemTransferDragHelp'}}"
@@ -481,10 +481,21 @@
                             <strong>{{name}}</strong>
                             {{#if supported}}
                               <span>{{localize typeLabel}}</span>
+                              {{#if container}}
+                                <span class="hyp3e-utilities__party-treasury-warning">
+                                  {{localize "hyp3e-utilities.applications.partySheet.itemTransferContainerUnsupported"}}
+                                </span>
+                              {{/if}}
                             {{else}}
-                              <span class="hyp3e-utilities__party-treasury-warning">
-                                {{localize "hyp3e-utilities.applications.partySheet.unsupportedItemType" type=type}}
-                              </span>
+                              {{#if container}}
+                                <span class="hyp3e-utilities__party-treasury-warning">
+                                  {{localize "hyp3e-utilities.applications.partySheet.itemTransferContainerUnsupported"}}
+                                </span>
+                              {{else}}
+                                <span class="hyp3e-utilities__party-treasury-warning">
+                                  {{localize "hyp3e-utilities.applications.partySheet.unsupportedItemType" type=type}}
+                                </span>
+                              {{/if}}
                             {{/if}}
                           </div>
                           {{#if supported}}
@@ -506,13 +517,15 @@
                                 </div>
                               {{/if}}
                             </dl>
-                            {{#if @root.canEdit}}
-                              <button
-                                type="button"
-                                data-action="takeTreasuryItem"
-                                data-item-uuid="{{uuid}}"
-                                {{#unless @root.hasTreasuryTransferDestinations}}disabled{{/unless}}
-                              >{{localize "hyp3e-utilities.applications.partySheet.takeTreasuryItem"}}</button>
+                            {{#if transferable}}
+                              {{#if @root.canEdit}}
+                                <button
+                                  type="button"
+                                  data-action="takeTreasuryItem"
+                                  data-item-uuid="{{uuid}}"
+                                  {{#unless @root.hasTreasuryTransferDestinations}}disabled{{/unless}}
+                                >{{localize "hyp3e-utilities.applications.partySheet.takeTreasuryItem"}}</button>
+                              {{/if}}
                             {{/if}}
                           {{/if}}
                         </li>

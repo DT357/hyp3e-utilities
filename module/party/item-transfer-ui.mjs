@@ -50,6 +50,7 @@ export function createItemTransferUiController({
   if (
     typeof adapter?.getItemQuantity !== 'function'
     || typeof adapter?.isSupportedPhysicalItem !== 'function'
+    || typeof adapter?.isContainerItem !== 'function'
   ) {
     throw new TypeError('Item transfer UI requires the hyp3e adapter.');
   }
@@ -124,8 +125,21 @@ export function createItemTransferUiController({
 
   function canTransferItem(item) {
     return adapter.isSupportedPhysicalItem(item)
-      && item.system?.isContainer !== true
+      && !adapter.isContainerItem(item)
       && adapter.getItemQuantity(item)?.value > 0;
+  }
+
+  function getItemRejectionKey(item) {
+    if (adapter.isContainerItem(item)) {
+      return `${APP_NAMESPACE}.itemTransferContainerUnsupported`;
+    }
+    if (!adapter.isSupportedPhysicalItem(item)) {
+      return `${APP_NAMESPACE}.itemTransferUnsupportedType`;
+    }
+    if (adapter.getItemQuantity(item)?.value <= 0) {
+      return `${APP_NAMESPACE}.itemTransferInvalid`;
+    }
+    return null;
   }
 
   async function promptQuantity({ destinationActor, item, sourceActor }) {
@@ -191,10 +205,14 @@ export function createItemTransferUiController({
     if (
       !source
       || !isDurableCharacter(source.actor)
-      || !canTransferItem(source.item)
       || !destinationActor
     ) {
       notify(notifications, 'warn', `${APP_NAMESPACE}.itemTransferInvalid`);
+      return null;
+    }
+    const rejectionKey = getItemRejectionKey(source.item);
+    if (rejectionKey) {
+      notify(notifications, 'warn', rejectionKey);
       return null;
     }
     if (!isPartyEditor() || !ownsActor(source.actor)) {
@@ -250,10 +268,14 @@ export function createItemTransferUiController({
       || !sourceActor?.uuid
       || !reference.itemUuid?.startsWith(`${sourceActor.uuid}.Item.`)
       || (source && source.actor?.uuid !== sourceActor.uuid)
-      || !canTransferItem(item)
       || !isDurableCharacter(destinationActor)
     ) {
       notify(notifications, 'warn', `${APP_NAMESPACE}.itemTransferInvalid`);
+      return null;
+    }
+    const rejectionKey = getItemRejectionKey(item);
+    if (rejectionKey) {
+      notify(notifications, 'warn', rejectionKey);
       return null;
     }
     if (!isPartyEditor() || !ownsActor(destinationActor)) {

@@ -153,12 +153,16 @@ function getStackProfile(item) {
   });
 }
 
+function isContainerItem(item) {
+  return item?.type === 'container' || item?.system?.isContainer === true;
+}
+
 function areItemsStackCompatible(source, destination) {
   if (
     source?.type !== 'item'
     || destination?.type !== 'item'
-    || source.system?.isContainer === true
-    || destination.system?.isContainer === true
+    || isContainerItem(source)
+    || isContainerItem(destination)
   ) return false;
   return JSON.stringify(getStackProfile(source))
     === JSON.stringify(getStackProfile(destination));
@@ -191,6 +195,7 @@ export const hyp3eAdapter = Object.freeze({
   isSupportedPhysicalItem,
 
   areItemsStackCompatible,
+  isContainerItem,
 
   getActorSummary(actor) {
     return {

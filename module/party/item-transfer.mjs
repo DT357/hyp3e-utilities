@@ -36,8 +36,10 @@ function belongsToActor(item, actor) {
     && item.uuid?.startsWith(`${actor.uuid}.Item.`) === true;
 }
 
-function isContainer(item) {
-  return item?.type === 'container' || item?.system?.isContainer === true;
+function isContainer(item, adapter) {
+  return typeof adapter?.isContainerItem === 'function'
+    ? adapter.isContainerItem(item)
+    : item?.type === 'container' || item?.system?.isContainer === true;
 }
 
 function partitionQuantity(quantity, transferAmount, isFullTransfer) {
@@ -117,7 +119,7 @@ export function buildItemTransferPlan({
       'The source Item does not belong to the source Actor.',
     );
   }
-  if (isContainer(sourceItem)) {
+  if (isContainer(sourceItem, adapter)) {
     fail(
       ITEM_TRANSFER_ERROR_CODES.unsupportedContainer,
       'Container transfers are not supported.',
@@ -157,7 +159,7 @@ export function buildItemTransferPlan({
     ? Array.from(destinationItems).filter((candidate) => (
       belongsToActor(candidate, destinationActor)
       && adapter.getItemCategory(candidate) === 'item'
-      && !isContainer(candidate)
+      && !isContainer(candidate, adapter)
       && canMerge(sourceItem, candidate) === true
     ))
     : [];

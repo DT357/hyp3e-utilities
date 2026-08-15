@@ -670,6 +670,22 @@ test('transfer operation rejects a stale source quantity before writes', async (
   assert.equal(harness.calls.length, 0);
 });
 
+test('non-empty container transfer is rejected before any document write', async () => {
+  const harness = createOperationHarness();
+  harness.sourceItem.system.isContainer = true;
+  harness.sourceItem.contents = [{ id: 'contained-item' }];
+  const response = await transferRequest(harness);
+
+  assert.equal(response.ok, false);
+  assert.equal(
+    response.error.code,
+    ITEM_TRANSFER_ERROR_CODES.unsupportedContainer,
+  );
+  assert.equal(harness.calls.length, 0);
+  assert.equal(harness.sourceActor.items.length, 1);
+  assert.equal(harness.destinationActor.items.length, 0);
+});
+
 test('destination write failure leaves the source untouched', async () => {
   const harness = createOperationHarness();
   harness.failures.destinationCreate = true;

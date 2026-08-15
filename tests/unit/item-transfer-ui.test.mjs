@@ -258,6 +258,31 @@ test('unauthorized or unowned users cannot open a dialog or request transfer', a
   }
 });
 
+test('containers and unsupported Item types receive distinct notices without writes', async () => {
+  const container = createHarness();
+  container.characterItem.system.isContainer = true;
+  container.characterItem.contents = [{ id: 'inside' }];
+  assert.equal(await container.controller.transferToTreasury(
+    container.characterItem.uuid,
+  ), null);
+  assert.equal(container.calls.length, 0);
+  assert.deepEqual(container.notifications, [[
+    'warn',
+    'hyp3e-utilities.applications.partySheet.itemTransferContainerUnsupported',
+  ]]);
+
+  const unsupported = createHarness();
+  unsupported.characterItem.type = 'spell';
+  assert.equal(await unsupported.controller.transferToTreasury(
+    unsupported.characterItem.uuid,
+  ), null);
+  assert.equal(unsupported.calls.length, 0);
+  assert.deepEqual(unsupported.notifications, [[
+    'warn',
+    'hyp3e-utilities.applications.partySheet.itemTransferUnsupportedType',
+  ]]);
+});
+
 test('destination options include only owned party characters', () => {
   const harness = createHarness();
   assert.deepEqual(harness.controller.getDestinationOptions(), [{
