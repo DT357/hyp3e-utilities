@@ -106,6 +106,52 @@ function renderMarchingOrderCard(report, localize) {
   ].join('');
 }
 
+function validateItemTransferReport(report) {
+  for (const key of [
+    'destinationActorUuid',
+    'destinationName',
+    'itemName',
+    'requesterName',
+    'requesterUserId',
+    'sourceActorUuid',
+    'sourceItemUuid',
+    'sourceName',
+  ]) {
+    if (typeof report?.[key] !== 'string') {
+      throw new TypeError(`Item transfer ${key} must be a string.`);
+    }
+  }
+  if (!Number.isInteger(report.quantity) || report.quantity <= 0) {
+    throw new TypeError('Item transfer quantity must be a positive integer.');
+  }
+  if (typeof report.merged !== 'boolean') {
+    throw new TypeError('Item transfer merge state must be boolean.');
+  }
+}
+
+function renderItemTransferCard(report, localize) {
+  const key = `${MODULE_ID}.chat.itemTransfer`;
+  const rows = [
+    renderRow(localize(`${key}.item`), report.itemName),
+    renderRow(localize(`${key}.quantity`), report.quantity),
+    renderRow(localize(`${key}.source`), report.sourceName),
+    renderRow(localize(`${key}.destination`), report.destinationName),
+    renderRow(localize(`${key}.requester`), report.requesterName),
+    renderRow(
+      localize(`${key}.mode`),
+      localize(`${key}.${report.merged ? 'merged' : 'created'}`),
+    ),
+  ];
+  return [
+    `<section class="${MODULE_ID} ${MODULE_ID}-chat-card" data-action="itemTransfer">`,
+    `<h3 class="${MODULE_ID}-chat-card__title">${escapeHtml(
+      localize(`${key}.title`),
+    )}</h3>`,
+    `<dl class="${MODULE_ID}-chat-card__details">${rows.join('')}</dl>`,
+    '</section>',
+  ].join('');
+}
+
 function renderNpcRollCard(instruction, evaluation, localize) {
   const actionLabel = localize(ACTION_LABEL_KEYS[instruction.kind]);
   let note = '';
@@ -227,6 +273,33 @@ export function createChatCardService({
   logger = console,
   randomId = globalThis.foundry?.utils?.randomID,
 } = {}) {
+  async function createItemTransferReport(report) {
+    validateItemTransferReport(report);
+    if (typeof ChatMessageClass?.create !== 'function') {
+      throw new Error('Foundry chat APIs are unavailable.');
+    }
+    const message = await ChatMessageClass.create({
+      author: game?.user?.id,
+      content: renderItemTransferCard(
+        report,
+        (key) => game.i18n.localize(key),
+      ),
+      flags: {
+        [MODULE_ID]: {
+          action: 'itemTransfer',
+          destinationActorUuid: report.destinationActorUuid,
+          feature: 'partySheet',
+          merged: report.merged,
+          quantity: report.quantity,
+          requesterUserId: report.requesterUserId,
+          sourceActorUuid: report.sourceActorUuid,
+          sourceItemUuid: report.sourceItemUuid,
+        },
+      },
+    });
+    return Object.freeze({ message });
+  }
+
   async function createMarchingOrderReport(report) {
     validateMarchingOrderReport(report);
     if (typeof ChatMessageClass?.create !== 'function') {
@@ -339,5 +412,9 @@ export function createChatCardService({
     });
   }
 
-  return Object.freeze({ createMarchingOrderReport, createNpcRollBatch });
+  return Object.freeze({
+    createItemTransferReport,
+    createMarchingOrderReport,
+    createNpcRollBatch,
+  });
 }

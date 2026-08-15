@@ -336,7 +336,9 @@ function createOperationHarness({
   sourceOwned = true,
 } = {}) {
   const calls = [];
+  const auditReports = [];
   const failures = {
+    audit: false,
     destinationCreate: false,
     destinationRollback: false,
     sourceWrite: false,
@@ -453,6 +455,13 @@ function createOperationHarness({
   };
   const service = createPartyItemTransferService({
     adapter: hyp3eAdapter,
+    chatCards: {
+      async createItemTransferReport(report) {
+        auditReports.push(structuredClone(report));
+        if (failures.audit) throw new Error('audit failed');
+        return { message: { id: `audit-${auditReports.length}` } };
+      },
+    },
     game: { actors },
     logger: { warn() {} },
     mutations,
@@ -461,6 +470,7 @@ function createOperationHarness({
   });
 
   return {
+    auditReports,
     calls,
     destinationActor,
     failures,
@@ -586,6 +596,7 @@ test('character-to-treasury full transfer creates destination before deletion', 
   assert.equal(harness.sourceActor.items.length, 0);
   assert.equal(harness.destinationActor.items.length, 1);
   assert.deepEqual(response.value, {
+    auditCreated: true,
     destinationActorUuid: harness.destinationActor.uuid,
     destinationItemUuid: `${harness.destinationActor.uuid}.Item.created-item`,
     merged: false,
@@ -695,6 +706,32 @@ test('destination write failure leaves the source untouched', async () => {
   assert.equal(response.error.code, PARTY_ITEM_TRANSFER_ERROR_CODES.writeFailed);
   assert.deepEqual(harness.calls.map(([name]) => name), ['destinationCreate']);
   assert.equal(harness.sourceActor.items.length, 1);
+  assert.equal(harness.auditReports.length, 0);
+});
+
+test('destination merge failure leaves both stacks untouched', async () => {
+  const harness = createOperationHarness();
+  const existing = createItem({
+    actor: harness.destinationActor,
+    bundle: 2,
+    id: 'existing-item',
+    max: 4,
+    quantity: 2,
+  });
+  existing.update = async () => {
+    harness.calls.push(['destinationUpdate']);
+    throw new Error('merge failed');
+  };
+  harness.destinationActor.items.push(existing);
+
+  const response = await transferRequest(harness, { quantity: 2 });
+
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, PARTY_ITEM_TRANSFER_ERROR_CODES.writeFailed);
+  assert.deepEqual(harness.calls.map(([name]) => name), ['destinationUpdate']);
+  assert.equal(harness.sourceItem.system.quantity.value, 5);
+  assert.equal(existing.system.quantity.value, 2);
+  assert.equal(harness.auditReports.length, 0);
 });
 
 test('source write failure removes the created destination Item', async () => {
@@ -794,6 +831,42 @@ test('transfer service merges compatible ordinary items and restores them on fai
   ]);
 });
 
+test('transfer audit reports exact participants after successful writes', async () => {
+  const harness = createOperationHarness();
+  const response = await transferRequest(harness, { quantity: 2 });
+
+  assert.equal(response.ok, true);
+  assert.equal(response.value.auditCreated, true);
+  assert.deepEqual(harness.auditReports, [{
+    destinationActorUuid: harness.destinationActor.uuid,
+    destinationName: harness.destinationActor.name ?? '',
+    itemName: harness.sourceItem.name,
+    merged: false,
+    quantity: 2,
+    requesterName: '',
+    requesterUserId: 'player',
+    sourceActorUuid: harness.sourceActor.uuid,
+    sourceItemUuid: harness.sourceItem.uuid,
+    sourceName: harness.sourceActor.name ?? '',
+  }]);
+  assert.deepEqual(harness.calls.map(([name]) => name), [
+    'destinationCreate',
+    'sourceUpdate',
+  ]);
+});
+
+test('audit failure keeps completed documents consistent and returns warning state', async () => {
+  const harness = createOperationHarness();
+  harness.failures.audit = true;
+  const response = await transferRequest(harness);
+
+  assert.equal(response.ok, true);
+  assert.equal(response.value.auditCreated, false);
+  assert.equal(harness.sourceActor.items.length, 0);
+  assert.equal(harness.destinationActor.items.length, 1);
+  assert.equal(harness.auditReports.length, 1);
+});
+
 test('transfer request uses the registered operation and strict payload', async () => {
   const harness = createOperationHarness({ requester: { id: 'gm', isGM: true } });
   const response = await harness.service.transferToTreasury({
@@ -825,6 +898,7 @@ test('treasury-to-character full transfer creates destination before deletion', 
   assert.equal(harness.sourceActor.items.length, 0);
   assert.equal(harness.destinationActor.items.length, 1);
   assert.deepEqual(response.value, {
+    auditCreated: true,
     destinationActorUuid: harness.destinationActor.uuid,
     destinationItemUuid:
       `${harness.destinationActor.uuid}.Item.character-created-item`,
@@ -894,4 +968,19 @@ test('reverse source failure removes the created character Item', async () => {
     PARTY_ITEM_TRANSFER_OPERATIONS.fromTreasury,
     'party.transferItemFromTreasury',
   );
+});
+
+test('reverse destination failure leaves the treasury Item untouched', async () => {
+  const harness = prepareReverseHarness();
+  harness.failures.reverseDestinationCreate = true;
+
+  const response = await reverseTransferRequest(harness);
+
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, PARTY_ITEM_TRANSFER_ERROR_CODES.writeFailed);
+  assert.deepEqual(harness.calls.map(([name]) => name), ['characterCreate']);
+  assert.equal(harness.sourceActor.items.length, 1);
+  assert.equal(harness.sourceItem.system.quantity.value, 5);
+  assert.equal(harness.destinationActor.items.length, 0);
+  assert.equal(harness.auditReports.length, 0);
 });

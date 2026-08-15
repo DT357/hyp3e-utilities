@@ -133,6 +133,7 @@ function applyFlatUpdate(target, update) {
 export function createPartyItemTransferService({
   adapter,
   canMerge,
+  chatCards,
   game,
   logger = console,
   mutations,
@@ -155,6 +156,9 @@ export function createPartyItemTransferService({
     || typeof adapter?.buildItemTransferCreateUpdate !== 'function'
   ) {
     throw new TypeError('Party item transfers require the hyp3e adapter.');
+  }
+  if (typeof chatCards?.createItemTransferReport !== 'function') {
+    throw new TypeError('Party item transfers require transfer audit chat.');
   }
   const mergeCompatibility = typeof canMerge === 'function'
     ? canMerge
@@ -358,7 +362,7 @@ export function createPartyItemTransferService({
       );
     }
 
-    return {
+    const result = {
       destinationActorUuid: destinationActor.uuid,
       destinationItemUuid: destinationReceipt.item.uuid,
       merged: destinationReceipt.action === 'update',
@@ -367,6 +371,26 @@ export function createPartyItemTransferService({
       sourceDeleted: plan.source.action === 'delete',
       sourceItemUuid: sourceItem.uuid,
     };
+    try {
+      await chatCards.createItemTransferReport({
+        destinationActorUuid: destinationActor.uuid,
+        destinationName: destinationActor.name ?? '',
+        itemName: sourceItem.name ?? '',
+        merged: result.merged,
+        quantity: plan.quantity,
+        requesterName: requester?.name ?? '',
+        requesterUserId: requester?.id ?? '',
+        sourceActorUuid: sourceActor.uuid,
+        sourceItemUuid: sourceItem.uuid,
+        sourceName: sourceActor.name ?? '',
+      });
+      result.auditCreated = true;
+    }
+    catch (error) {
+      logger.warn?.('Item transfer audit chat failed.', error);
+      result.auditCreated = false;
+    }
+    return result;
   }
 
   mutations.registerOperation(PARTY_ITEM_TRANSFER_OPERATIONS.toTreasury, {

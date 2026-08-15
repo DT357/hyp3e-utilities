@@ -245,7 +245,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 | ITM-004 | `DONE` | ITM-002, ITM-003 | Correct quantity, bundle, maximum, and merge semantics | Verified fixtures for weapon, armor, shield, and item types |
 | ITM-005 | `DONE` | ITM-002, ITM-003, PB-007 | Supported drag/drop entry points on Party and Actor sheets | Valid drop, unauthorized drop, cancelled dialog, and invalid payload |
 | ITM-006 | `DONE` | ITM-001 | Explicit container and unsupported-item rejection | Non-empty container causes no document mutation and a clear notice |
-| ITM-007 | `TODO` | ITM-002, ITM-003 | Transfer audit chat/report and compensating rollback | Injected failure at each write boundary leaves consistent documents |
+| ITM-007 | `DONE` | ITM-002, ITM-003 | Transfer audit chat/report and compensating rollback | Injected failure at each write boundary leaves consistent documents |
 
 M4 is complete when all TRY and ITM items are `DONE`; no tested failure path duplicates or destroys an item; and the 0.4.0 package passes all earlier regression matrices.
 
@@ -344,11 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 3 are complete. TRY-001 and TRY-002 established the
-managed treasury and its read-only views; ITM-001 now provides the pure,
-immutable transfer planner, and ITM-002 provides the authoritative
-character-to-treasury operation, and ITM-003 provides its reverse. Proceed
-next with transfer audit chat and recovery hardening in ITM-007.
+Milestones 0 through 3 are complete. All Milestone 4 work items and their
+Foundry 13/14 live transfer matrix are complete. Proceed next with the 0.4.0
+package/version regression gate, then XP-001.
 
 ## 15. Current Project Status
 
@@ -356,8 +354,10 @@ next with transfer audit chat and recovery hardening in ITM-007.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestones 0 through 3 are complete.
-- Immediate next batch: Add transfer audit and recovery in ITM-007.
+- Implementation: Milestones 0 through 3 and all Milestone 4 work items are
+  complete; the 0.4.0 package gate remains.
+- Immediate next batch: Complete the 0.4.0 package/version regression gate,
+  then begin XP-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

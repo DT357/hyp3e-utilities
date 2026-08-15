@@ -124,6 +124,7 @@
         "itemTransferPrompt": "Move {item} from {source} to {destination}?",
         "itemTransferConfirm": "Transfer",
         "itemTransferComplete": "The item transfer is complete.",
+        "itemTransferAuditFailed": "The item transfer is complete, but its audit chat card could not be created.",
         "itemTransferFailed": "The item transfer could not be completed.",
         "itemTransferInvalid": "That drop does not identify a supported transferable item.",
         "itemTransferContainerUnsupported": "Containers cannot be transferred. Remove their contents and move the individual items instead.",
@@ -241,6 +242,17 @@
           "middle": "Middle",
           "rear": "Rear"
         }
+      },
+      "itemTransfer": {
+        "title": "Party Item Transfer",
+        "item": "Item",
+        "quantity": "Quantity",
+        "source": "Source",
+        "destination": "Destination",
+        "requester": "Requested By",
+        "mode": "Destination",
+        "created": "New Item",
+        "merged": "Merged Stack"
       },
       "actions": {
         "reaction": "Reaction Roll",

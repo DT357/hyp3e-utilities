@@ -10,6 +10,7 @@ import {
 function createHarness({
   authorized = true,
   dialogResult = 2,
+  transferValue = {},
   owned = true,
   treasuryVisible = true,
 } = {}) {
@@ -97,11 +98,11 @@ function createHarness({
   const transfers = {
     async transferFromTreasury(payload, revision) {
       calls.push(['fromTreasury', payload, revision]);
-      return { ok: true, value: {} };
+      return { ok: true, value: transferValue };
     },
     async transferToTreasury(payload, revision) {
       calls.push(['toTreasury', payload, revision]);
-      return { ok: true, value: {} };
+      return { ok: true, value: transferValue };
     },
   };
   const controller = createItemTransferUiController({
@@ -221,6 +222,26 @@ test('snapshot reference supports reverse transfer when treasury is locally hidd
   ]);
 });
 
+test('completed transfer warns when its audit chat could not be created', async () => {
+  const harness = createHarness({ transferValue: { auditCreated: false } });
+
+  const response = await harness.controller.transferToTreasury(
+    harness.characterItem.uuid,
+  );
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(harness.notifications, [
+    [
+      'info',
+      'hyp3e-utilities.applications.partySheet.itemTransferComplete',
+    ],
+    [
+      'warn',
+      'hyp3e-utilities.applications.partySheet.itemTransferAuditFailed',
+    ],
+  ]);
+});
+
 test('cancelled confirmation and invalid drop payload perform no request', async () => {
   const cancelled = createHarness({ dialogResult: null });
   const cancelResponse = await cancelled.controller.handlePartyDrop(
@@ -330,11 +351,14 @@ test('Actor sheet activation adds owned-character controls and custom drop captu
   assert.equal(listeners.get('dragover').capture, true);
 });
 
-test('controller lifecycle registers and removes one Actor sheet hook', () => {
+test('controller lifecycle registers and removes the hyp3e ActorSheetV2 hook', () => {
   const harness = createHarness();
   assert.equal(harness.controller.start(), true);
   assert.equal(harness.controller.start(), false);
-  assert.equal(typeof harness.hooks.handlers.get('renderActorSheet'), 'function');
+  assert.equal(
+    typeof harness.hooks.handlers.get('renderActorSheetV2'),
+    'function',
+  );
   assert.equal(harness.controller.stop(), true);
-  assert.deepEqual(harness.calls.at(-1), ['hookOff', 'renderActorSheet', 1]);
+  assert.deepEqual(harness.calls.at(-1), ['hookOff', 'renderActorSheetV2', 1]);
 });

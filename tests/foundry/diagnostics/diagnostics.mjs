@@ -12,6 +12,7 @@ const RUN_PREFIX = 'Hyp3e Utilities Compatibility';
 
 let diagnosticSocket;
 let productionMutationExecutions = 0;
+let itemTransferCleanup = async () => {};
 let treasuryViewCleanup = async () => {};
 
 const results = {
@@ -39,6 +40,7 @@ const results = {
   ref001: {},
   try001: {},
   try002: {},
+  itm007: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -3095,6 +3097,213 @@ async function testProductionPartyTreasuryViews() {
   };
 }
 
+async function cleanupItemTransferFixtures() {
+  if (!game.user.isGM) return;
+  const api = game.modules.get(MODULE_ID).api;
+  const fixtureActors = game.actors.filter(
+    (actor) => actor.getFlag(DIAGNOSTIC_ID, 'itm007') === true,
+  );
+  const fixtureActorUuids = new Set(fixtureActors.map((actor) => actor.uuid));
+  for (const actor of fixtureActors) {
+    const state = api.partyStore.getState();
+    const operations = [
+      ['memberActorUuids', 'party.removeMember'],
+      ['followerActorUuids', 'party.removeFollower'],
+    ];
+    for (const [collection, operation] of operations) {
+      if (!state[collection].includes(actor.uuid)) continue;
+      await api.partyMutations.request(operation, {
+        expectedRevision: api.partyStore.getState().revision,
+        payload: { actorUuid: actor.uuid },
+        requestId: `itm007-cleanup-${operation}-${foundry.utils.randomID()}`,
+      });
+    }
+  }
+  if (fixtureActors.length) {
+    await Actor.deleteDocuments(fixtureActors.map((actor) => actor.id));
+  }
+
+  const treasury = api.partyTreasury.getStatus().actor;
+  const treasuryItemIds = treasury?.items.filter(
+    (item) => item.getFlag(DIAGNOSTIC_ID, 'itm007') === true,
+  ).map((item) => item.id) ?? [];
+  if (treasuryItemIds.length) {
+    await treasury.deleteEmbeddedDocuments('Item', treasuryItemIds);
+  }
+
+  const auditMessageIds = game.messages.filter((message) => {
+    const flags = message.flags?.[MODULE_ID];
+    return flags?.action === 'itemTransfer'
+      && (
+        fixtureActorUuids.has(flags.sourceActorUuid)
+        || fixtureActorUuids.has(flags.destinationActorUuid)
+      );
+  }).map((message) => message.id);
+  if (auditMessageIds.length) {
+    await ChatMessage.deleteDocuments(auditMessageIds);
+  }
+}
+
+async function testProductionItemTransfers(playerUserIds) {
+  const api = game.modules.get(MODULE_ID).api;
+  await cleanupItemTransferFixtures();
+  itemTransferCleanup = cleanupItemTransferFixtures;
+  const treasury = api.partyTreasury.getStatus().actor;
+  if (!treasury) throw new Error('ITM-007 requires the managed Party Treasury.');
+
+  const ownership = {
+    default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE,
+    [game.user.id]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER,
+  };
+  for (const playerUserId of playerUserIds) {
+    ownership[playerUserId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+  }
+  const actor = await Actor.create({
+    flags: { [DIAGNOSTIC_ID]: { itm007: true } },
+    name: `${RUN_PREFIX} ITM-007 Character`,
+    ownership,
+    type: 'character',
+  });
+  const addMember = await api.partyMutations.request('party.addMember', {
+    expectedRevision: api.partyStore.getState().revision,
+    payload: { actorUuid: actor.uuid },
+    requestId: `itm007-add-member-${foundry.utils.randomID()}`,
+  });
+  const [gmItem, playerItem] = await actor.createEmbeddedDocuments('Item', [
+    {
+      flags: { [DIAGNOSTIC_ID]: { itm007: true, role: 'gm' } },
+      name: `${RUN_PREFIX} ITM-007 GM Item`,
+      system: { quantity: { bundle: 2, max: 4, value: 4 } },
+      type: 'item',
+    },
+    {
+      flags: { [DIAGNOSTIC_ID]: { itm007: true, role: 'player' } },
+      name: `${RUN_PREFIX} ITM-007 Player Item`,
+      system: { quantity: { bundle: 1, max: 3, value: 3 } },
+      type: 'item',
+    },
+  ]);
+
+  const toTreasury = await api.partyItemTransfers.transferToTreasury({
+    expectedSourceQuantity: 4,
+    quantity: 2,
+    sourceActorUuid: actor.uuid,
+    sourceItemUuid: gmItem.uuid,
+  });
+  const treasuryItem = treasury.items.get(
+    toTreasury.value?.destinationItemUuid?.split('.').at(-1),
+  );
+  const partialTransferConserved = toTreasury.ok
+    && api.adapter.getItemQuantity(gmItem).value === 2
+    && api.adapter.getItemQuantity(treasuryItem).value === 2;
+  const fromTreasury = await api.partyItemTransfers.transferFromTreasury({
+    destinationActorUuid: actor.uuid,
+    expectedSourceQuantity: 2,
+    quantity: 2,
+    sourceItemUuid: treasuryItem?.uuid,
+  });
+  const gmAuditMessages = game.messages.filter((message) => {
+    const flags = message.flags?.[MODULE_ID];
+    return flags?.action === 'itemTransfer'
+      && flags.requesterUserId === game.user.id
+      && (
+        flags.sourceActorUuid === actor.uuid
+        || flags.destinationActorUuid === actor.uuid
+      );
+  });
+
+  return {
+    actorUuid: actor.uuid,
+    addMemberSucceeded: addMember.ok,
+    auditCardsCreated:
+      gmAuditMessages.length === 2
+      && gmAuditMessages.every((message) => message.whisper.length === 0),
+    bidirectionalSucceeded: toTreasury.ok && fromTreasury.ok,
+    itemServicePublished:
+      typeof api.partyItemTransfers?.transferToTreasury === 'function'
+      && typeof api.partyItemTransfers?.transferFromTreasury === 'function',
+    partialTransferConserved,
+    restoredToCharacter:
+      !treasury.items.has(treasuryItem?.id)
+      && api.adapter.getItemQuantity(gmItem).value === 4,
+    playerFixtureReady:
+      playerItem.parent?.uuid === actor.uuid
+      && api.adapter.getItemQuantity(playerItem).value === 3,
+  };
+}
+
+async function testPlayerItemTransfers() {
+  const api = game.modules.get(MODULE_ID).api;
+  const actor = game.actors.find(
+    (entry) => entry.getFlag(DIAGNOSTIC_ID, 'itm007') === true,
+  );
+  const item = actor?.items.find(
+    (entry) => entry.getFlag(DIAGNOSTIC_ID, 'role') === 'player',
+  );
+  if (!actor || !item) throw new Error('ITM-007 Player fixtures are unavailable.');
+
+  await actor.sheet.render(true);
+  const actorSheetControlRendered = await waitUntil(() => Boolean(
+    actor.sheet.element?.querySelector?.(
+      `.${MODULE_ID}__send-item[data-item-uuid="${item.uuid}"]`,
+    ),
+  ));
+  if (actor.sheet.rendered) await actor.sheet.close();
+
+  const toTreasury = await api.partyItemTransfers.transferToTreasury({
+    expectedSourceQuantity: 3,
+    quantity: 3,
+    sourceActorUuid: actor.uuid,
+    sourceItemUuid: item.uuid,
+  });
+  const sheet = new api.applications.OpenPartySheetApplication();
+  let partySheetTakeControlRendered = false;
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="supplies"]',
+    )?.click();
+    partySheetTakeControlRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector(
+        `[data-action="takeTreasuryItem"][data-item-uuid="${toTreasury.value?.destinationItemUuid}"]:not([disabled])`,
+      ),
+    ));
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+  }
+
+  const fromTreasury = await api.partyItemTransfers.transferFromTreasury({
+    destinationActorUuid: actor.uuid,
+    expectedSourceQuantity: 3,
+    quantity: 3,
+    sourceItemUuid: toTreasury.value?.destinationItemUuid,
+  });
+  const returnedItem = actor.items.get(
+    fromTreasury.value?.destinationItemUuid?.split('.').at(-1),
+  );
+  const playerAuditMessages = game.messages.filter((message) => {
+    const flags = message.flags?.[MODULE_ID];
+    return flags?.action === 'itemTransfer'
+      && flags.requesterUserId === game.user.id
+      && (
+        flags.sourceActorUuid === actor.uuid
+        || flags.destinationActorUuid === actor.uuid
+      );
+  });
+
+  return {
+    actorSheetControlRendered,
+    auditCardsCreated:
+      playerAuditMessages.length === 2
+      && playerAuditMessages.every((message) => message.whisper.length === 0),
+    bidirectionalSucceeded: toTreasury.ok && fromTreasury.ok,
+    ownershipEnforced: actor.testUserPermission(game.user, 'OWNER'),
+    partySheetTakeControlRendered,
+    quantityConserved: api.adapter.getItemQuantity(returnedItem).value === 3,
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -3177,8 +3386,13 @@ async function runGmDiagnostics() {
       gm: await testProductionPartyTreasuryViews(),
       waitingForPlayer: true,
     };
+    const grantedPlayerUserIds = await grantDiagnosticPartyAccess();
     results.par002 = {
-      grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
+      grantedPlayerUserIds,
+      waitingForPlayer: true,
+    };
+    results.itm007 = {
+      gm: await testProductionItemTransfers(grantedPlayerUserIds),
       waitingForPlayer: true,
     };
     results.par004 = { waitingForPlayer: true };
@@ -3186,6 +3400,7 @@ async function runGmDiagnostics() {
     results.status = 'complete';
   }
   catch (error) {
+    await itemTransferCleanup();
     await treasuryViewCleanup();
     results.errors.push(serializeError(error));
     results.status = 'failed';
@@ -3905,6 +4120,7 @@ async function runPlayerSocketDiagnostic() {
     finally {
       if (treasuryViewSheet.rendered) await treasuryViewSheet.close();
     }
+    const itemTransferResult = await testPlayerItemTransfers();
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
@@ -3916,6 +4132,7 @@ async function runPlayerSocketDiagnostic() {
     results.ref001 = refreshResult;
     results.try001 = treasuryPlayerResult;
     results.try002 = treasuryViewPlayerResult;
+    results.itm007 = itemTransferResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3930,6 +4147,7 @@ async function runPlayerSocketDiagnostic() {
       ref001: refreshResult,
       try001: treasuryPlayerResult,
       try002: treasuryViewPlayerResult,
+      itm007: itemTransferResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -4054,6 +4272,16 @@ Hooks.once('ready', async () => {
       player: message.try002,
       waitingForPlayer: false,
     };
+    results.itm007 = {
+      ...results.itm007,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.itm007,
+      waitingForPlayer: false,
+    };
+    await itemTransferCleanup();
+    itemTransferCleanup = async () => {};
     await treasuryViewCleanup();
     treasuryViewCleanup = async () => {};
     publishResults();

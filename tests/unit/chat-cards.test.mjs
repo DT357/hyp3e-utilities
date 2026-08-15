@@ -39,6 +39,15 @@ const TRANSLATIONS = {
   'hyp3e-utilities.chat.marchingOrder.ranks.front': 'Front',
   'hyp3e-utilities.chat.marchingOrder.ranks.middle': 'Middle',
   'hyp3e-utilities.chat.marchingOrder.ranks.rear': 'Rear',
+  'hyp3e-utilities.chat.itemTransfer.title': 'Party Item Transfer',
+  'hyp3e-utilities.chat.itemTransfer.item': 'Item',
+  'hyp3e-utilities.chat.itemTransfer.quantity': 'Quantity',
+  'hyp3e-utilities.chat.itemTransfer.source': 'Source',
+  'hyp3e-utilities.chat.itemTransfer.destination': 'Destination',
+  'hyp3e-utilities.chat.itemTransfer.requester': 'Requested By',
+  'hyp3e-utilities.chat.itemTransfer.mode': 'Destination',
+  'hyp3e-utilities.chat.itemTransfer.created': 'New Item',
+  'hyp3e-utilities.chat.itemTransfer.merged': 'Merged Stack',
 };
 
 function createHarness({
@@ -300,4 +309,39 @@ test('marching-order reports are public, ordered, escaped, and retain empty rank
   assert.match(content, /<li[^>]*>Empty<\/li>/);
   assert.equal(content.includes('<b>First</b>'), false);
   assert.equal(content.includes('<script>'), false);
+});
+
+test('item transfer audit is public, escaped, and carries stable document flags', async () => {
+  const harness = createHarness();
+  const report = await harness.service.createItemTransferReport({
+    destinationActorUuid: 'Actor.treasury',
+    destinationName: 'Party <Treasury>',
+    itemName: '<script>Rope</script>',
+    merged: true,
+    quantity: 3,
+    requesterName: 'Player & Friend',
+    requesterUserId: 'player-id',
+    sourceActorUuid: 'Actor.character',
+    sourceItemUuid: 'Actor.character.Item.rope',
+    sourceName: 'Astra',
+  });
+
+  assert.equal(report.message.id, 'message-1');
+  assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
+  assert.deepEqual(harness.messages[0].flags['hyp3e-utilities'], {
+    action: 'itemTransfer',
+    destinationActorUuid: 'Actor.treasury',
+    feature: 'partySheet',
+    merged: true,
+    quantity: 3,
+    requesterUserId: 'player-id',
+    sourceActorUuid: 'Actor.character',
+    sourceItemUuid: 'Actor.character.Item.rope',
+  });
+  assert.match(harness.messages[0].content, /Party Item Transfer/);
+  assert.match(harness.messages[0].content, /&lt;script&gt;Rope&lt;\/script&gt;/);
+  assert.match(harness.messages[0].content, /Party &lt;Treasury&gt;/);
+  assert.match(harness.messages[0].content, /Player &amp; Friend/);
+  assert.match(harness.messages[0].content, /Merged Stack/);
+  assert.equal(harness.messages[0].content.includes('<script>'), false);
 });

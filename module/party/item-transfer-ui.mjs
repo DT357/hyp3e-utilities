@@ -199,6 +199,21 @@ export function createItemTransferUiController({
     return null;
   }
 
+  function notifyTransferResult(response) {
+    notify(
+      notifications,
+      response?.ok ? 'info' : 'error',
+      `${APP_NAMESPACE}.${response?.ok ? 'itemTransferComplete' : 'itemTransferFailed'}`,
+    );
+    if (response?.ok && response.value?.auditCreated === false) {
+      notify(
+        notifications,
+        'warn',
+        `${APP_NAMESPACE}.itemTransferAuditFailed`,
+      );
+    }
+  }
+
   async function transferToTreasury(sourceItemUuid) {
     const source = resolveItem(sourceItemUuid);
     const destinationActor = getManagedTreasury();
@@ -230,11 +245,7 @@ export function createItemTransferUiController({
       sourceActorUuid: source.actor.uuid,
       sourceItemUuid: source.item.uuid,
     }, revision);
-    notify(
-      notifications,
-      response?.ok ? 'info' : 'error',
-      `${APP_NAMESPACE}.${response?.ok ? 'itemTransferComplete' : 'itemTransferFailed'}`,
-    );
+    notifyTransferResult(response);
     return response ?? null;
   }
 
@@ -293,11 +304,7 @@ export function createItemTransferUiController({
       ...selection,
       sourceItemUuid: item.uuid,
     }, revision);
-    notify(
-      notifications,
-      response?.ok ? 'info' : 'error',
-      `${APP_NAMESPACE}.${response?.ok ? 'itemTransferComplete' : 'itemTransferFailed'}`,
-    );
+    notifyTransferResult(response);
     return response ?? null;
   }
 
@@ -396,7 +403,7 @@ export function createItemTransferUiController({
       return false;
     }
     actorSheetHookId = hooks.on(
-      'renderActorSheet',
+      'renderActorSheetV2',
       (application, html) => activateActorSheet(application, html),
     );
     return true;
@@ -404,7 +411,7 @@ export function createItemTransferUiController({
 
   function stop() {
     if (actorSheetHookId === null) return false;
-    hooks.off?.('renderActorSheet', actorSheetHookId);
+    hooks.off?.('renderActorSheetV2', actorSheetHookId);
     actorSheetHookId = null;
     return true;
   }

@@ -264,6 +264,7 @@ export function registerModuleLifecycle({
     });
     partyItemTransfers = createPartyItemTransferService({
       adapter: hyp3eAdapter,
+      chatCards,
       game: currentGame,
       logger,
       mutations: partyMutations,

@@ -462,10 +462,33 @@ Items and restored the original five coin values in each disposable world. Raw
 Foundry sender identity matched both Players, the prior regression remained
 green, and no diagnostic errors were recorded.
 
+### Bidirectional Item transfers and audit recovery (ITM-007)
+
+Foundry 13.351 with hyp3e 4.0.3 and Foundry 14.365 with hyp3e 4.1.0 each
+completed the production transfer matrix with connected GM and authorized
+Player clients. Partial and full ordinary-Item transfers conserved quantity,
+bundle, and maximum values in both directions. Source ownership, active-GM
+execution, raw Player sender identity, public audit cards, and post-test fixture
+cleanup all passed.
+
+The first Foundry 14 pass exposed that hyp3e uses `ActorSheetV2`; the legacy
+`renderActorSheet` hook therefore could not add the Actor Sheet transfer
+button. Binding the control to `renderActorSheetV2` fixed both supported
+generations. The corrected passes rendered an enabled Actor Sheet "To Party"
+button and Party Sheet "Take" button for the authorized Player. No
+transfer-related browser warning or error remained.
+
+The automated recovery matrix independently injected failures into destination
+creation and merge, source update and deletion, compensation, and audit chat.
+Pre-source failures preserved the source, recoverable post-destination failures
+restored the destination, and post-commit chat failure retained consistent
+inventory with an explicit warning.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
 PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
-TRY-001, TRY-002, and ITM-001 through ITM-006 are complete. No compatibility
+TRY-001, TRY-002, and ITM-001 through ITM-007 are complete. No compatibility
 finding contradicts the approved architecture. Milestones 1 through 3 are
-complete; Milestone 4 continues with transfer audit/recovery in ITM-007.
+complete; only the 0.4.0 package/version regression gate remains before
+Milestone 4 closes.
