@@ -30,6 +30,7 @@ import { createPartySupplyService } from '../party/party-supplies.mjs';
 import { createPartyTreasuryService } from '../party/party-treasury.mjs';
 import { createPartyXpPreviewService } from '../party/party-xp-preview.mjs';
 import { createPartyXpAwardService } from '../party/party-xp-awards.mjs';
+import { createPartyWagePreviewService } from '../party/party-wage-preview.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -131,6 +132,7 @@ export function registerModuleLifecycle({
   let partyTreasury;
   let partyXp;
   let partyXpAwards;
+  let partyWages;
   let transport;
   let socketlibReady = false;
   let foundationInitialized = false;
@@ -191,6 +193,7 @@ export function registerModuleLifecycle({
       partyTreasuryProvider: () => partyTreasury,
       partyXpAwardsProvider: () => partyXpAwards,
       partyXpProvider: () => partyXp,
+      partyWagesProvider: () => partyWages,
     });
     hooks.on(
       'activateActorDirectory',
@@ -303,6 +306,12 @@ export function registerModuleLifecycle({
       previewService: partyXp,
       store: partyStore,
     });
+    partyWages = createPartyWagePreviewService({
+      adapter: hyp3eAdapter,
+      game: currentGame,
+      mutations: partyMutations,
+      store: partyStore,
+    });
     partyItemTransfers = createPartyItemTransferService({
       adapter: hyp3eAdapter,
       chatCards,
@@ -354,6 +363,7 @@ export function registerModuleLifecycle({
       partyTreasury,
       partyXp,
       partyXpAwards,
+      partyWages,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);

@@ -56,6 +56,7 @@ export function createFoundationApplications({
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
   partyTreasuryProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyTreasury,
+  partyWagesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyWages,
   partyXpAwardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXpAwards,
   partyXpProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXp,
   proseMirrorElementClass = globalThis.foundry?.applications?.elements
@@ -228,6 +229,7 @@ export function createFoundationApplications({
       this._partyNoteDraft = null;
       this._partyTabScrollPositions = new Map();
       this._supplyDraft = null;
+      this._wageDraft = null;
       this._xpDraft = null;
       this._externalRefreshScheduled = false;
       this._partyHookSubscriptions = [];
@@ -257,6 +259,7 @@ export function createFoundationApplications({
         pingActor: OpenPartySheetApplication.pingActor,
         previewXp: OpenPartySheetApplication.previewXp,
         previewCoins: OpenPartySheetApplication.previewCoins,
+        previewWages: OpenPartySheetApplication.previewWages,
         reportMarchingOrder: OpenPartySheetApplication.reportMarchingOrder,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
@@ -493,6 +496,7 @@ export function createFoundationApplications({
       this._marchingNoteDrafts.clear();
       this._partyNoteDraft = null;
       this._supplyDraft = null;
+      this._wageDraft = null;
       this._xpDraft = null;
       await this.render({ force: true });
     }
@@ -511,6 +515,24 @@ export function createFoundationApplications({
           notifications,
           'error',
           `${APP_NAMESPACE}.partySheet.coinPreviewFailed`,
+        );
+      }
+      await this.render({ force: true });
+    }
+
+    static async previewWages(_event, target) {
+      this._captureWageDraft({ target });
+      const service = partyWagesProvider();
+      if (!this._wageDraft || typeof service?.requestPreview !== 'function') return;
+      const response = await service.requestPreview({
+        selectedActorUuids: this._wageDraft.selectedActorUuids,
+      }, this._wageDraft.baseRevision);
+      if (response?.ok) this._wageDraft.preview = response.value;
+      else {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.wagePreviewFailed`,
         );
       }
       await this.render({ force: true });
@@ -902,6 +924,20 @@ export function createFoundationApplications({
           '[data-xp-recipient]:checked',
         )).map((element) => element.dataset.actorUuid),
         totalXp: section.querySelector('[data-xp-total]')?.value ?? '',
+      };
+    }
+
+    _captureWageDraft(event) {
+      const section = event.target?.closest?.('[data-party-wages]');
+      if (!section) return;
+      this._wageDraft = {
+        baseRevision: this._wageDraft?.baseRevision
+          ?? partyStoreProvider()?.getState()?.revision
+          ?? 0,
+        preview: null,
+        selectedActorUuids: Array.from(section.querySelectorAll(
+          '[data-wage-recipient]:checked',
+        )).map((element) => element.dataset.actorUuid),
       };
     }
 
@@ -1391,6 +1427,26 @@ export function createFoundationApplications({
           })),
         }),
       );
+      const canPreviewWages =
+        decision.allowed
+        && lifecycleReady
+        && this._activeTab === 'followers';
+      const wageService = canPreviewWages ? partyWagesProvider() : null;
+      const wageInput = this._wageDraft
+        ? { selectedActorUuids: this._wageDraft.selectedActorUuids }
+        : {};
+      const wagePreview = this._wageDraft?.preview ?? null;
+      const wageInputResponse =
+        wagePreview === null
+        && typeof wageService?.requestPreview === 'function'
+        ? await wageService.requestPreview(wageInput, state.revision)
+        : null;
+      const wageModel = wagePreview ?? (
+        wageInputResponse?.ok ? wageInputResponse.value : null
+      );
+      const wagePreviewStale =
+        this._wageDraft !== null
+        && this._wageDraft.baseRevision !== state.revision;
       const canDistributeXp = game.user?.isGM === true;
       const xpService = canDistributeXp ? partyXpProvider() : null;
       const xpInput = this._xpDraft
@@ -1436,6 +1492,7 @@ export function createFoundationApplications({
             && COIN_KEYS.some((coinKey) => entry.awards[coinKey] > 0)
           )),
         canPreviewCoins,
+        canPreviewWages,
         canDistributeXp,
         canConfirmXp:
           xpPreview !== null
@@ -1454,6 +1511,7 @@ export function createFoundationApplications({
           ...(this._supplyDraft ? [this._supplyDraft] : []),
           ...(this._xpDraft ? [this._xpDraft] : []),
           ...(this._coinDraft ? [this._coinDraft] : []),
+          ...(this._wageDraft ? [this._wageDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
@@ -1463,6 +1521,7 @@ export function createFoundationApplications({
             || this._supplyDraft !== null
             || this._xpDraft !== null
             || this._coinDraft !== null
+            || this._wageDraft !== null
           ),
         hasMembers: members.length > 0,
         members,
@@ -1504,6 +1563,11 @@ export function createFoundationApplications({
         coinPreviewStale,
         coinTotalShares: coinModel?.totalShares ?? 0,
         hasCoinRecipients: coinDistributions.length > 0,
+        hasWageFollowers: (wageModel?.followers?.length ?? 0) > 0,
+        wageModel,
+        wagePreview,
+        wagePreviewReady: wagePreview !== null,
+        wagePreviewStale,
       };
     }
 
@@ -1513,6 +1577,7 @@ export function createFoundationApplications({
         '[data-party-member-drop-zone]',
       );
       const coinSection = this.element?.querySelector?.('[data-party-coins]');
+      const wageSection = this.element?.querySelector?.('[data-party-wages]');
       const followerDropZone = this.element?.querySelector?.(
         '[data-party-follower-drop-zone]',
       );
@@ -1533,6 +1598,12 @@ export function createFoundationApplications({
         coinSection?.addEventListener(
           'input',
           this._captureCoinDraft.bind(this),
+        );
+      }
+      if (context.canPreviewWages === true) {
+        wageSection?.addEventListener(
+          'input',
+          this._captureWageDraft.bind(this),
         );
       }
       if (context.canEdit !== true) return;
@@ -1633,6 +1704,7 @@ export function createFoundationApplications({
       this._partyNoteDraft = null;
       this._partyTabScrollPositions.clear();
       this._supplyDraft = null;
+      this._wageDraft = null;
       this._xpDraft = null;
       try {
         return await super.close(options);

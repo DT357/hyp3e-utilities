@@ -246,6 +246,53 @@
             </div>
           {{/if}}
 
+          {{#if canPreviewWages}}
+            <section class="hyp3e-utilities__party-wages" data-party-wages>
+              <h3>{{localize "hyp3e-utilities.applications.partySheet.wageHeading"}}</h3>
+              <p>{{localize "hyp3e-utilities.applications.partySheet.wageHelp"}}</p>
+              {{#if hasWageFollowers}}
+                <fieldset class="hyp3e-utilities__party-wage-followers">
+                  <legend>{{localize "hyp3e-utilities.applications.partySheet.wageRecipients"}}</legend>
+                  {{#each wageModel.followers}}
+                    <label>
+                      <input
+                        type="checkbox"
+                        data-wage-recipient
+                        data-actor-uuid="{{actorUuid}}"
+                        {{#if selected}}checked{{/if}}
+                        {{#if missing}}disabled{{/if}}
+                      >
+                      <span>{{name}}</span>
+                      <small>{{localize "hyp3e-utilities.applications.partySheet.wageAmount" wage=wageGp}}</small>
+                    </label>
+                  {{/each}}
+                </fieldset>
+                <button type="button" data-action="previewWages">
+                  {{localize "hyp3e-utilities.applications.partySheet.wagePreviewAction"}}
+                </button>
+              {{else}}
+                <p role="status">{{localize "hyp3e-utilities.applications.partySheet.wageNoFollowers"}}</p>
+              {{/if}}
+              {{#if wagePreviewReady}}
+                {{#if wagePreviewStale}}
+                  <p class="hyp3e-utilities__party-treasury-warning" role="status">
+                    {{localize "hyp3e-utilities.applications.partySheet.wagePreviewStale"}}
+                  </p>
+                {{/if}}
+                <dl class="hyp3e-utilities__party-wage-summary">
+                  <div><dt>{{localize "hyp3e-utilities.applications.partySheet.wageTreasuryGp"}}</dt><dd>{{wagePreview.availableGp}}</dd></div>
+                  <div><dt>{{localize "hyp3e-utilities.applications.partySheet.wageTotal"}}</dt><dd>{{wagePreview.totalDueGp}}</dd></div>
+                  <div><dt>{{localize "hyp3e-utilities.applications.partySheet.wageRemaining"}}</dt><dd>{{wagePreview.remainingGp}}</dd></div>
+                </dl>
+                {{#unless wagePreview.enoughGp}}
+                  <p class="hyp3e-utilities__party-treasury-warning" role="status">
+                    {{localize "hyp3e-utilities.applications.partySheet.wageInsufficient" shortfall=wagePreview.shortfallGp}}
+                  </p>
+                {{/unless}}
+              {{/if}}
+            </section>
+          {{/if}}
+
           {{#if hasFollowers}}
             <ol class="hyp3e-utilities__party-members">
               {{#each followers}}

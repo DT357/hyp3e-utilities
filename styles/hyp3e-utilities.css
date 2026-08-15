@@ -318,6 +318,52 @@
   width: 100%;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-wages {
+  border: 1px solid var(--color-border-light-tertiary, #777);
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.65rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wages h3,
+.hyp3e-utilities .hyp3e-utilities__party-wages p {
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-followers {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-followers label {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-summary div {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-summary dt {
+  font-weight: 700;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-wage-summary dd {
+  margin: 0;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-members {
   display: grid;
   gap: 0.5rem;

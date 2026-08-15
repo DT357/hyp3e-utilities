@@ -1752,3 +1752,89 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
   assert.deepEqual(awardCalls, [[previewed.coinPreview, 40, 'coin-confirm-id']]);
   assert.equal(app._coinDraft, null);
 });
+
+test('Party Sheet wage preview preserves active-GM output and insufficient-GP status', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 50;
+  state.treasuryActorUuid = 'Actor.treasury';
+  state.followerActorUuids = ['Actor.one', 'Actor.two'];
+  const calls = [];
+  const makePreview = (input = {}) => ({
+    availableGp: 6,
+    canSettle: input.selectedActorUuids?.length === 1,
+    enoughGp: input.selectedActorUuids?.length === 1,
+    followers: [
+      {
+        actorUuid: 'Actor.one', missing: false, name: 'One', paymentGp: 3,
+        selected: input.selectedActorUuids?.includes('Actor.one') ?? true,
+        wageGp: 3,
+      },
+      {
+        actorUuid: 'Actor.two', missing: false, name: 'Two', paymentGp: 5,
+        selected: input.selectedActorUuids?.includes('Actor.two') ?? true,
+        wageGp: 5,
+      },
+    ],
+    remainingGp: input.selectedActorUuids?.length === 1 ? 3 : 6,
+    revision: 50,
+    shortfallGp: input.selectedActorUuids?.length === 1 ? 0 : 2,
+    totalDueGp: input.selectedActorUuids?.length === 1 ? 3 : 8,
+    treasuryActorUuid: 'Actor.treasury',
+  });
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 2 : [] },
+      user: { id: 'trusted', isGM: false, role: 2 },
+      users: [],
+    },
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyTreasuryProvider: () => ({
+      getStatus: () => ({
+        actor: null, candidates: [], configuredUuid: state.treasuryActorUuid,
+        hasDuplicates: false, kind: 'missing',
+      }),
+      requestSnapshot: async () => ({
+        ok: true,
+        value: {
+          actorUuid: state.treasuryActorUuid, coins: {}, items: [],
+          name: 'Party Treasury', ready: true, revision: 50,
+        },
+      }),
+    }),
+    partyWagesProvider: () => ({
+      requestPreview: async (input, revision) => {
+        calls.push([structuredClone(input), revision]);
+        return { ok: true, value: makePreview(input) };
+      },
+    }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
+    .call(app, undefined, { dataset: { tab: 'followers' } });
+
+  const initial = await app._prepareContext({});
+  assert.equal(initial.canPreviewWages, true);
+  assert.equal(initial.wagePreviewReady, false);
+  assert.equal(initial.wageModel.enoughGp, false);
+
+  const section = {
+    querySelectorAll: () => [{ dataset: { actorUuid: 'Actor.one' } }],
+  };
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.previewWages
+    .call(app, undefined, { closest: () => section });
+  const previewed = await app._prepareContext({});
+
+  assert.equal(previewed.wagePreviewReady, true);
+  assert.equal(previewed.wagePreview.canSettle, true);
+  assert.deepEqual(calls.at(-1), [
+    { selectedActorUuids: ['Actor.one'] },
+    50,
+  ]);
+  assert.deepEqual(app._wageDraft, {
+    baseRevision: 50,
+    preview: previewed.wagePreview,
+    selectedActorUuids: ['Actor.one'],
+  });
+});
