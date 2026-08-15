@@ -8,6 +8,7 @@ import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import { createPartyActionService } from '../party/party-actions.mjs';
+import { createPartyCleanupService } from '../party/party-cleanup.mjs';
 import { createPartyFollowerService } from '../party/party-followers.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
@@ -95,6 +96,7 @@ export function registerModuleLifecycle({
   let compatibility;
   let api;
   let partyActions;
+  let partyCleanup;
   let partyFollowers;
   let partyMembers;
   let partyMutations;
@@ -197,6 +199,13 @@ export function registerModuleLifecycle({
       logger,
       protocol: partyMutations,
     });
+    partyCleanup = createPartyCleanupService({
+      game: currentGame,
+      hooks,
+      logger,
+      mutations: partyMutations,
+      store: partyStore,
+    });
     partyMembers = createPartyMemberService({
       adapter: hyp3eAdapter,
       game: currentGame,
@@ -220,6 +229,7 @@ export function registerModuleLifecycle({
       npcRolls,
       npcSelection,
       partyActions,
+      partyCleanup,
       partyFollowers,
       partyMembers,
       partyMutations,
@@ -232,9 +242,12 @@ export function registerModuleLifecycle({
 
     hooks.once('ready', () => {
       if (!transport.available) transport.initialize();
-      void partyStore.initialize().catch((error) => {
-        logger.warn?.('Party state initialization failed.', error);
-      });
+      partyCleanup.start();
+      void partyStore.initialize()
+        .then(() => partyCleanup.pruneMissingReferences())
+        .catch((error) => {
+          logger.warn?.('Party state initialization or cleanup failed.', error);
+        });
       npcSelection.start();
       void npcActionHud.start().catch((error) => {
         logger.warn?.('NPC Action HUD failed to start.', error);

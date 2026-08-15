@@ -131,6 +131,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
     'function',
   );
   assert.equal(typeof getApi().partyActions.rollSave, 'function');
+  assert.equal(typeof getApi().partyCleanup.pruneDeletedActor, 'function');
   assert.equal(typeof getApi().partyFollowers.getFollowerRows, 'function');
   assert.equal(typeof getApi().partyMembers.getMemberRows, 'function');
   assert.equal(typeof getApi().partyMutations.request, 'function');

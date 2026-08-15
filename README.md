@@ -4,12 +4,14 @@ Foundry Virtual Tabletop utilities for the [`hyp3e`](https://github.com/thuriank
 
 ## Status
 
-The module foundation and NPC Action HUD are under active development. The HUD
-currently tracks controlled NPC tokens, displays their core combat statistics,
-opens exact token Actor sheets, and sends GM-only reaction, five-category save,
-and morale results. Its draggable position is persisted per client, resettable
-from module settings, and clamped to the current viewport. These features are
-validated on the supported Foundry and `hyp3e` versions below.
+The module foundation, NPC Action HUD, and Party Core are implemented. The HUD
+tracks controlled NPC tokens and provides GM-only reaction, five-category save,
+and morale actions. The shared Party Sheet supports authorized players, party
+members, character/NPC followers, wages and shares, Actor links, token pings,
+reused save/morale actions, conflict-safe local drafts, and automatic cleanup
+of deleted member/follower references. These features are validated on the
+supported Foundry and `hyp3e` versions below. Marching order, supplies, and
+notes are the next active milestone.
 
 ## Compatibility
 
@@ -43,12 +45,13 @@ The GitHub Actions workflow validates every push and pull request. A tag matchin
 - `module.json`, used by Foundry's manifest installer and updater
 - `hyp3e-utilities.zip`, containing the installable module
 
-For example, after changing both `module.json` and `package.json` to version `0.1.0`:
+For example, after changing both `module.json` and `package.json` to the target
+version:
 
 ```powershell
-git tag v0.1.0
+git tag v1.0.0
 git push -u origin main
-git push origin v0.1.0
+git push origin v1.0.0
 ```
 
 ## License

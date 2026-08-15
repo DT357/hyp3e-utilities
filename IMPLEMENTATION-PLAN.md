@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Milestone 2 Party Core in progress
+Status: Milestone 3 Marching Order, Supplies, and Notes in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -212,7 +212,7 @@ M1 is complete when all FND and HUD items are `DONE`, `npm run check` passes, th
 | PAR-007 | `DONE` | PAR-005 | Followers tab for character/NPC followers, employment fields, shares, and wages | Validation of Actor type and GP-only wage inputs |
 | PAR-008 | `DONE` | PAR-006, PAR-007, HUD-002, HUD-003 | Party/follower summary actions, token ping, saves, and morale reuse | No duplicate roll logic; permission and missing-token checks |
 | PAR-009 | `DONE` | PAR-005 | External-update handling and explicit unsaved-form policy | Two-client edit matrix and stale form warning |
-| PAR-010 | `TODO` | PAR-003 | Cleanup of deleted Actor references without destructive treasury behavior | Member/follower deletion and treasury deletion tests |
+| PAR-010 | `DONE` | PAR-003 | Cleanup of deleted Actor references without destructive treasury behavior | Member/follower deletion and treasury deletion tests |
 
 ### M2 acceptance matrix
 
@@ -355,8 +355,8 @@ in PAR-006.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestones 0 and 1 are complete.
-- Immediate next batch: Implement deleted-Actor reference cleanup in PAR-010 and complete the Milestone 2 gate.
+- Implementation: Milestones 0 through 2 are complete.
+- Immediate next batch: Implement the pure marching-order model and mutations in MAR-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

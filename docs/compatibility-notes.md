@@ -332,9 +332,24 @@ production socket path, and the existing sender-identity and concurrent-write
 gates remained green in both generations. Automated coverage independently
 proves the draft lifecycle and exact revision submitted on save.
 
+### Safe deleted-Actor reference cleanup (PAR-010)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the real-document cleanup gate. In both generations,
+deleting a tracked member and follower removed their references, shares,
+follower wage, and marching-order entries with exactly one Party State revision
+per Actor. An unlinked token's synthetic Actor was ignored and the linked
+follower remained tracked.
+
+Deleting the configured `treasure` Actor did not revise Party State and retained
+its exact UUID before and after tracked-Actor cleanup. This preserves the
+explicit recovery input for TRY-001 and confirms PAR-010 does not silently
+recreate, rebind, or delete treasury Actors. The full two-client Milestone 2
+regression then passed on both supported generations with no diagnostic errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-009 are complete. No compatibility finding contradicts the
-approved architecture. Milestone 1 is complete; the next compatibility work is
-deleted-Actor cleanup and the complete Milestone 2 matrix.
+PAR-001 through PAR-010 are complete. No compatibility finding contradicts the
+approved architecture. Milestones 1 and 2 are complete; the next compatibility
+work is marching order, supplies, and notes in Milestone 3.

@@ -533,12 +533,12 @@ test('Party Sheet preserves follower drafts and rejects stale saves at their bas
   state.shares = { 'Actor.retainer': 1 };
   const requests = [];
   const followerService = {
-    getFollowerRows: (currentState) => [{
+    getFollowerRows: (currentState) => currentState.followerActorUuids.map(() => ({
       actorUuid: 'Actor.retainer',
       missing: false,
       share: currentState.shares['Actor.retainer'],
       wageGp: currentState.followerWages['Actor.retainer'],
-    }],
+    })),
   };
   const classes = createFoundationApplications({
     ApplicationV2: StubApplicationV2,
@@ -594,4 +594,18 @@ test('Party Sheet preserves follower drafts and rejects stale saves at their bas
   assert.equal(discardedContext.hasUnsavedChanges, false);
   assert.equal(discardedContext.hasStaleDraft, false);
   assert.equal(discardedContext.followers[0].wageGp, 4);
+
+  app._captureFollowerDraft({
+    target: { closest: () => draftRow },
+  });
+  state = {
+    ...state,
+    revision: 4,
+    followerActorUuids: [],
+    followerWages: {},
+    shares: {},
+  };
+  const removedContext = await app._prepareContext({});
+  assert.equal(removedContext.hasUnsavedChanges, false);
+  assert.equal(removedContext.followers.length, 0);
 });

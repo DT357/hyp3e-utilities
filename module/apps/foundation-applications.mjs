@@ -560,6 +560,12 @@ export function createFoundationApplications({
       });
       const state = partyStoreProvider()?.getState()
         ?? createPartyStateDefault();
+      const followerActorUuids = new Set(state.followerActorUuids);
+      for (const actorUuid of this._followerDrafts.keys()) {
+        if (!followerActorUuids.has(actorUuid)) {
+          this._followerDrafts.delete(actorUuid);
+        }
+      }
       const followers = (partyFollowersProvider()?.getFollowerRows?.(state)
         ?? []).map((row) => {
         const draft = decision.allowed

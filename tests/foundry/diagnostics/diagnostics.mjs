@@ -30,6 +30,7 @@ const results = {
   par007: {},
   par008: {},
   par009: {},
+  par010: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -418,6 +419,7 @@ async function testProductionFoundation(character, npc) {
     chatCardsPublished: Boolean(api?.chatCards),
     partyMutationsPublished: Boolean(api?.partyMutations),
     partyActionsPublished: Boolean(api?.partyActions),
+    partyCleanupPublished: Boolean(api?.partyCleanup),
     partyFollowersPublished: Boolean(api?.partyFollowers),
     partyMembersPublished: Boolean(api?.partyMembers),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
@@ -1610,6 +1612,52 @@ function registerProductionPartyDiagnostic() {
       return { notes: payload.notes };
     },
   });
+  api.partyStore.registerMutation('party.compatibilityCleanupSetup', {
+    async mutate({ payload, state }) {
+      state.treasuryActorUuid = payload.treasuryActorUuid;
+      state.memberActorUuids.push(payload.memberActorUuid);
+      state.followerActorUuids.push(payload.followerActorUuid);
+      state.followerWages[payload.followerActorUuid] = 6;
+      state.shares[payload.memberActorUuid] = 1.25;
+      state.shares[payload.followerActorUuid] = 0.75;
+      state.marchingOrder.front.actorUuids.push(payload.memberActorUuid);
+      state.marchingOrder.rear.actorUuids.push(payload.followerActorUuid);
+    },
+    validatePayload(payload) {
+      const keys = [
+        'followerActorUuid',
+        'memberActorUuid',
+        'treasuryActorUuid',
+      ];
+      if (
+        !payload
+        || typeof payload !== 'object'
+        || Array.isArray(payload)
+        || Object.keys(payload).some((key) => !keys.includes(key))
+        || keys.some((key) => typeof payload[key] !== 'string')
+      ) {
+        throw new TypeError('Compatibility cleanup payload is invalid.');
+      }
+      return Object.fromEntries(keys.map((key) => [key, payload[key]]));
+    },
+  });
+  api.partyStore.registerMutation('party.compatibilityTreasuryMutation', {
+    async mutate({ payload, state }) {
+      state.treasuryActorUuid = payload.actorUuid;
+    },
+    validatePayload(payload) {
+      if (
+        !payload
+        || typeof payload !== 'object'
+        || Array.isArray(payload)
+        || Object.keys(payload).some((key) => key !== 'actorUuid')
+        || typeof payload.actorUuid !== 'string'
+      ) {
+        throw new TypeError('Compatibility treasury payload is invalid.');
+      }
+      return { actorUuid: payload.actorUuid };
+    },
+  });
 }
 
 function testProductionPartyPermissions() {
@@ -2174,6 +2222,133 @@ async function testProductionPartyActions(character, npc) {
   }
 }
 
+async function testProductionPartyCleanup() {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalTreasuryActorUuid = api.partyStore.getState()
+    .treasuryActorUuid;
+  let member;
+  let follower;
+  let treasury;
+  let scene;
+  const request = (operation, payload, suffix) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `par010-${game.user.id}-${suffix}`,
+    },
+  );
+
+  try {
+    [member, follower, treasury] = await Actor.createDocuments([
+      { name: `${RUN_PREFIX} Cleanup Member`, type: 'character' },
+      { name: `${RUN_PREFIX} Cleanup Follower`, type: 'npc' },
+      { name: `${RUN_PREFIX} Cleanup Treasury`, type: 'treasure' },
+    ]);
+    const setupResult = await request(
+      'party.compatibilityCleanupSetup',
+      {
+        followerActorUuid: follower.uuid,
+        memberActorUuid: member.uuid,
+        treasuryActorUuid: treasury.uuid,
+      },
+      'setup',
+    );
+    const setupObserved = await waitUntil(() => {
+      const state = api.partyStore.getState();
+      return state.memberActorUuids.includes(member.uuid)
+        && state.followerActorUuids.includes(follower.uuid)
+        && state.treasuryActorUuid === treasury.uuid;
+    });
+
+    scene = await Scene.create({
+      name: `${RUN_PREFIX} Cleanup Synthetic`,
+      active: false,
+      navigation: false,
+    });
+    const [token] = await scene.createEmbeddedDocuments('Token', [{
+      actorId: follower.id,
+      actorLink: false,
+      name: `${RUN_PREFIX} Cleanup Synthetic`,
+    }]);
+    const beforeSyntheticRevision = api.partyStore.getState().revision;
+    const syntheticResult = await api.partyCleanup.pruneDeletedActor(
+      token.actor,
+    );
+    await token.delete();
+    await wait(200);
+    const afterSynthetic = api.partyStore.getState();
+
+    const beforeTreasuryRevision = afterSynthetic.revision;
+    await treasury.delete();
+    await wait(300);
+    const afterTreasury = api.partyStore.getState();
+
+    const beforeMemberRevision = afterTreasury.revision;
+    await member.delete();
+    const memberCleanupObserved = await waitUntil(() => (
+      !api.partyStore.getState().memberActorUuids.includes(member.uuid)
+    ));
+    const afterMember = api.partyStore.getState();
+
+    const beforeFollowerRevision = afterMember.revision;
+    await follower.delete();
+    const followerCleanupObserved = await waitUntil(() => (
+      !api.partyStore.getState().followerActorUuids.includes(follower.uuid)
+    ));
+    const afterFollower = api.partyStore.getState();
+
+    return {
+      setupSucceeded: setupResult.ok && setupObserved,
+      syntheticSkipped: syntheticResult.skipped === true,
+      syntheticDeletionDidNotRevise:
+        afterSynthetic.revision === beforeSyntheticRevision,
+      syntheticDeletionKeptFollower:
+        afterSynthetic.followerActorUuids.includes(follower.uuid),
+      treasuryDeletionDidNotRevise:
+        afterTreasury.revision === beforeTreasuryRevision,
+      treasuryReferencePreserved:
+        afterTreasury.treasuryActorUuid === treasury.uuid,
+      memberCleanupObserved,
+      memberCleanupRevisedOnce:
+        afterMember.revision === beforeMemberRevision + 1,
+      memberMetadataPruned:
+        !Object.hasOwn(afterMember.shares, member.uuid)
+        && !afterMember.marchingOrder.front.actorUuids.includes(member.uuid),
+      followerRetainedAfterMemberCleanup:
+        afterMember.followerActorUuids.includes(follower.uuid)
+        && afterMember.followerWages[follower.uuid] === 6,
+      followerCleanupObserved,
+      followerCleanupRevisedOnce:
+        afterFollower.revision === beforeFollowerRevision + 1,
+      followerMetadataPruned:
+        !Object.hasOwn(afterFollower.followerWages, follower.uuid)
+        && !Object.hasOwn(afterFollower.shares, follower.uuid)
+        && !afterFollower.marchingOrder.rear.actorUuids.includes(follower.uuid),
+      treasuryStillPreservedAfterTrackedCleanup:
+        afterFollower.treasuryActorUuid === treasury.uuid,
+    };
+  }
+  finally {
+    if (scene) await scene.delete();
+    const actorIds = [member, follower, treasury]
+      .filter((actor) => actor && game.actors.has(actor.id))
+      .map((actor) => actor.id);
+    if (actorIds.length) await Actor.deleteDocuments(actorIds);
+    await api.partyCleanup.pruneMissingReferences();
+    if (
+      api.partyStore.getState().treasuryActorUuid
+      !== originalTreasuryActorUuid
+    ) {
+      await request(
+        'party.compatibilityTreasuryMutation',
+        { actorUuid: originalTreasuryActorUuid },
+        'restore-treasury',
+      );
+    }
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2226,6 +2401,7 @@ async function runGmDiagnostics() {
     results.par006 = await testProductionPartyMembers(character, npc);
     results.par007 = await testProductionPartyFollowers(character, npc);
     results.par008 = await testProductionPartyActions(character, npc);
+    results.par010 = await testProductionPartyCleanup();
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,

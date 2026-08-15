@@ -2,7 +2,7 @@
   "id": "hyp3e-utilities",
   "title": "Hyp3e Utilities",
   "description": "Utilities for the hyp3e Foundry VTT system.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14.365",
