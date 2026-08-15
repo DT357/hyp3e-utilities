@@ -1556,3 +1556,78 @@ test('Party Sheet routes treasury button, drag, and drop entry points', async ()
     'true',
   ]);
 });
+
+test('Party Sheet GM XP preview preserves calculator output and local selection', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 31;
+  state.memberActorUuids = ['Actor.hero'];
+  state.followerActorUuids = ['Actor.npc'];
+  const calls = [];
+  const makePreview = ({ selectedActorUuids, totalXp }) => ({
+    baseRemainderXp: totalXp === '703' ? 2 : 0,
+    consumedNpcXp: totalXp === '703' ? 100 : 0,
+    distributions: [
+      {
+        actorUuid: 'Actor.hero', baseXp: totalXp === '703' ? 401 : 0,
+        bonusPercent: 10, finalAwardXp: totalXp === '703' ? 441 : 0,
+        included: true, name: 'Hero', selected: true, share: 1,
+        writeback: true,
+      },
+      {
+        actorUuid: 'Actor.npc', baseXp: totalXp === '703' ? 100 : 0,
+        bonusPercent: 0, finalAwardXp: totalXp === '703' ? 100 : 0,
+        included: selectedActorUuids?.includes('Actor.npc') ?? true,
+        name: 'NPC', selected: selectedActorUuids?.includes('Actor.npc') ?? true,
+        share: 0.25, writeback: false,
+      },
+    ],
+    persistedXp: totalXp === '703' ? 441 : 0,
+    totalShares: 1.25,
+    totalXp: Number(totalXp),
+  });
+  const xpService = {
+    getPreview: (request) => {
+      calls.push(structuredClone(request));
+      return makePreview(request);
+    },
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyXpProvider: () => xpService,
+  });
+  const app = new classes.OpenPartySheetApplication();
+
+  const initial = await app._prepareContext({});
+  assert.equal(initial.canDistributeXp, true);
+  assert.equal(initial.xpPreviewReady, false);
+  assert.deepEqual(initial.xpDistributions, makePreview({ totalXp: 0 }).distributions);
+
+  const section = {
+    querySelector: () => ({ value: '703' }),
+    querySelectorAll: () => [{ dataset: { actorUuid: 'Actor.hero' } }],
+  };
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.previewXp
+    .call(app, undefined, { closest: () => section });
+  const previewed = await app._prepareContext({});
+
+  assert.equal(previewed.xpPreviewReady, true);
+  assert.equal(previewed.xpPreview.baseRemainderXp, 2);
+  assert.equal(previewed.xpPreview.distributions[0].finalAwardXp, 441);
+  assert.deepEqual(calls.at(-1), {
+    selectedActorUuids: ['Actor.hero'],
+    totalXp: '703',
+  });
+  assert.deepEqual(app._xpDraft, {
+    baseRevision: 31,
+    preview: previewed.xpPreview,
+    selectedActorUuids: ['Actor.hero'],
+    totalXp: '703',
+  });
+});

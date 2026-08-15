@@ -56,7 +56,9 @@ export function allocateExperience({
     const shareUnits = normalizeShareUnits(recipient?.share);
     const isSelected = selected == null || selected.has(actorUuid);
     return {
-      actorType: recipient?.actorType === 'npc' ? 'npc' : 'character',
+      actorType: ['character', 'npc'].includes(recipient?.actorType)
+        ? recipient.actorType
+        : 'missing',
       actorUuid,
       bonusPercent: normalizeSignedSafeWhole(recipient?.bonusPercent),
       isSelected,
@@ -97,7 +99,7 @@ export function allocateExperience({
 
     allocatedBaseXp += baseXp;
     persistedXp = addSafe(persistedXp, persistentAwardXp);
-    if (!writeback) consumedNpcXp += baseXp;
+    if (recipient.actorType === 'npc') consumedNpcXp += baseXp;
 
     return {
       actorType: recipient.actorType,

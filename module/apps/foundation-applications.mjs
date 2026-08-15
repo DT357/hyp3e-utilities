@@ -54,6 +54,7 @@ export function createFoundationApplications({
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
   partyTreasuryProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyTreasury,
+  partyXpProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXp,
   proseMirrorElementClass = globalThis.foundry?.applications?.elements
     ?.HTMLProseMirrorElement,
   requestIdProvider = createRequestId,
@@ -223,6 +224,7 @@ export function createFoundationApplications({
       this._partyNoteDraft = null;
       this._partyTabScrollPositions = new Map();
       this._supplyDraft = null;
+      this._xpDraft = null;
       this._externalRefreshScheduled = false;
       this._partyHookSubscriptions = [];
     }
@@ -247,6 +249,7 @@ export function createFoundationApplications({
         openMember: OpenPartySheetApplication.openMember,
         openPartyTreasury: OpenPartySheetApplication.openPartyTreasury,
         pingActor: OpenPartySheetApplication.pingActor,
+        previewXp: OpenPartySheetApplication.previewXp,
         reportMarchingOrder: OpenPartySheetApplication.reportMarchingOrder,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
@@ -482,6 +485,20 @@ export function createFoundationApplications({
       this._marchingNoteDrafts.clear();
       this._partyNoteDraft = null;
       this._supplyDraft = null;
+      this._xpDraft = null;
+      await this.render({ force: true });
+    }
+
+    static async previewXp(_event, target) {
+      if (game.user?.isGM !== true) return;
+      this._captureXpDraft({ target });
+      const service = partyXpProvider();
+      if (!this._xpDraft || typeof service?.getPreview !== 'function') return;
+      this._xpDraft.baseRevision = partyStoreProvider()?.getState()?.revision ?? 0;
+      this._xpDraft.preview = service.getPreview({
+        selectedActorUuids: this._xpDraft.selectedActorUuids,
+        totalXp: this._xpDraft.totalXp,
+      });
       await this.render({ force: true });
     }
 
@@ -758,6 +775,21 @@ export function createFoundationApplications({
           key,
           section.querySelector(`[data-field="${key}"]`)?.value ?? '',
         ])),
+      };
+    }
+
+    _captureXpDraft(event) {
+      const section = event.target?.closest?.('[data-party-xp]');
+      if (!section) return;
+      this._xpDraft = {
+        baseRevision: this._xpDraft?.baseRevision
+          ?? partyStoreProvider()?.getState()?.revision
+          ?? 0,
+        preview: null,
+        selectedActorUuids: Array.from(section.querySelectorAll(
+          '[data-xp-recipient]:checked',
+        )).map((element) => element.dataset.actorUuid),
+        totalXp: section.querySelector('[data-xp-total]')?.value ?? '',
       };
     }
 
@@ -1215,6 +1247,19 @@ export function createFoundationApplications({
       const treasuryTransferDestinations = decision.allowed
         ? partyItemTransferUiProvider()?.getDestinationOptions?.(state) ?? []
         : [];
+      const canDistributeXp = game.user?.isGM === true;
+      const xpService = canDistributeXp ? partyXpProvider() : null;
+      const xpInput = this._xpDraft
+        ? {
+          selectedActorUuids: this._xpDraft.selectedActorUuids,
+          totalXp: this._xpDraft.totalXp,
+        }
+        : { totalXp: 0 };
+      const xpInputModel = typeof xpService?.getPreview === 'function'
+        ? xpService.getPreview(xpInput, state)
+        : null;
+      const xpPreview = this._xpDraft?.preview ?? null;
+      const xpModel = xpPreview ?? xpInputModel;
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -1236,6 +1281,7 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        canDistributeXp,
         canManageTreasury,
         canRollPartyActions: game.user?.isGM === true,
         followers,
@@ -1246,6 +1292,7 @@ export function createFoundationApplications({
           ...this._marchingNoteDrafts.values(),
           ...(this._partyNoteDraft ? [this._partyNoteDraft] : []),
           ...(this._supplyDraft ? [this._supplyDraft] : []),
+          ...(this._xpDraft ? [this._xpDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
@@ -1253,6 +1300,7 @@ export function createFoundationApplications({
             || this._marchingNoteDrafts.size > 0
             || this._partyNoteDraft !== null
             || this._supplyDraft !== null
+            || this._xpDraft !== null
           ),
         hasMembers: members.length > 0,
         members,
@@ -1274,6 +1322,14 @@ export function createFoundationApplications({
         treasuryTransferDestinations,
         hasTreasuryTransferDestinations:
           treasuryTransferDestinations.length > 0,
+        hasXpRecipients: (xpModel?.distributions?.length ?? 0) > 0,
+        xpDistributions: xpModel?.distributions ?? [],
+        xpPreview,
+        xpPreviewReady: xpPreview !== null,
+        xpPreviewStale:
+          this._xpDraft !== null
+          && this._xpDraft.baseRevision !== state.revision,
+        xpTotal: this._xpDraft?.totalXp ?? '',
       };
     }
 
@@ -1292,8 +1348,12 @@ export function createFoundationApplications({
       const treasuryInventory = this.element?.querySelector?.(
         '[data-party-treasury-drop-zone]',
       );
+      const xpSection = this.element?.querySelector?.('[data-party-xp]');
       this._mountPartyNoteEditors(context);
       this._restorePartySheetViewState();
+      if (context.canDistributeXp === true) {
+        xpSection?.addEventListener('input', this._captureXpDraft.bind(this));
+      }
       if (context.canEdit !== true) return;
       followerDropZone?.addEventListener(
         'input',
@@ -1391,6 +1451,7 @@ export function createFoundationApplications({
       this._partyNoteDraft = null;
       this._partyTabScrollPositions.clear();
       this._supplyDraft = null;
+      this._xpDraft = null;
       try {
         return await super.close(options);
       }

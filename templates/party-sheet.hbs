@@ -63,6 +63,84 @@
           </div>
         {{/if}}
 
+        {{#if canDistributeXp}}
+          <section class="hyp3e-utilities__party-xp" data-party-xp>
+            <h3>{{localize "hyp3e-utilities.applications.partySheet.xpHeading"}}</h3>
+            <p>{{localize "hyp3e-utilities.applications.partySheet.xpHelp"}}</p>
+            <label class="hyp3e-utilities__party-xp-total">
+              <span>{{localize "hyp3e-utilities.applications.partySheet.xpTotal"}}</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric"
+                value="{{xpTotal}}"
+                data-xp-total
+              >
+            </label>
+            {{#if hasXpRecipients}}
+              <fieldset class="hyp3e-utilities__party-xp-recipients">
+                <legend>{{localize "hyp3e-utilities.applications.partySheet.xpRecipients"}}</legend>
+                {{#each xpDistributions}}
+                  <label>
+                    <input
+                      type="checkbox"
+                      data-xp-recipient
+                      data-actor-uuid="{{actorUuid}}"
+                      {{#if selected}}checked{{/if}}
+                      {{#if missing}}disabled{{/if}}
+                    >
+                    <span>{{name}}</span>
+                    <small>{{localize "hyp3e-utilities.applications.partySheet.xpShare" share=share}}</small>
+                  </label>
+                {{/each}}
+              </fieldset>
+              <button type="button" data-action="previewXp">
+                {{localize "hyp3e-utilities.applications.partySheet.xpPreviewAction"}}
+              </button>
+            {{else}}
+              <p role="status">{{localize "hyp3e-utilities.applications.partySheet.xpNoRecipients"}}</p>
+            {{/if}}
+            {{#if xpPreviewReady}}
+              {{#if xpPreviewStale}}
+                <p class="hyp3e-utilities__party-xp-warning" role="status">
+                  {{localize "hyp3e-utilities.applications.partySheet.xpPreviewStale"}}
+                </p>
+              {{/if}}
+              <dl class="hyp3e-utilities__party-xp-summary">
+                <div><dt>{{localize "hyp3e-utilities.applications.partySheet.xpTotalShares"}}</dt><dd>{{xpPreview.totalShares}}</dd></div>
+                <div><dt>{{localize "hyp3e-utilities.applications.partySheet.xpRemainder"}}</dt><dd>{{xpPreview.baseRemainderXp}}</dd></div>
+              </dl>
+              <div class="hyp3e-utilities__party-xp-table-wrap">
+                <table class="hyp3e-utilities__party-xp-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.xpRecipient"}}</th>
+                      <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.xpBase"}}</th>
+                      <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.xpAdjustment"}}</th>
+                      <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.xpAward"}}</th>
+                      <th scope="col">{{localize "hyp3e-utilities.applications.partySheet.xpWriteback"}}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{#each xpPreview.distributions}}
+                      {{#if included}}
+                        <tr>
+                          <th scope="row">{{name}}</th>
+                          <td>{{baseXp}}</td>
+                          <td>{{adjustmentLabel}}</td>
+                          <td>{{finalAwardXp}}</td>
+                          <td>{{localize writebackLabel}}</td>
+                        </tr>
+                      {{/if}}
+                    {{/each}}
+                  </tbody>
+                </table>
+              </div>
+            {{/if}}
+          </section>
+        {{/if}}
+
         {{#if hasMembers}}
           <ol class="hyp3e-utilities__party-members">
             {{#each members}}
