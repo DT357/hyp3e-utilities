@@ -21,6 +21,8 @@ All notable changes to Hyp3e Utilities are documented here.
 
 ### Changed
 
+- Compacted Overview member rows, moved token pinging to the member portrait,
+  and made **Add Selected Actor** use the active scene's controlled token.
 - Replaced the full-width character-sheet **To Party** controls with accessible
   dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft

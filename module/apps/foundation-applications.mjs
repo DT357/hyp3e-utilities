@@ -368,10 +368,12 @@ export function createFoundationApplications({
     }
 
     static async addSelectedActor() {
-      const selectedEntry = actorDirectoryProvider()?.element?.querySelector?.(
-        '.directory-item.active[data-entry-id]',
-      );
-      const actor = game.actors?.get?.(selectedEntry?.dataset?.entryId);
+      const selectedToken = canvasProvider()?.tokens?.controlled?.[0];
+      const actorId = selectedToken?.document?.actorId;
+      const actor = game.actors?.get?.(actorId)
+        ?? (selectedToken?.actor?.isToken === true
+          ? null
+          : selectedToken?.actor);
       if (!actor?.uuid) {
         notify(
           notifications,

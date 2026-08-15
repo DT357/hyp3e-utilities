@@ -162,7 +162,32 @@
                 class="hyp3e-utilities__party-member {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
                 data-party-actor-row
               >
-                <img src="{{img}}" alt="" width="48" height="48">
+                {{#if missing}}
+                  <img
+                    class="hyp3e-utilities__party-member-portrait-image"
+                    src="{{img}}"
+                    alt=""
+                    width="40"
+                    height="40"
+                  >
+                {{else}}
+                  <button
+                    type="button"
+                    class="hyp3e-utilities__party-member-portrait"
+                    data-action="pingActor"
+                    data-actor-uuid="{{actorUuid}}"
+                    data-tooltip="{{localize "hyp3e-utilities.applications.partySheet.pingTokenFor" name=name}}"
+                    aria-label="{{localize "hyp3e-utilities.applications.partySheet.pingTokenFor" name=name}}"
+                  >
+                    <img
+                      class="hyp3e-utilities__party-member-portrait-image"
+                      src="{{img}}"
+                      alt=""
+                      width="40"
+                      height="40"
+                    >
+                  </button>
+                {{/if}}
                 <div class="hyp3e-utilities__party-member-identity">
                   {{#if missing}}
                     <strong>{{name}}</strong>
@@ -204,14 +229,9 @@
                   </button>
                 {{/if}}
                 {{#unless missing}}
-                  <div class="hyp3e-utilities__party-row-actions">
-                    <button
-                      type="button"
-                      data-action="pingActor"
-                      data-actor-uuid="{{actorUuid}}"
-                    >{{localize "hyp3e-utilities.applications.partySheet.pingToken"}}</button>
-                    {{#if ../canRollPartyActions}}
-                      {{#if canRollSave}}
+                  {{#if ../canRollPartyActions}}
+                    {{#if canRollSave}}
+                      <div class="hyp3e-utilities__party-row-actions hyp3e-utilities__party-row-actions--member">
                         <select
                           data-field="party-save"
                           aria-label="{{localize "hyp3e-utilities.applications.partySheet.saveCategory"}}"
@@ -225,9 +245,9 @@
                           data-action="rollMemberSave"
                           data-actor-uuid="{{actorUuid}}"
                         >{{localize "hyp3e-utilities.applications.partySheet.rollSave"}}</button>
-                      {{/if}}
+                      </div>
                     {{/if}}
-                  </div>
+                  {{/if}}
                 {{/unless}}
               </li>
             {{/each}}

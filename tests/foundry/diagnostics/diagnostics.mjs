@@ -1901,6 +1901,34 @@ async function testProductionPartyMembers(character, npc) {
     ),
   ));
   const overviewText = sheet.element?.textContent ?? '';
+  const memberElement = sheet.element?.querySelector(
+    `[data-party-actor-row]:has([data-action="openMember"][data-actor-uuid="${character.uuid}"])`,
+  );
+  const portraitPing = memberElement?.querySelector(
+    `.hyp3e-utilities__party-member-portrait[data-action="pingActor"][data-actor-uuid="${character.uuid}"]`,
+  );
+  const memberSaveActions = memberElement?.querySelector(
+    '.hyp3e-utilities__party-row-actions--member',
+  );
+  const memberSaveSelect = memberSaveActions?.querySelector(
+    '[data-field="party-save"]',
+  );
+  const memberSaveButton = memberSaveActions?.querySelector(
+    '[data-action="rollMemberSave"]',
+  );
+  const saveSelectRect = memberSaveSelect?.getBoundingClientRect?.();
+  const saveButtonRect = memberSaveButton?.getBoundingClientRect?.();
+  const portraitPingIntegrated = Boolean(
+    portraitPing?.querySelector('img')
+    && portraitPing.getAttribute('aria-label')
+    && portraitPing.textContent.trim() === '',
+  );
+  const memberSaveActionsCompact = Boolean(
+    memberSaveSelect
+    && memberSaveButton
+    && saveSelectRect.width <= 120
+    && Math.abs(saveSelectRect.top - saveButtonRect.top) <= 2,
+  );
 
   sheet.element?.querySelector(
     `[data-action="openMember"][data-actor-uuid="${character.uuid}"]`,
@@ -1970,6 +1998,8 @@ async function testProductionPartyMembers(character, npc) {
       && overviewText.includes(
         `${characterRow?.summary?.hp?.value} / ${characterRow?.summary?.hp?.max}`,
       ),
+    portraitPingIntegrated,
+    memberSaveActionsCompact,
     actorSheetOpened,
     removedThroughUi,
     actorDropAdded,

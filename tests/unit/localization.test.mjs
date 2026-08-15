@@ -229,6 +229,37 @@ test('Party Sheet tabs, movement controls, editors, and focus styles are accessi
   assert.match(styles, /\.hyp3e-utilities :is\([^)]*\):focus-visible/);
 });
 
+test('Party Sheet member roster keeps portrait ping and save actions compact', async () => {
+  const [template, styles] = await Promise.all([
+    readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),
+    readFile(path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'), 'utf8'),
+  ]);
+  const rosterStart = template.indexOf('{{#if hasMembers}}');
+  const rosterEnd = template.indexOf('{{#if showFollowers}}');
+  const memberRoster = template.slice(rosterStart, rosterEnd);
+
+  assert.match(
+    memberRoster,
+    /party-member-portrait[\s\S]*data-action="pingActor"[\s\S]*<img/,
+  );
+  assert.doesNotMatch(
+    memberRoster,
+    /data-action="pingActor"[\s\S]*pingToken"\}\}<\/button>/,
+  );
+  assert.match(
+    memberRoster,
+    /party-row-actions--member[\s\S]*data-field="party-save"[\s\S]*data-action="rollMemberSave"/,
+  );
+  assert.match(
+    styles,
+    /party-row-actions--member\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-column:\s*auto;/s,
+  );
+  assert.match(
+    styles,
+    /party-row-actions--member select\s*\{[^}]*width:\s*7rem;/s,
+  );
+});
+
 test('fixed HUD foreground colors meet WCAG AA contrast', () => {
   function rgb(hex) {
     return [1, 3, 5].map((offset) => Number.parseInt(

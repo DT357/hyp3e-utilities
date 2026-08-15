@@ -352,22 +352,35 @@ test('Party Sheet Overview renders member rows and routes member actions through
   }];
   const opened = [];
   const requests = [];
-  const controlledActors = [
+  const selectedSceneActor = {
+    documentName: 'Actor',
+    id: 'scene-selected',
+    isToken: false,
+    type: 'character',
+    uuid: 'Actor.scene-selected',
+  };
+  const controlledTokens = [
     {
-      documentName: 'Actor',
-      isToken: false,
-      type: 'character',
-      uuid: 'Actor.controlled',
+      actor: {
+        documentName: 'Actor',
+        isToken: true,
+        type: 'character',
+        uuid: 'Scene.scene.Token.synthetic',
+      },
+      document: { actorId: selectedSceneActor.id },
     },
     {
-      documentName: 'Actor',
-      isToken: true,
-      type: 'character',
-      uuid: 'Scene.scene.Token.synthetic',
+      actor: {
+        documentName: 'Actor',
+        isToken: false,
+        type: 'character',
+        uuid: 'Actor.controlled',
+      },
+      document: { actorId: 'controlled' },
     },
   ];
   const game = {
-    actors: new Map([['selected', { uuid: 'Actor.selected' }]]),
+    actors: new Map([[selectedSceneActor.id, selectedSceneActor]]),
     i18n: { localize: (key) => key },
     settings: { get: (_namespace, key) => key.includes('Minimum') ? 1 : [] },
     user: { id: 'player', isGM: false, role: 1 },
@@ -376,13 +389,8 @@ test('Party Sheet Overview renders member rows and routes member actions through
   const classes = createFoundationApplications({
     ApplicationV2: StubApplicationV2,
     HandlebarsApplicationMixin: (Base) => class extends Base {},
-    actorDirectoryProvider: () => ({
-      element: {
-        querySelector: () => ({ dataset: { entryId: 'selected' } }),
-      },
-    }),
     canvasProvider: () => ({
-      tokens: { controlled: controlledActors.map((actor) => ({ actor })) },
+      tokens: { controlled: controlledTokens },
     }),
     game,
     partyMembersProvider: () => ({
@@ -445,7 +453,7 @@ test('Party Sheet Overview renders member rows and routes member actions through
       operation: PARTY_MEMBER_OPERATIONS.add,
       envelope: {
         expectedRevision: 4,
-        payload: { actorUuid: 'Actor.selected' },
+        payload: { actorUuid: 'Actor.scene-selected' },
         requestId: 'member-request-3',
       },
     },
