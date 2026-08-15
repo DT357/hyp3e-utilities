@@ -6,6 +6,7 @@ import { hyp3eAdapter } from '../adapters/hyp3e-adapter.mjs';
 import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
+import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -80,6 +81,7 @@ export function registerModuleLifecycle({
   logger,
   foundryApi = globalThis.foundry?.applications?.api,
   loadTemplates,
+  renderTemplate,
   socketlibProvider = () => globalThis.socketlib,
   canvasProvider = () => globalThis.canvas,
   notifications = globalThis.ui?.notifications,
@@ -135,6 +137,15 @@ export function registerModuleLifecycle({
       hooks,
       logger,
     });
+    const npcActionHud = createNpcActionHud({
+      chatCards,
+      game: currentGame,
+      logger,
+      notifications,
+      npcRolls,
+      renderTemplate,
+      selection: npcSelection,
+    });
     registerSettings({ game: currentGame, hooks, menuTypes: applications });
     const templateLoader = loadTemplates
       ?? globalThis.foundry?.applications?.handlebars?.loadTemplates;
@@ -156,6 +167,7 @@ export function registerModuleLifecycle({
       applications,
       chatCards,
       compatibility,
+      npcActionHud,
       npcRolls,
       npcSelection,
       socket: transport,
@@ -166,6 +178,9 @@ export function registerModuleLifecycle({
     hooks.once('ready', () => {
       if (!transport.available) transport.initialize();
       npcSelection.start();
+      void npcActionHud.start().catch((error) => {
+        logger.warn?.('NPC Action HUD failed to start.', error);
+      });
       hooks.callAll?.(HOOK_NAMES.ready, api);
       logger.info?.('Ready', getEnvironment(currentGame));
     });

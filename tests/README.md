@@ -12,10 +12,11 @@ The automated suite uses the Node.js built-in test runner and requires no instal
 Tests that require a running Foundry world are manual compatibility tests. Record their environment and results under `docs/test-runs/`; do not make `npm test` depend on a local Foundry installation or personal world data.
 
 Reaction boundaries, reaction/save/morale batch planning, the chat service,
-and the controlled-NPC selection controller are covered by pure tests with
-injected Foundry APIs. The Foundry diagnostic additionally verifies the
-planners, actual GM-whisper chat messages, and live canvas selection behavior
-against prepared `hyp3e` Actor data in both supported Foundry generations.
+the controlled-NPC selection controller, and the NPC Action HUD overlay are
+covered by pure tests with injected Foundry APIs. The Foundry diagnostic
+additionally verifies the planners, actual GM-whisper chat messages, live
+canvas selection, overlay rendering, and UI actions against prepared `hyp3e`
+Actor data in both supported Foundry generations.
 
 The test-only module under `foundry/diagnostics/` exercises Foundry document,
 ApplicationV2, SocketLib, and production-foundation behavior and publishes its

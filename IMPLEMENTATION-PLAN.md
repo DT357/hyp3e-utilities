@@ -188,7 +188,7 @@ Planned production areas: `module/core/`, `module/adapters/`, `module/settings/`
 | HUD-002 | `DONE` | FND-002 | Save and morale roll planners using verified `hyp3e` targets | Tests for all five saves, missing data, modifiers, and morale success/failure |
 | HUD-003 | `DONE` | HUD-001, HUD-002 | GM-whisper chat-card service for reaction, save, and morale batches | Sanitization and recipient tests; manual chat-card inspection |
 | HUD-004 | `DONE` | FND-002, PB-005 | Controlled-NPC selection controller and stable HUD view model | Linked/unlinked, duplicate, mixed selection, deletion, and empty-selection tests |
-| HUD-005 | `TODO` | FND-005, HUD-004 | HUD overlay with HP bars, AC/DR, movement, actor-sheet link, selectors, and action buttons | Render and interaction checks at common screen sizes |
+| HUD-005 | `DONE` | FND-005, HUD-004 | HUD overlay with HP bars, AC/DR, movement, actor-sheet link, selectors, and action buttons | Render and interaction checks at common screen sizes |
 | HUD-006 | `TODO` | HUD-005 | Per-client drag position, viewport clamping, and reset control | Reload, resize, zoom, and off-screen recovery checks |
 | HUD-007 | `TODO` | HUD-005 | Debounced hook synchronization and cleanup | No duplicate hooks, renders, or listeners after enable/disable and world reload |
 | HUD-008 | `TODO` | HUD-003, HUD-007 | HUD settings, localization, accessibility labels, disabled states, and error notices | Keyboard use, localization-key scan, and unavailable-action checks |
@@ -295,6 +295,7 @@ The 1.0.0 release is ready only when all M6 items are `DONE`, the repository is 
 | --- | --- |
 | Adapter mappings | `tests/unit/hyp3e-adapter.test.mjs` |
 | NPC selection controller | `tests/unit/npc-selection.test.mjs` |
+| NPC Action HUD overlay | `tests/unit/npc-action-hud.test.mjs` |
 | Reaction table | `tests/unit/reaction-table.test.mjs` |
 | Save and morale planning | `tests/unit/npc-rolls.test.mjs` |
 | Permissions | `tests/unit/party-permissions.test.mjs` |
@@ -343,9 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-The foundation, pure roll-planning, shared chat-output, and controlled-NPC
-selection portions of Milestone 1 are complete.
-Proceed next with the NPC Action HUD overlay in HUD-005.
+The foundation, pure roll-planning, shared chat-output, controlled-NPC
+selection, and visible action overlay portions of Milestone 1 are complete.
+Proceed next with HUD position persistence and viewport clamping in HUD-006.
 
 ## 15. Current Project Status
 
@@ -353,8 +354,8 @@ Proceed next with the NPC Action HUD overlay in HUD-005.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001 through HUD-004 are complete.
-- Immediate next batch: Implement the NPC Action HUD overlay and interactions in HUD-005.
+- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001 through HUD-005 are complete.
+- Immediate next batch: Implement per-client HUD position persistence, dragging, reset behavior, and viewport clamping in HUD-006.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

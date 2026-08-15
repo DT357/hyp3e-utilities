@@ -125,6 +125,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
   assert.equal(typeof getApi().npcRolls.planReactionBatch, 'function');
   assert.equal(typeof getApi().chatCards.createNpcRollBatch, 'function');
   assert.equal(typeof getApi().npcSelection.getViewModel, 'function');
+  assert.equal(typeof getApi().npcActionHud.executeAction, 'function');
   assert.equal(subscriptions.size > 0, true);
   assert.equal(moduleRecord.api, getApi());
 });

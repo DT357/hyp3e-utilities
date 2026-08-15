@@ -31,6 +31,7 @@ const results = {
   hud002: {},
   hud003: {},
   hud004: {},
+  hud005: {},
   errors: [],
 };
 
@@ -850,6 +851,202 @@ async function testProductionHudSelection(character, npc) {
   }
 }
 
+async function testProductionHudOverlay(npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalScene = game.scenes.active;
+  const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const missingMoraleActor = await Actor.create({
+    name: `${RUN_PREFIX} No Morale`,
+    type: 'npc',
+    system: {
+      npcType: 'monster',
+      hp: { value: 4, max: 8 },
+      ac: { value: 6, dr: 1 },
+      movement: { base: { value: 30 } },
+      saves: Object.fromEntries(SAVE_KEYS.map((saveKey, index) => [
+        saveKey,
+        { value: 11 + index },
+      ])),
+      morale: null,
+    },
+  });
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} HUD Overlay`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+  let openedSheet;
+
+  try {
+    const tokenDocuments = await scene.createEmbeddedDocuments('Token', [
+      {
+        name: `${RUN_PREFIX} Overlay Beta`,
+        actorId: npc.id,
+        actorLink: false,
+        x: 100,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Overlay No Morale`,
+        actorId: missingMoraleActor.id,
+        actorLink: true,
+        x: 300,
+        y: 100,
+      },
+    ]);
+    const [betaDocument] = tokenDocuments;
+
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    if (!canvasActivated) throw new Error('HUD-005 scene did not activate.');
+
+    const betaToken = canvas.tokens.get(betaDocument.id);
+    const noMoraleToken = canvas.tokens.get(tokenDocuments[1].id);
+    canvas.tokens.releaseAll();
+    betaToken.control({ releaseOthers: true });
+    noMoraleToken.control({ releaseOthers: false });
+
+    const overlayReady = await waitUntil(() => (
+      document.querySelectorAll('#hyp3e-utilities-npc-action-hud').length === 1
+      && document.querySelectorAll(
+        '#hyp3e-utilities-npc-action-hud .hyp3e-utilities-npc-action-hud__target',
+      ).length === 2
+    ));
+    const overlay = document.getElementById('hyp3e-utilities-npc-action-hud');
+    const rowElements = [...overlay.querySelectorAll(
+      '.hyp3e-utilities-npc-action-hud__target',
+    )];
+    const saveSelect = overlay.querySelector('[data-role="save-category"]');
+    const saveOptions = [...saveSelect.options].map((option) => option.value);
+    const initialRect = overlay.getBoundingClientRect();
+
+    if (new URLSearchParams(window.location.search).has('hudPreview')) {
+      await wait(12000);
+    }
+
+    saveSelect.value = 'sorcery';
+    saveSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    await betaToken.actor.update({ 'system.hp.value': 2 });
+    const selectorPersists = await waitUntil(() => (
+      document.querySelector(
+        '#hyp3e-utilities-npc-action-hud [data-role="save-category"]',
+      )?.value === 'sorcery'
+    ));
+
+    openedSheet = betaToken.actor.sheet;
+    document.querySelector(
+      `#hyp3e-utilities-npc-action-hud [data-action="openActorSheet"][data-token-uuid="${betaDocument.uuid}"]`,
+    ).click();
+    const exactActorSheetOpened = await waitUntil(
+      () => openedSheet.rendered === true,
+    );
+
+    const existingMessageIds = new Set(Array.from(game.messages ?? [])
+      .map((message) => message.id));
+    const newHudMessages = () => Array.from(game.messages ?? []).filter(
+      (message) => !existingMessageIds.has(message.id)
+        && message.flags?.[MODULE_ID]?.feature === 'npcActionHud',
+    );
+    const actionButton = (action) => document.querySelector(
+      `#hyp3e-utilities-npc-action-hud [data-action="${action}"]`,
+    );
+
+    actionButton('reaction').click();
+    const reactionCompleted = await waitUntil(
+      () => newHudMessages().filter(
+        (message) => message.flags[MODULE_ID].action === 'reaction',
+      ).length === 2,
+    );
+    actionButton('save').click();
+    const saveCompleted = await waitUntil(
+      () => newHudMessages().filter(
+        (message) => message.flags[MODULE_ID].action === 'save',
+      ).length === 2,
+    );
+    actionButton('morale').click();
+    const moraleCompleted = await waitUntil(
+      () => newHudMessages().filter(
+        (message) => message.flags[MODULE_ID].action === 'morale',
+      ).length === 1,
+    );
+    const messages = newHudMessages();
+    const saveMessages = messages.filter(
+      (message) => message.flags[MODULE_ID].action === 'save',
+    );
+
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', false);
+    const settingRemovesOverlay = await waitUntil(
+      () => document.getElementById('hyp3e-utilities-npc-action-hud') == null,
+    );
+
+    return {
+      canvasActivated,
+      overlayReady,
+      oneStableOverlay: overlayReady,
+      rowCount: rowElements.length,
+      rowNames: rowElements.map((row) => row.querySelector(
+        '.hyp3e-utilities-npc-action-hud__actor',
+      ).textContent.trim()),
+      tokenRowsDistinct:
+        new Set(rowElements.map((row) => row.dataset.tokenUuid)).size === 2,
+      hpWidthsValid: rowElements.every((row) => {
+        const width = Number.parseFloat(row.querySelector(
+          '.hyp3e-utilities-npc-action-hud__hp-fill',
+        ).style.width);
+        return Number.isFinite(width) && width >= 0 && width <= 100;
+      }),
+      statsRendered: rowElements.every((row) => (
+        row.querySelectorAll('.hyp3e-utilities-npc-action-hud__stats dt').length
+          === 4
+      )),
+      missingMoraleDisplayed: rowElements.some((row) => (
+        row.querySelector('.hyp3e-utilities-npc-action-hud__missing')
+          ?.textContent.trim() === 'Missing'
+      )),
+      saveOptions,
+      fiveSaveSelector: saveOptions.join(',') === SAVE_KEYS.join(','),
+      selectorPersists,
+      exactActorSheetOpened,
+      reactionCompleted,
+      saveCompleted,
+      moraleCompleted,
+      actionMessageCount: messages.length,
+      saveCategoryExplicit: saveMessages.every(
+        (message) => message.flags[MODULE_ID].category === 'sorcery',
+      ),
+      viewportFit:
+        initialRect.left >= 0
+        && initialRect.top >= 0
+        && initialRect.right <= window.innerWidth,
+      settingRemovesOverlay,
+    };
+  }
+  finally {
+    if (openedSheet?.rendered) await openedSheet.close();
+    canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'enableNpcActionHud',
+      originalEnabled,
+    );
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+    await missingMoraleActor.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -893,6 +1090,7 @@ async function runGmDiagnostics() {
     testProductionHudRules(character, npc);
     results.hud003 = await testProductionHudChat(npc);
     results.hud004 = await testProductionHudSelection(character, npc);
+    results.hud005 = await testProductionHudOverlay(npc);
     results.status = 'complete';
   }
   catch (error) {

@@ -58,6 +58,30 @@
         "placeholder": "The Party Sheet foundation is ready. Party features will be added in the Party Sheet milestone."
       }
     },
+    "hud": {
+      "title": "NPC Action HUD",
+      "selectedCount": "Selected NPCs: {count}",
+      "reaction": "Reaction",
+      "saveCategory": "Save category",
+      "save": "Roll Save",
+      "morale": "Morale",
+      "openActorSheet": "Open Actor sheet",
+      "hp": "HP",
+      "ac": "AC",
+      "dr": "DR",
+      "movement": "Move",
+      "moraleValue": "Morale",
+      "missingMorale": "Missing",
+      "partialWarning": "NPC action completed with {skipped} skipped and {failed} failed target(s).",
+      "actionFailed": "The NPC Action HUD could not complete that action.",
+      "saves": {
+        "death": "Death",
+        "device": "Device",
+        "transformation": "Transformation",
+        "avoidance": "Avoidance",
+        "sorcery": "Sorcery"
+      }
+    },
     "chat": {
       "actor": "NPC",
       "total": "Total",

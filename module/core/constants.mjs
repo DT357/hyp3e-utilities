@@ -44,6 +44,8 @@ export const TEMPLATE_PATHS = Object.freeze({
     `modules/${MODULE_ID}/templates/settings/party-sheet-permissions.hbs`,
   partySheetPlaceholder:
     `modules/${MODULE_ID}/templates/party-sheet-placeholder.hbs`,
+  npcActionHud:
+    `modules/${MODULE_ID}/templates/npc-action-hud.hbs`,
 });
 
 export const CSS_NAMESPACE = MODULE_ID;

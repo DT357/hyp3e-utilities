@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-004 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-004 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-005 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-005 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -133,10 +133,25 @@ real canvas tokens. Both generations verified that:
 
 The diagnostic used three selected NPC tokens plus one selected character and
 completed with no module-originated browser warning or error. The controller
-publishes data only; HUD-005 remains responsible for rendering the overlay.
+publishes data for the HUD-005 overlay.
+
+### NPC Action HUD overlay (HUD-005)
+
+Foundry 13.351 and 14.365 rendered the production overlay from real controlled
+tokens. Both generations verified one stable overlay, distinct token rows,
+clamped HP widths, AC/DR/movement statistics, the missing-morale indicator,
+all five explicit save options, selected-save persistence across Actor updates,
+and removal when the world setting was disabled.
+
+UI actions opened the exact unlinked token Actor sheet and reused the
+production reaction, save, morale, and chat-card services. Two selected NPCs
+created two reaction messages, two Sorcery save messages, and one morale
+message while the missing-morale target was skipped and reported once. Visual
+inspection at the automated 1280-by-720 viewport confirmed the desktop layout,
+responsive row wrapping, readable health bars, and long-name ellipsis.
 
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-004 are
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-005 are
 complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is HUD-005 overlay rendering and interaction behavior.
+next compatibility gate is HUD-006 drag, persistence, and viewport behavior.
