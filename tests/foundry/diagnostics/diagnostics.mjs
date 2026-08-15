@@ -1037,6 +1037,19 @@ async function testProductionHudOverlay(npc) {
         '#hyp3e-utilities-npc-action-hud [data-action="openActorSheet"]',
       ).length === 2
     ));
+    const compactRows = [...document.querySelectorAll(
+      '#hyp3e-utilities-npc-action-hud .hyp3e-utilities-npc-action-hud__target',
+    )];
+    const compactCardMarginsReset = compactRows.every((row) => {
+      const styles = getComputedStyle(row);
+      return styles.marginTop === '0px'
+        && styles.marginRight === '0px'
+        && styles.marginBottom === '0px'
+        && styles.marginLeft === '0px';
+    });
+    const compactCardHeightsUniform = new Set(compactRows.map(
+      (row) => row.getBoundingClientRect().height,
+    )).size === 1;
     await game.settings.set(
       MODULE_ID,
       'displayDetailedNpcInformation',
@@ -1084,6 +1097,8 @@ async function testProductionHudOverlay(npc) {
           && statLines[0].querySelectorAll('dt').length === 3
           && statLines[1].querySelectorAll('dt').length === 2;
       }),
+      compactCardMarginsReset,
+      compactCardHeightsUniform,
       detailedSettingHidesStats,
       detailedSettingRestoresStats,
       missingMoraleDisplayed: rowElements.some((row) => (

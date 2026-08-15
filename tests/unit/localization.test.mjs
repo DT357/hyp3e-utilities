@@ -180,6 +180,10 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(styles, /\.hyp3e-utilities-npc-action-hud__actions\s*\{[^}]*flex-wrap:\s*nowrap;/s);
   assert.match(styles, /\.hyp3e-utilities-npc-action-hud__save-action select\s*\{[^}]*width:\s*108px;/s);
   assert.match(styles, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(160px,\s*100%\),\s*1fr\)\);/);
+  const targetStyles = styles.match(
+    /\.hyp3e-utilities-npc-action-hud__target\s*\{[^}]*\}/s,
+  )?.[0] ?? '';
+  assert.match(targetStyles, /margin:\s*0;/);
   assert.match(styles, /__stats--vitals\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
   assert.match(styles, /__stats--movement\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
   const actorHealthStyles = styles.match(
@@ -192,6 +196,8 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(diagnostics, /__stats dt'\)\.length\s*=== 5/s);
   assert.match(diagnostics, /subtypeRemoved:/);
   assert.match(diagnostics, /statLinesRendered:/);
+  assert.match(diagnostics, /compactCardMarginsReset/);
+  assert.match(diagnostics, /compactCardHeightsUniform/);
   assert.match(diagnostics, /detailedSettingHidesStats/);
   assert.match(diagnostics, /detailedSettingRestoresStats/);
 });
