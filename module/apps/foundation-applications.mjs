@@ -56,6 +56,7 @@ export function createFoundationApplications({
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
   partyTreasuryProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyTreasury,
+  partyWageSettlementProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyWageSettlement,
   partyWagesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyWages,
   partyXpAwardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXpAwards,
   partyXpProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXp,
@@ -274,6 +275,7 @@ export function createFoundationApplications({
         savePartyNotes: OpenPartySheetApplication.savePartyNotes,
         saveSupplies: OpenPartySheetApplication.saveSupplies,
         selectTab: OpenPartySheetApplication.selectTab,
+        settleWages: OpenPartySheetApplication.settleWages,
         takeTreasuryItem: OpenPartySheetApplication.takeTreasuryItem,
       },
     };
@@ -536,6 +538,40 @@ export function createFoundationApplications({
         );
       }
       await this.render({ force: true });
+    }
+
+    static async settleWages() {
+      const state = partyStoreProvider()?.getState?.();
+      if (
+        !this._wageDraft?.preview
+        || this._wageDraft.baseRevision !== state?.revision
+        || this._wageDraft.preview.canSettle !== true
+      ) return null;
+      const service = partyWageSettlementProvider();
+      if (typeof service?.settle !== 'function') return null;
+      this._wageDraft.requestId ??= requestIdProvider();
+      const response = await service.settle(
+        this._wageDraft.preview,
+        this._wageDraft.baseRevision,
+        this._wageDraft.requestId,
+      );
+      if (response?.ok) {
+        this._wageDraft = null;
+        notify(
+          notifications,
+          'info',
+          `${APP_NAMESPACE}.partySheet.wageSettlementComplete`,
+        );
+      }
+      else {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.wageSettlementFailed`,
+        );
+      }
+      await this.render({ force: true });
+      return response;
     }
 
     static async distributeCoins() {
@@ -1493,6 +1529,10 @@ export function createFoundationApplications({
           )),
         canPreviewCoins,
         canPreviewWages,
+        canConfirmWages:
+          wagePreview !== null
+          && !wagePreviewStale
+          && wagePreview.canSettle === true,
         canDistributeXp,
         canConfirmXp:
           xpPreview !== null

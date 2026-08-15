@@ -104,6 +104,9 @@
         "wageRecipients": "Followers to Pay",
         "wageAmount": "{wage} GP",
         "wagePreviewAction": "Preview Wage Payment",
+        "wageConfirmAction": "Confirm Wage Payment",
+        "wageSettlementComplete": "Follower wages were paid and reported to chat.",
+        "wageSettlementFailed": "Follower wages could not be paid. No successful settlement was reported.",
         "wageNoFollowers": "Add followers before paying wages.",
         "wagePreviewFailed": "The active GM could not calculate the wage preview.",
         "wagePreviewStale": "The Party Sheet changed after this preview. Preview again before confirming.",
@@ -326,6 +329,13 @@
         "requester": "Distributed By",
         "character": "Added to character purse",
         "npc": "NPC allocation consumed; no writeback"
+      },
+      "wageSettlement": {
+        "title": "Follower Wage Settlement",
+        "treasury": "Treasury",
+        "total": "GP Paid",
+        "remaining": "Treasury GP Remaining",
+        "requester": "Paid By"
       },
       "actions": {
         "reaction": "Reaction Roll",

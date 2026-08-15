@@ -289,6 +289,13 @@
                     {{localize "hyp3e-utilities.applications.partySheet.wageInsufficient" shortfall=wagePreview.shortfallGp}}
                   </p>
                 {{/unless}}
+                <button
+                  type="button"
+                  data-action="settleWages"
+                  {{#unless canConfirmWages}}disabled{{/unless}}
+                >
+                  {{localize "hyp3e-utilities.applications.partySheet.wageConfirmAction"}}
+                </button>
               {{/if}}
             </section>
           {{/if}}

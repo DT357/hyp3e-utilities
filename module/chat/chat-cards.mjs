@@ -318,6 +318,61 @@ function renderCoinDistributionCard(report, localize) {
   ].join('');
 }
 
+function validateWageSettlementReport(report) {
+  for (const key of [
+    'requestId',
+    'requesterName',
+    'requesterUserId',
+    'treasuryActorUuid',
+    'treasuryName',
+  ]) {
+    if (typeof report?.[key] !== 'string') {
+      throw new TypeError(`Wage settlement ${key} must be a string.`);
+    }
+  }
+  for (const key of ['remainingGp', 'revision', 'totalPaidGp']) {
+    if (!Number.isSafeInteger(report?.[key]) || report[key] < 0) {
+      throw new TypeError(`Wage settlement ${key} is invalid.`);
+    }
+  }
+  if (!Array.isArray(report.payments) || report.payments.length === 0) {
+    throw new TypeError('Wage settlement requires at least one payment.');
+  }
+  for (const payment of report.payments) {
+    if (
+      typeof payment?.actorUuid !== 'string'
+      || typeof payment?.name !== 'string'
+      || !Number.isSafeInteger(payment?.paymentGp)
+      || payment.paymentGp <= 0
+    ) {
+      throw new TypeError('Wage settlement payment is invalid.');
+    }
+  }
+}
+
+function renderWageSettlementCard(report, localize) {
+  const key = `${MODULE_ID}.chat.wageSettlement`;
+  const summary = [
+    renderRow(localize(`${key}.treasury`), report.treasuryName),
+    renderRow(localize(`${key}.total`), `${report.totalPaidGp} GP`),
+    renderRow(localize(`${key}.remaining`), `${report.remainingGp} GP`),
+    renderRow(localize(`${key}.requester`), report.requesterName),
+  ];
+  const payments = report.payments.map((payment) => [
+    `<li data-actor-uuid="${escapeHtml(payment.actorUuid)}">`,
+    `<span>${escapeHtml(payment.name)}</span> `,
+    `<strong>${escapeHtml(`${payment.paymentGp} GP`)}</strong>`,
+    '</li>',
+  ].join(''));
+  return [
+    `<section class="${MODULE_ID} ${MODULE_ID}-chat-card" data-action="wageSettlement">`,
+    `<h3 class="${MODULE_ID}-chat-card__title">${escapeHtml(localize(`${key}.title`))}</h3>`,
+    `<dl class="${MODULE_ID}-chat-card__details">${summary.join('')}</dl>`,
+    `<ol class="${MODULE_ID}-chat-card__wage-payments">${payments.join('')}</ol>`,
+    '</section>',
+  ].join('');
+}
+
 function renderNpcRollCard(instruction, evaluation, localize) {
   const actionLabel = localize(ACTION_LABEL_KEYS[instruction.kind]);
   let note = '';
@@ -538,6 +593,31 @@ export function createChatCardService({
     return Object.freeze({ message });
   }
 
+  async function createWageSettlementReport(report) {
+    validateWageSettlementReport(report);
+    if (typeof ChatMessageClass?.create !== 'function') {
+      throw new Error('Foundry chat APIs are unavailable.');
+    }
+    const message = await ChatMessageClass.create({
+      author: game?.user?.id,
+      content: renderWageSettlementCard(
+        report,
+        (key) => game.i18n.localize(key),
+      ),
+      flags: {
+        [MODULE_ID]: {
+          action: 'wageSettlement',
+          feature: 'partySheet',
+          requestId: report.requestId,
+          requesterUserId: report.requesterUserId,
+          revision: report.revision,
+          treasuryActorUuid: report.treasuryActorUuid,
+        },
+      },
+    });
+    return Object.freeze({ message });
+  }
+
   async function createNpcRollBatch(batch, { batchId } = {}) {
     validateBatch(batch);
     if (!game?.user?.isGM) {
@@ -633,6 +713,7 @@ export function createChatCardService({
     createItemTransferReport,
     createMarchingOrderReport,
     createNpcRollBatch,
+    createWageSettlementReport,
     createXpDistributionReport,
   });
 }

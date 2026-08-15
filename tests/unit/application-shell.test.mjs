@@ -1753,12 +1753,13 @@ test('Party Sheet coin preview preserves active-GM output for trusted editors', 
   assert.equal(app._coinDraft, null);
 });
 
-test('Party Sheet wage preview preserves active-GM output and insufficient-GP status', async () => {
+test('Party Sheet wage preview and settlement preserve active-GM output and stable confirmation', async () => {
   const state = createPartyStateDefault();
   state.revision = 50;
   state.treasuryActorUuid = 'Actor.treasury';
   state.followerActorUuids = ['Actor.one', 'Actor.two'];
   const calls = [];
+  const settlementCalls = [];
   const makePreview = (input = {}) => ({
     availableGp: 6,
     canSettle: input.selectedActorUuids?.length === 1,
@@ -1790,6 +1791,12 @@ test('Party Sheet wage preview preserves active-GM output and insufficient-GP st
       users: [],
     },
     partyStoreProvider: () => ({ getState: () => state }),
+    partyWageSettlementProvider: () => ({
+      settle: async (...args) => {
+        settlementCalls.push(args);
+        return { ok: true, value: { remainingGp: 3, totalPaidGp: 3 } };
+      },
+    }),
     partyTreasuryProvider: () => ({
       getStatus: () => ({
         actor: null, candidates: [], configuredUuid: state.treasuryActorUuid,
@@ -1809,6 +1816,7 @@ test('Party Sheet wage preview preserves active-GM output and insufficient-GP st
         return { ok: true, value: makePreview(input) };
       },
     }),
+    requestIdProvider: () => 'wage-confirm-id',
   });
   const app = new classes.OpenPartySheetApplication();
   await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
@@ -1828,6 +1836,7 @@ test('Party Sheet wage preview preserves active-GM output and insufficient-GP st
 
   assert.equal(previewed.wagePreviewReady, true);
   assert.equal(previewed.wagePreview.canSettle, true);
+  assert.equal(previewed.canConfirmWages, true);
   assert.deepEqual(calls.at(-1), [
     { selectedActorUuids: ['Actor.one'] },
     50,
@@ -1837,4 +1846,13 @@ test('Party Sheet wage preview preserves active-GM output and insufficient-GP st
     preview: previewed.wagePreview,
     selectedActorUuids: ['Actor.one'],
   });
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.settleWages
+    .call(app);
+  assert.deepEqual(settlementCalls, [[
+    previewed.wagePreview,
+    50,
+    'wage-confirm-id',
+  ]]);
+  assert.equal(app._wageDraft, null);
 });

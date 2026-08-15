@@ -66,6 +66,11 @@ const TRANSLATIONS = {
   'hyp3e-utilities.chat.coinDistribution.requester': 'Distributed By',
   'hyp3e-utilities.chat.coinDistribution.character': 'Added to character purse',
   'hyp3e-utilities.chat.coinDistribution.npc': 'NPC allocation consumed; no writeback',
+  'hyp3e-utilities.chat.wageSettlement.title': 'Follower Wage Settlement',
+  'hyp3e-utilities.chat.wageSettlement.treasury': 'Treasury',
+  'hyp3e-utilities.chat.wageSettlement.total': 'GP Paid',
+  'hyp3e-utilities.chat.wageSettlement.remaining': 'Treasury GP Remaining',
+  'hyp3e-utilities.chat.wageSettlement.requester': 'Paid By',
 };
 
 function createHarness({
@@ -460,5 +465,40 @@ test('coin distribution audit is public, escaped, and reports all five denominat
   assert.match(content, /Trusted &lt;Player&gt;/);
   assert.match(content, /Added to character purse/);
   assert.match(content, /NPC allocation consumed; no writeback/);
+  assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
+});
+
+test('wage settlement audit is public, escaped, and lists positive GP payments', async () => {
+  const harness = createHarness();
+  const report = await harness.service.createWageSettlementReport({
+    payments: [
+      { actorUuid: 'Actor.one', name: '<Retainer>', paymentGp: 3 },
+      { actorUuid: 'Actor.two', name: 'NPC & Porter', paymentGp: 5 },
+    ],
+    remainingGp: 12,
+    requestId: 'wage-request-id',
+    requesterName: 'Trusted <Player>',
+    requesterUserId: 'trusted',
+    revision: 10,
+    totalPaidGp: 8,
+    treasuryActorUuid: 'Actor.treasury',
+    treasuryName: 'Party & Treasury',
+  });
+
+  assert.equal(report.message.id, 'message-1');
+  assert.deepEqual(harness.messages[0].flags['hyp3e-utilities'], {
+    action: 'wageSettlement',
+    feature: 'partySheet',
+    requestId: 'wage-request-id',
+    requesterUserId: 'trusted',
+    revision: 10,
+    treasuryActorUuid: 'Actor.treasury',
+  });
+  const { content } = harness.messages[0];
+  assert.match(content, /Follower Wage Settlement/);
+  assert.match(content, /&lt;Retainer&gt;.*3 GP/);
+  assert.match(content, /NPC &amp; Porter.*5 GP/);
+  assert.match(content, /Party &amp; Treasury/);
+  assert.match(content, /Trusted &lt;Player&gt;/);
   assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
 });
