@@ -3,28 +3,11 @@ import {
   MODULE_ID,
   SETTING_KEYS,
 } from '../core/constants.mjs';
+import { createPartyStateDefault } from '../party/party-state.mjs';
+
+export { createPartyStateDefault } from '../party/party-state.mjs';
 
 const SETTING_NAMESPACE = `${MODULE_ID}.settings`;
-
-export function createPartyStateDefault() {
-  return {
-    schemaVersion: 1,
-    revision: 0,
-    treasuryActorUuid: '',
-    memberActorUuids: [],
-    followerActorUuids: [],
-    followerWages: {},
-    shares: {},
-    marchingOrder: {
-      front: { actorUuids: [], notes: '' },
-      middle: { actorUuids: [], notes: '' },
-      rear: { actorUuids: [], notes: '' },
-    },
-    supplies: { torches: '', lanterns: '', oil: '', rations: '' },
-    treasureNotes: { gems: '', misc: '' },
-    notes: '',
-  };
-}
 
 export function validateHudPosition(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};

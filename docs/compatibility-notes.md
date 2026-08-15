@@ -215,9 +215,21 @@ The protocol does not yet write Party Sheet state. PAR-003 defines state and
 revision semantics; PAR-004 supplies serialized GM-authoritative writes and
 stale-revision rejection.
 
+### Versioned Party Sheet state (PAR-003)
+
+The schema-1 state model has no Foundry runtime dependency. Automated coverage
+proves independent defaults, deterministic normalization, strict unknown-field
+and future-version rejection, schema-0 migration, durable world-Actor UUID
+filtering, member/follower exclusivity, metadata pruning, quarter-share and GP
+wage normalization, marching-order uniqueness, and monotonic revisions.
+
+The world-setting integration is intentionally deferred to PAR-004, where the
+same model will be tested through serialized active-GM writes and stale client
+revisions in both supported Foundry generations.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-002 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-003 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the versioned state and authoritative-write portion of Milestone 2.
+the authoritative-write portion of Milestone 2.

@@ -205,7 +205,7 @@ M1 is complete when all FND and HUD items are `DONE`, `npm run check` passes, th
 | --- | --- | --- | --- | --- |
 | PAR-001 | `DONE` | PB-009 | Pure permission policy for GM, minimum role, explicit grants, and denial | Matrix tests for every role/grant combination |
 | PAR-002 | `DONE` | PB-008, PAR-001 | Authenticated named mutation operations with schema validation | Spoofing, malformed payload, unauthorized, no-GM, and duplicate-request tests |
-| PAR-003 | `TODO` | PB-006 | Versioned party-state defaults, normalization, migration, and revision model | Round-trip, missing field, unknown field, and old-version tests |
+| PAR-003 | `DONE` | PB-006 | Versioned party-state defaults, normalization, migration, and revision model | Round-trip, missing field, unknown field, and old-version tests |
 | PAR-004 | `TODO` | PAR-002, PAR-003 | GM-authoritative party store with serialized writes and stale-revision rejection | Concurrent-edit and rollback tests |
 | PAR-005 | `TODO` | FND-005, PAR-004 | Singleton Party Sheet app and GM-facing open controls | Only one instance; reopen focuses/rerenders; close cleans listeners |
 | PAR-006 | `TODO` | PAR-005 | Overview tab for member add/remove, summary data, and Actor links | Character-only membership rules and deleted-Actor handling |
@@ -344,9 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-The foundation, NPC Action HUD, Party Sheet permission policy, and authenticated
-party-mutation protocol are complete. Proceed next with the versioned Party
-Sheet state model in PAR-003.
+The foundation, NPC Action HUD, Party Sheet permission policy, authenticated
+party-mutation protocol, and versioned Party Sheet state model are complete.
+Proceed next with the GM-authoritative Party Sheet store in PAR-004.
 
 ## 15. Current Project Status
 
@@ -355,7 +355,7 @@ Sheet state model in PAR-003.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 and 1 are complete.
-- Immediate next batch: Implement versioned Party Sheet defaults, normalization, migration, and revision handling in PAR-003.
+- Immediate next batch: Implement serialized GM-authoritative Party Sheet writes and stale-revision rejection in PAR-004.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
