@@ -7,6 +7,7 @@ import {
   preloadFoundationTemplates,
 } from '../../module/apps/foundation-applications.mjs';
 import { PARTY_MEMBER_OPERATIONS } from '../../module/party/party-members.mjs';
+import { PARTY_FOLLOWER_OPERATIONS } from '../../module/party/party-followers.mjs';
 import { createPartyStateDefault } from '../../module/party/party-state.mjs';
 
 class StubApplicationV2 {
@@ -335,4 +336,110 @@ test('Party Sheet Overview renders member rows and routes member actions through
   directoryButton.click({ preventDefault: () => {} });
   await new Promise((resolve) => setTimeout(resolve));
   assert.equal(app.renderCount, rendersBeforeDirectoryClick + 1);
+});
+
+test('Party Sheet Followers renders rows and routes employment, removal, and drop actions', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 8;
+  state.followerActorUuids = ['Actor.retainer'];
+  const rows = [{
+    actorUuid: 'Actor.retainer',
+    missing: false,
+    name: 'Retainer',
+    share: 1,
+    wageGp: 2,
+  }];
+  const opened = [];
+  const requests = [];
+  const game = {
+    settings: { get: (_namespace, key) => key.includes('Minimum') ? 1 : [] },
+    user: { id: 'player', isGM: false, role: 1 },
+    users: [],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game,
+    partyFollowersProvider: () => ({
+      getActor: (actorUuid) => actorUuid === 'Actor.retainer'
+        ? { sheet: { render: (...args) => opened.push(args) } }
+        : null,
+      getFollowerRows: () => rows,
+    }),
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        return {
+          ok: true,
+          value: { state: { revision: envelope.expectedRevision + 1 } },
+        };
+      },
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    requestIdProvider: (() => {
+      let id = 0;
+      return () => `follower-request-${++id}`;
+    })(),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
+    .call(app, undefined, { dataset: { tab: 'followers' } });
+  const context = await app._prepareContext({});
+  assert.equal(context.showFollowers, true);
+  assert.equal(context.hasFollowers, true);
+  assert.equal(context.followers, rows);
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.openFollower
+    .call(app, undefined, { dataset: { actorUuid: 'Actor.retainer' } });
+  assert.deepEqual(opened, [[true]]);
+
+  const employmentRow = {
+    querySelector: (selector) => ({
+      value: selector.includes('wage') ? '4' : '1.25',
+    }),
+  };
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.saveFollower
+    .call(app, undefined, {
+      closest: () => employmentRow,
+      dataset: { actorUuid: 'Actor.retainer' },
+    });
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.removeFollower
+    .call(app, undefined, { dataset: { actorUuid: 'Actor.retainer' } });
+  await app._handleFollowerDrop({
+    preventDefault: () => {},
+    dataTransfer: {
+      getData: () => JSON.stringify({ type: 'Actor', uuid: 'Actor.droppedNpc' }),
+    },
+  });
+
+  assert.deepEqual(requests, [
+    {
+      operation: PARTY_FOLLOWER_OPERATIONS.setEmployment,
+      envelope: {
+        expectedRevision: 8,
+        payload: {
+          actorUuid: 'Actor.retainer',
+          share: '1.25',
+          wageGp: '4',
+        },
+        requestId: 'follower-request-1',
+      },
+    },
+    {
+      operation: PARTY_FOLLOWER_OPERATIONS.remove,
+      envelope: {
+        expectedRevision: 8,
+        payload: { actorUuid: 'Actor.retainer' },
+        requestId: 'follower-request-2',
+      },
+    },
+    {
+      operation: PARTY_FOLLOWER_OPERATIONS.add,
+      envelope: {
+        expectedRevision: 8,
+        payload: { actorUuid: 'Actor.droppedNpc' },
+        requestId: 'follower-request-3',
+      },
+    },
+  ]);
 });

@@ -104,7 +104,111 @@
         {{/if}}
       </section>
     {{else}}
-      <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+      {{#if showFollowers}}
+        <section
+          class="hyp3e-utilities__party-overview"
+          data-party-follower-drop-zone
+        >
+          {{#if canEdit}}
+            <div class="hyp3e-utilities__party-toolbar">
+              <span>{{localize "hyp3e-utilities.applications.partySheet.dropFollowers"}}</span>
+            </div>
+          {{/if}}
+
+          {{#if hasFollowers}}
+            <ol class="hyp3e-utilities__party-members">
+              {{#each followers}}
+                <li
+                  class="hyp3e-utilities__party-member hyp3e-utilities__party-follower {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
+                  data-follower-row
+                >
+                  <img src="{{img}}" alt="" width="48" height="48">
+                  <div class="hyp3e-utilities__party-member-identity">
+                    {{#if missing}}
+                      <strong>{{name}}</strong>
+                      <span>{{localize "hyp3e-utilities.applications.partySheet.missingReference"}}</span>
+                    {{else}}
+                      <button
+                        type="button"
+                        class="hyp3e-utilities__party-member-link"
+                        data-action="openFollower"
+                        data-actor-uuid="{{actorUuid}}"
+                      >{{name}}</button>
+                      <span>
+                        {{summary.race}} · {{summary.className}} {{summary.level}}
+                        {{#if npcSubtype}} · {{npcSubtype}}{{/if}}
+                      </span>
+                      {{#if invalidType}}
+                        <span>{{localize "hyp3e-utilities.applications.partySheet.invalidFollowerType"}}</span>
+                      {{/if}}
+                    {{/if}}
+                  </div>
+                  {{#unless missing}}
+                    <dl class="hyp3e-utilities__party-member-stats">
+                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}} / {{summary.hp.max}}</dd></div>
+                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
+                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
+                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
+                    </dl>
+                  {{/unless}}
+                  <div class="hyp3e-utilities__party-employment">
+                    {{#if ../canEdit}}
+                      <label for="hyp3e-utilities-follower-wage-{{@index}}">
+                        {{localize "hyp3e-utilities.applications.partySheet.wageGp"}}
+                      </label>
+                      <input
+                        id="hyp3e-utilities-follower-wage-{{@index}}"
+                        data-field="follower-wage"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value="{{wageGp}}"
+                      >
+                      <label for="hyp3e-utilities-follower-share-{{@index}}">
+                        {{localize "hyp3e-utilities.applications.partySheet.share"}}
+                      </label>
+                      <input
+                        id="hyp3e-utilities-follower-share-{{@index}}"
+                        data-field="follower-share"
+                        type="number"
+                        min="0"
+                        step="0.25"
+                        value="{{share}}"
+                      >
+                      <button
+                        type="button"
+                        data-action="saveFollower"
+                        data-actor-uuid="{{actorUuid}}"
+                      >{{localize "hyp3e-utilities.applications.partySheet.saveFollower"}}</button>
+                    {{else}}
+                      <span>{{localize "hyp3e-utilities.applications.partySheet.wageGp"}}: {{wageGp}}</span>
+                      <span>{{localize "hyp3e-utilities.applications.partySheet.share"}}: {{share}}</span>
+                    {{/if}}
+                  </div>
+                  {{#if ../canEdit}}
+                    <button
+                      type="button"
+                      class="hyp3e-utilities__party-member-remove"
+                      data-action="removeFollower"
+                      data-actor-uuid="{{actorUuid}}"
+                    >
+                      {{#if missing}}
+                        {{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}
+                      {{else}}
+                        {{localize "hyp3e-utilities.applications.partySheet.removeFollower"}}
+                      {{/if}}
+                    </button>
+                  {{/if}}
+                </li>
+              {{/each}}
+            </ol>
+          {{else}}
+            <p>{{localize "hyp3e-utilities.applications.partySheet.noFollowers"}}</p>
+          {{/if}}
+        </section>
+      {{else}}
+        <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+      {{/if}}
     {{/if}}
   </section>
 </section>

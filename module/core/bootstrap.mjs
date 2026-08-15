@@ -7,6 +7,7 @@ import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
+import { createPartyFollowerService } from '../party/party-followers.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
@@ -92,6 +93,7 @@ export function registerModuleLifecycle({
 }) {
   let compatibility;
   let api;
+  let partyFollowers;
   let partyMembers;
   let partyMutations;
   let partyStore;
@@ -136,6 +138,7 @@ export function registerModuleLifecycle({
       hooks,
       logger,
       notifications,
+      partyFollowersProvider: () => partyFollowers,
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
       partyStoreProvider: () => partyStore,
@@ -190,6 +193,11 @@ export function registerModuleLifecycle({
       game: currentGame,
       store: partyStore,
     });
+    partyFollowers = createPartyFollowerService({
+      adapter: hyp3eAdapter,
+      game: currentGame,
+      store: partyStore,
+    });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -202,6 +210,7 @@ export function registerModuleLifecycle({
       npcActionHud,
       npcRolls,
       npcSelection,
+      partyFollowers,
       partyMembers,
       partyMutations,
       partyPermissions,

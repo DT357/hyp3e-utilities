@@ -5,6 +5,7 @@ import {
   SETTING_KEYS,
   TEMPLATE_PATHS,
 } from '../core/constants.mjs';
+import { PARTY_FOLLOWER_OPERATIONS } from '../party/party-followers.mjs';
 import { evaluatePartyEditPermission } from '../party/party-permissions.mjs';
 import { PARTY_MEMBER_OPERATIONS } from '../party/party-members.mjs';
 import { createPartyStateDefault } from '../party/party-state.mjs';
@@ -36,6 +37,7 @@ export function createFoundationApplications({
   notifications = globalThis.ui?.notifications,
   actorDirectoryProvider = () => globalThis.ui?.actors,
   canvasProvider = () => globalThis.canvas,
+  partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
   partyMembersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMembers,
   partyMutationsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMutations,
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
@@ -212,8 +214,11 @@ export function createFoundationApplications({
       actions: {
         addControlledMembers: OpenPartySheetApplication.addControlledMembers,
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
+        openFollower: OpenPartySheetApplication.openFollower,
         openMember: OpenPartySheetApplication.openMember,
+        removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
+        saveFollower: OpenPartySheetApplication.saveFollower,
         selectTab: OpenPartySheetApplication.selectTab,
       },
     };
@@ -279,9 +284,9 @@ export function createFoundationApplications({
 
       let expectedRevision = partyStoreProvider()?.getState()?.revision ?? 0;
       for (const actorUuid of actorUuids) {
-        const response = await this._requestMemberOperation(
+        const response = await this._requestPartyOperation(
           PARTY_MEMBER_OPERATIONS.add,
-          actorUuid,
+          { actorUuid },
           expectedRevision,
         );
         if (!response?.ok) break;
@@ -302,10 +307,25 @@ export function createFoundationApplications({
         );
         return;
       }
-      await this._requestMemberOperation(
+      await this._requestPartyOperation(
         PARTY_MEMBER_OPERATIONS.add,
-        actor.uuid,
+        { actorUuid: actor.uuid },
       );
+    }
+
+    static async openFollower(_event, target) {
+      const actor = partyFollowersProvider()?.getActor(
+        target?.dataset?.actorUuid,
+      );
+      if (!actor) {
+        notify(
+          notifications,
+          'warn',
+          `${APP_NAMESPACE}.partySheet.missingActor`,
+        );
+        return;
+      }
+      await actor.sheet?.render?.(true);
     }
 
     static async openMember(_event, target) {
@@ -324,23 +344,47 @@ export function createFoundationApplications({
     }
 
     static async removeMember(_event, target) {
-      await this._requestMemberOperation(
+      await this._requestPartyOperation(
         PARTY_MEMBER_OPERATIONS.remove,
-        target?.dataset?.actorUuid,
+        { actorUuid: target?.dataset?.actorUuid },
       );
     }
 
-    async _requestMemberOperation(
+    static async removeFollower(_event, target) {
+      await this._requestPartyOperation(
+        PARTY_FOLLOWER_OPERATIONS.remove,
+        { actorUuid: target?.dataset?.actorUuid },
+        undefined,
+        `${APP_NAMESPACE}.partySheet.followerOperationFailed`,
+      );
+    }
+
+    static async saveFollower(_event, target) {
+      const row = target?.closest?.('[data-follower-row]');
+      await this._requestPartyOperation(
+        PARTY_FOLLOWER_OPERATIONS.setEmployment,
+        {
+          actorUuid: target?.dataset?.actorUuid,
+          share: row?.querySelector?.('[data-field="follower-share"]')?.value,
+          wageGp: row?.querySelector?.('[data-field="follower-wage"]')?.value,
+        },
+        undefined,
+        `${APP_NAMESPACE}.partySheet.followerOperationFailed`,
+      );
+    }
+
+    async _requestPartyOperation(
       operation,
-      actorUuid,
+      payload,
       expectedRevision = partyStoreProvider()?.getState()?.revision ?? 0,
+      failureMessage = `${APP_NAMESPACE}.partySheet.memberOperationFailed`,
     ) {
-      if (typeof actorUuid !== 'string' || !actorUuid) return null;
+      if (!payload?.actorUuid) return null;
       const response = await partyMutationsProvider()?.request?.(
         operation,
         {
           expectedRevision,
-          payload: { actorUuid },
+          payload,
           requestId: requestIdProvider(),
         },
       );
@@ -348,7 +392,7 @@ export function createFoundationApplications({
         notify(
           notifications,
           'error',
-          `${APP_NAMESPACE}.partySheet.memberOperationFailed`,
+          failureMessage,
         );
       }
       return response ?? null;
@@ -366,9 +410,29 @@ export function createFoundationApplications({
       if (dropData?.type !== 'Actor') return;
       const actorUuid = dropData.uuid
         ?? (dropData.id ? `Actor.${dropData.id}` : '');
-      await this._requestMemberOperation(
+      await this._requestPartyOperation(
         PARTY_MEMBER_OPERATIONS.add,
-        actorUuid,
+        { actorUuid },
+      );
+    }
+
+    async _handleFollowerDrop(event) {
+      event.preventDefault();
+      let dropData;
+      try {
+        dropData = JSON.parse(event.dataTransfer?.getData('text/plain') ?? '');
+      }
+      catch {
+        return;
+      }
+      if (dropData?.type !== 'Actor') return;
+      const actorUuid = dropData.uuid
+        ?? (dropData.id ? `Actor.${dropData.id}` : '');
+      await this._requestPartyOperation(
+        PARTY_FOLLOWER_OPERATIONS.add,
+        { actorUuid },
+        undefined,
+        `${APP_NAMESPACE}.partySheet.followerOperationFailed`,
       );
     }
 
@@ -387,6 +451,8 @@ export function createFoundationApplications({
       });
       const state = partyStoreProvider()?.getState()
         ?? createPartyStateDefault();
+      const followers = partyFollowersProvider()?.getFollowerRows?.(state)
+        ?? [];
       const members = partyMembersProvider()?.getMemberRows?.(state) ?? [];
       const tabs = [
         ['overview', `${APP_NAMESPACE}.partySheet.tabs.overview`],
@@ -405,10 +471,13 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        followers,
+        hasFollowers: followers.length > 0,
         hasMembers: members.length > 0,
         members,
         permissionReason: decision.reason,
         showOverview: this._activeTab === 'overview',
+        showFollowers: this._activeTab === 'followers',
         state,
         tabs,
       };
@@ -419,13 +488,22 @@ export function createFoundationApplications({
       const dropZone = this.element?.querySelector?.(
         '[data-party-member-drop-zone]',
       );
-      if (!dropZone || context.canEdit !== true) return;
-      dropZone.addEventListener('dragover', (event) => event.preventDefault());
-      dropZone.addEventListener('drop', (event) => {
-        void this._handleActorDrop(event).catch((error) => {
-          logger.warn?.('Party Sheet Actor drop failed.', error);
+      const followerDropZone = this.element?.querySelector?.(
+        '[data-party-follower-drop-zone]',
+      );
+      if (context.canEdit !== true) return;
+      for (const [element, handler] of [
+        [dropZone, this._handleActorDrop.bind(this)],
+        [followerDropZone, this._handleFollowerDrop.bind(this)],
+      ]) {
+        if (!element) continue;
+        element.addEventListener('dragover', (event) => event.preventDefault());
+        element.addEventListener('drop', (event) => {
+          void handler(event).catch((error) => {
+            logger.warn?.('Party Sheet Actor drop failed.', error);
+          });
         });
-      });
+      }
     }
 
     async _onFirstRender(context, options) {

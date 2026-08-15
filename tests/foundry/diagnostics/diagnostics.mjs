@@ -27,6 +27,7 @@ const results = {
   par004: {},
   par005: {},
   par006: {},
+  par007: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -414,6 +415,7 @@ async function testProductionFoundation(character, npc) {
     applicationsPublished: Boolean(api?.applications),
     chatCardsPublished: Boolean(api?.chatCards),
     partyMutationsPublished: Boolean(api?.partyMutations),
+    partyFollowersPublished: Boolean(api?.partyFollowers),
     partyMembersPublished: Boolean(api?.partyMembers),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     partyStorePublished: Boolean(api?.partyStore),
@@ -1813,6 +1815,128 @@ async function testProductionPartyMembers(character, npc) {
   };
 }
 
+async function testProductionPartyFollowers(character, npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const request = (operation, payload) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `par007-${foundry.utils.randomID()}`,
+    },
+  );
+  const characterAdd = await request(
+    'party.addFollower',
+    { actorUuid: character.uuid },
+  );
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const sheet = new PartySheet();
+  await sheet.render({ force: true });
+  sheet.element?.querySelector(
+    '[data-action="selectTab"][data-tab="followers"]',
+  )?.click();
+  const followersTabRendered = await waitUntil(() => (
+    sheet.element?.querySelector('[data-tab="followers"]')
+      ?.getAttribute('aria-selected') === 'true'
+  ));
+
+  await sheet._handleFollowerDrop({
+    preventDefault: () => {},
+    dataTransfer: {
+      getData: () => JSON.stringify({ type: 'Actor', uuid: npc.uuid }),
+    },
+  });
+  const npcDropAdded = await waitUntil(() => (
+    api.partyStore.getState().followerActorUuids.includes(npc.uuid)
+  ));
+  const twoFollowersRendered = await waitUntil(() => (
+    sheet.element?.querySelectorAll('[data-follower-row]')?.length === 2
+  ));
+  const rows = api.partyFollowers.getFollowerRows();
+  const npcRow = rows.find((row) => row.actorUuid === npc.uuid);
+  const npcElement = [...sheet.element.querySelectorAll('[data-follower-row]')]
+    .find((row) => row.querySelector(
+      `[data-actor-uuid="${npc.uuid}"]`,
+    ));
+  const npcSubtypeRendered = (
+    npcRow?.npcSubtype === api.adapter.getNpcSubtype(npc)
+    && sheet.element?.textContent?.includes(npcRow.npcSubtype)
+  );
+  const wageInput = npcElement?.querySelector('[data-field="follower-wage"]');
+  const shareInput = npcElement?.querySelector('[data-field="follower-share"]');
+  if (wageInput) wageInput.value = '5';
+  if (shareInput) shareInput.value = '0.75';
+  npcElement?.querySelector('[data-action="saveFollower"]')?.click();
+  const employmentSaved = await waitUntil(() => (
+    api.partyStore.getState().followerWages[npc.uuid] === 5
+    && api.partyStore.getState().shares[npc.uuid] === 0.75
+  ));
+
+  sheet.element?.querySelector(
+    `[data-action="openFollower"][data-actor-uuid="${npc.uuid}"]`,
+  )?.click();
+  const actorSheetOpened = await waitUntil(() => npc.sheet?.rendered);
+  if (npc.sheet?.rendered) await npc.sheet.close();
+
+  sheet.element?.querySelector(
+    `[data-action="removeFollower"][data-actor-uuid="${character.uuid}"]`,
+  )?.click();
+  const characterRemoved = await waitUntil(() => (
+    !api.partyStore.getState().followerActorUuids.includes(character.uuid)
+  ));
+
+  const missingActor = await Actor.create({
+    name: `${RUN_PREFIX} Deleted Follower`,
+    type: 'npc',
+  });
+  const missingActorUuid = missingActor.uuid;
+  const missingAdd = await request(
+    'party.addFollower',
+    { actorUuid: missingActorUuid },
+  );
+  await missingActor.delete();
+  await sheet.render({ force: true });
+  const missingRowRetained = api.partyFollowers.getFollowerRows().some(
+    (row) => row.actorUuid === missingActorUuid && row.missing,
+  );
+  const missingReferenceRendered = Boolean(sheet.element?.querySelector(
+    `.hyp3e-utilities__party-member--missing [data-actor-uuid="${missingActorUuid}"]`,
+  ));
+  sheet.element?.querySelector(
+    `[data-action="removeFollower"][data-actor-uuid="${missingActorUuid}"]`,
+  )?.click();
+  const missingReferenceCleaned = await waitUntil(() => (
+    !api.partyStore.getState().followerActorUuids.includes(missingActorUuid)
+  ));
+  const npcRemove = await request(
+    'party.removeFollower',
+    { actorUuid: npc.uuid },
+  );
+  await sheet.close();
+
+  return {
+    characterAddSucceeded: characterAdd.ok,
+    followersTabRendered,
+    npcDropAdded,
+    twoFollowersRendered,
+    characterAndNpcRows:
+      rows.some((row) => (
+        row.actorUuid === character.uuid
+        && row.summary?.type === 'character'
+      ))
+      && npcRow?.summary?.type === 'npc',
+    npcSubtypeRendered,
+    employmentSaved,
+    actorSheetOpened,
+    characterRemoved,
+    missingAddSucceeded: missingAdd.ok,
+    missingRowRetained,
+    missingReferenceRendered,
+    missingReferenceCleaned,
+    npcRemoved: npcRemove.ok,
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1863,6 +1987,7 @@ async function runGmDiagnostics() {
     results.par001 = testProductionPartyPermissions();
     results.par005 = await testProductionPartySheetApplication();
     results.par006 = await testProductionPartyMembers(character, npc);
+    results.par007 = await testProductionPartyFollowers(character, npc);
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,

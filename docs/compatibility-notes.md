@@ -280,9 +280,25 @@ become enumerable in the public applications class collection. The helper is
 now a static Party Sheet method, preserving the collection's established API;
 the corrected v13/v14 runs completed with no diagnostic errors.
 
+### Followers and employment data (PAR-007)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the complete Followers gate. Each generation added a
+durable character follower through the authoritative operation and an NPC
+follower through the tab's Actor-drop entry point. Both rows rendered, the NPC
+subtype matched the adapter, and the exact NPC Actor sheet opened from its row.
+
+A 5 GP whole-number daily wage and 0.75 quarter-share persisted together, and
+removing each follower cleared its Party State metadata without deleting an
+Actor. A deliberately deleted NPC reference remained visible and was removed
+through the authorized cleanup action. Automated coverage separately proves
+character/NPC type acceptance, member/follower exclusivity, non-GM ownership,
+synthetic and treasure rejection, strict wage/share validation, and preservation
+of unrelated member metadata. Both live runs completed without errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-006 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-007 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the Followers portion of Milestone 2.
+the reused Party Sheet row actions in Milestone 2.
