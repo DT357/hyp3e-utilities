@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through REF-001 / M3 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through REF-001 / M3 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through ITM-007 / M4 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through ITM-007 / M4 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -484,11 +484,23 @@ Pre-source failures preserved the source, recoverable post-destination failures
 restored the destination, and post-commit chat failure retained consistent
 inventory with an explicit warning.
 
+### Milestone 4 package gate
+
+The manifest and package metadata agree on version 0.4.0. The release workflow
+now includes the required `templates` directory in addition to module code,
+styles, language data, manifest, README, license, and notices. A new regression
+test guards those four runtime asset directories.
+
+`npm run check` passed 165 tests plus syntax, localization, and manifest
+validation. A disposable local archive contained 52 entries, used portable ZIP
+path separators, and extracted into a clean directory with all nine directly
+required runtime/manifest/template files present. No tag or public release was
+created.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
 PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
 TRY-001, TRY-002, and ITM-001 through ITM-007 are complete. No compatibility
-finding contradicts the approved architecture. Milestones 1 through 3 are
-complete; only the 0.4.0 package/version regression gate remains before
-Milestone 4 closes.
+finding contradicts the approved architecture. Milestones 1 through 4 are
+complete and the validated package version is 0.4.0.

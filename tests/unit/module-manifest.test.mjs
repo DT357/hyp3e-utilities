@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
@@ -64,6 +64,20 @@ test('release URLs use the current repository and artifact names', async () => {
     manifest.download,
     `${repositoryUrl}/releases/latest/download/hyp3e-utilities.zip`,
   );
+});
+
+test('release archive includes every runtime asset directory', async () => {
+  const workflow = await readFile(
+    projectFileUrl('.github/workflows/validate-and-release.yml'),
+    'utf8',
+  );
+  const packageCommand = workflow.match(
+    /zip -r hyp3e-utilities\.zip[^\r\n]+/,
+  )?.[0] ?? '';
+
+  for (const requiredPath of ['module', 'styles', 'lang', 'templates']) {
+    assert.match(packageCommand, new RegExp(`(?:^|\\s)${requiredPath}(?:\\s|$)`));
+  }
 });
 
 test('Foundry compatibility diagnostics declare their test dependencies', async () => {

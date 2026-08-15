@@ -17,7 +17,9 @@ managed, flagged Party Treasury with explicit missing-Actor recovery and
 duplicate selection. Its five native coin denominations appear on Treasure and
 its physical embedded Items appear on Supplies through an authorized
 active-GM snapshot. These features are validated on the supported Foundry and
-`hyp3e` versions below; Milestone 4 is in progress.
+`hyp3e` versions below. Authorized owners can now move supported loose Items in
+both directions with quantity-safe merges, explicit recovery, and public audit
+cards. Milestone 4 is complete.
 
 ## Compatibility
 

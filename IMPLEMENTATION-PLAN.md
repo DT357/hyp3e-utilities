@@ -344,9 +344,8 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 3 are complete. All Milestone 4 work items and their
-Foundry 13/14 live transfer matrix are complete. Proceed next with the 0.4.0
-package/version regression gate, then XP-001.
+Milestones 0 through 4 are complete. Proceed next with the pure XP allocation
+calculator in XP-001.
 
 ## 15. Current Project Status
 
@@ -354,10 +353,8 @@ package/version regression gate, then XP-001.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestones 0 through 3 and all Milestone 4 work items are
-  complete; the 0.4.0 package gate remains.
-- Immediate next batch: Complete the 0.4.0 package/version regression gate,
-  then begin XP-001.
+- Implementation: Milestones 0 through 4 are complete.
+- Immediate next batch: Implement the pure XP allocation calculator in XP-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Package module
-        run: zip -r hyp3e-utilities.zip module.json README.md LICENSE THIRD_PARTY_NOTICES.md module styles lang
+        run: zip -r hyp3e-utilities.zip module.json README.md LICENSE THIRD_PARTY_NOTICES.md module styles lang templates
 
       - name: Create GitHub release
         env:
