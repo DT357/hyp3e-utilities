@@ -244,9 +244,23 @@ proves exact prior-state restoration after a partially applied setting error,
 distinct reporting when compensation fails, no write after a mutator failure,
 and a final authority check if the active GM changes mid-operation.
 
+### Singleton Party Sheet shell (PAR-005)
+
+Foundry 13.351 and 14.365 rendered the same production ApplicationV2 shell
+with one connected window, six localized tabs, current revision, and edit
+status. Reopening returned the same instance, rerendered it, and brought it
+forward. A Party State hook triggered refresh while open; closing removed the
+listener and allowed a distinct replacement instance to render. The Settings
+menu resolves directly to the singleton class.
+
+The first live pass caught a cross-generation action-handler defect: Foundry
+supplies the activated element as the handler's second argument, not as
+`event.currentTarget`. The corrected handler uses that target, and the final
+v13/v14 runs both switched to Followers with the expected selected-tab state.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-004 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-005 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the Party Sheet application portion of Milestone 2.
+the Overview and Followers portion of Milestone 2.

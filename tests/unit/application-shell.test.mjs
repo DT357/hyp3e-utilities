@@ -8,12 +8,25 @@ import {
 } from '../../module/apps/foundation-applications.mjs';
 
 class StubApplicationV2 {
+  constructor() {
+    this.bringToFrontCount = 0;
+    this.renderCount = 0;
+  }
+
   async close() {
     this.closed = true;
+    this.rendered = false;
   }
 
   async render() {
     this.rerendered = true;
+    this.rendered = true;
+    this.renderCount += 1;
+    return this;
+  }
+
+  bringToFront() {
+    this.bringToFrontCount += 1;
   }
 }
 
@@ -100,4 +113,73 @@ test('setting menu actions persist only their validated values', async () => {
     },
   ]);
   assert.equal(permissionsApp.rerendered, true);
+});
+
+test('Party Sheet is a focused singleton with cleaned external-update hooks', async () => {
+  const subscriptions = new Map();
+  const removed = [];
+  let hookId = 0;
+  const hooks = {
+    on: (name, callback) => {
+      const id = ++hookId;
+      subscriptions.set(id, { callback, name });
+      return id;
+    },
+    off: (name, id) => {
+      removed.push([name, id]);
+      subscriptions.delete(id);
+    },
+  };
+  const settingValues = new Map([
+    ['partySheetMinimumEditRole', 2],
+    ['partySheetExplicitEditorUserIds', []],
+  ]);
+  const state = { schemaVersion: 1, revision: 7 };
+  const game = {
+    settings: { get: (_namespace, key) => settingValues.get(key) },
+    user: { id: 'trusted', isGM: false, role: 2 },
+    users: [],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game,
+    hooks,
+    partyStoreProvider: () => ({ getState: () => state }),
+  });
+
+  const first = new classes.OpenPartySheetApplication();
+  const reopened = new classes.OpenPartySheetApplication();
+  assert.equal(reopened, first);
+  await first._onFirstRender({}, {});
+  await first.render({ force: true });
+  await reopened.render({ force: true });
+  assert.equal(first.renderCount, 2);
+  assert.equal(first.bringToFrontCount, 2);
+  assert.deepEqual(
+    [...subscriptions.values()].map(({ name }) => name).sort(),
+    [
+      'hyp3e-utilities.partyPermissionsUpdated',
+      'hyp3e-utilities.partyStateUpdated',
+    ],
+  );
+
+  const context = await first._prepareContext({});
+  assert.equal(context.state, state);
+  assert.equal(context.canEdit, true);
+  assert.equal(context.permissionReason, 'minimumRole');
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.selectTab
+    .call(first, undefined, { dataset: { tab: 'followers' } });
+  assert.equal((await first._prepareContext({})).activeTab.id, 'followers');
+
+  const renderCount = first.renderCount;
+  for (const { callback } of subscriptions.values()) callback();
+  await new Promise((resolve) => setTimeout(resolve));
+  assert.equal(first.renderCount, renderCount + 2);
+
+  await first.close();
+  assert.equal(subscriptions.size, 0);
+  assert.equal(removed.length, 2);
+  const replacement = new classes.OpenPartySheetApplication();
+  assert.notEqual(replacement, first);
 });

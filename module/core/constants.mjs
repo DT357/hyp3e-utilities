@@ -31,6 +31,7 @@ export const FLAG_KEYS = Object.freeze({
 });
 
 export const HOOK_NAMES = Object.freeze({
+  partyPermissionsUpdated: `${MODULE_ID}.partyPermissionsUpdated`,
   partyStateUpdated: `${MODULE_ID}.partyStateUpdated`,
   ready: `${MODULE_ID}.ready`,
   settingsChanged: `${MODULE_ID}.settingsChanged`,
@@ -43,8 +44,7 @@ export const TEMPLATE_PATHS = Object.freeze({
     `modules/${MODULE_ID}/templates/settings/reset-hud-position.hbs`,
   permissions:
     `modules/${MODULE_ID}/templates/settings/party-sheet-permissions.hbs`,
-  partySheetPlaceholder:
-    `modules/${MODULE_ID}/templates/party-sheet-placeholder.hbs`,
+  partySheet: `modules/${MODULE_ID}/templates/party-sheet.hbs`,
   npcActionHud:
     `modules/${MODULE_ID}/templates/npc-action-hud.hbs`,
 });

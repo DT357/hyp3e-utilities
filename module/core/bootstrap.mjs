@@ -91,6 +91,7 @@ export function registerModuleLifecycle({
 }) {
   let compatibility;
   let api;
+  let partyStore;
   let transport;
   let socketlibReady = false;
   let foundationInitialized = false;
@@ -128,7 +129,10 @@ export function registerModuleLifecycle({
       ApplicationV2: foundryApi.ApplicationV2,
       HandlebarsApplicationMixin: foundryApi.HandlebarsApplicationMixin,
       game: currentGame,
+      hooks,
+      logger,
       notifications,
+      partyStoreProvider: () => partyStore,
     });
     const chatCards = createChatCardService({
       game: currentGame,
@@ -166,7 +170,7 @@ export function registerModuleLifecycle({
       logger,
       transport,
     });
-    const partyStore = createPartyStore({
+    partyStore = createPartyStore({
       game: currentGame,
       logger,
       protocol: partyMutations,

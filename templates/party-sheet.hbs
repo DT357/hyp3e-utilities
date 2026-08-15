@@ -1,0 +1,37 @@
+<section
+  class="hyp3e-utilities__party-sheet"
+  aria-label="{{localize "hyp3e-utilities.applications.partySheet.title"}}"
+>
+  <header class="hyp3e-utilities__party-summary">
+    <span>{{localize "hyp3e-utilities.applications.partySheet.revision" revision=state.revision}}</span>
+    <span class="hyp3e-utilities__party-access">
+      {{#if canEdit}}
+        {{localize "hyp3e-utilities.applications.partySheet.editable"}}
+      {{else}}
+        {{localize "hyp3e-utilities.applications.partySheet.readOnly"}}
+      {{/if}}
+    </span>
+  </header>
+
+  <nav
+    class="hyp3e-utilities__party-tabs"
+    aria-label="{{localize "hyp3e-utilities.applications.partySheet.navigation"}}"
+    role="tablist"
+  >
+    {{#each tabs}}
+      <button
+        type="button"
+        class="{{#if active}}active{{/if}}"
+        data-action="selectTab"
+        data-tab="{{id}}"
+        role="tab"
+        aria-selected="{{#if active}}true{{else}}false{{/if}}"
+      >{{localize label}}</button>
+    {{/each}}
+  </nav>
+
+  <section class="hyp3e-utilities__party-panel" role="tabpanel">
+    <h2>{{localize activeTab.label}}</h2>
+    <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+  </section>
+</section>

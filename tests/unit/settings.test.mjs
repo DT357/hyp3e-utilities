@@ -72,6 +72,8 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
   byKey.npcActionHudPosition.onChange({ left: 10, top: 20, width: 360 });
   const partyState = createPartyStateDefault();
   byKey.partyState.onChange(partyState);
+  byKey.partySheetMinimumEditRole.onChange(2);
+  byKey.partySheetExplicitEditorUserIds.onChange(['player']);
   assert.deepEqual(harness.hookCalls, [
     [
       HOOK_NAMES.settingsChanged,
@@ -84,6 +86,16 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
       { left: 10, top: 20, width: 360 },
     ],
     [HOOK_NAMES.partyStateUpdated, partyState],
+    [
+      HOOK_NAMES.partyPermissionsUpdated,
+      SETTING_KEYS.partySheetMinimumEditRole,
+      2,
+    ],
+    [
+      HOOK_NAMES.partyPermissionsUpdated,
+      SETTING_KEYS.partySheetExplicitEditorUserIds,
+      ['player'],
+    ],
   ]);
 });
 

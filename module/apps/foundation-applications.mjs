@@ -1,9 +1,12 @@
 import {
   CSS_NAMESPACE,
+  HOOK_NAMES,
   MODULE_ID,
   SETTING_KEYS,
   TEMPLATE_PATHS,
 } from '../core/constants.mjs';
+import { evaluatePartyEditPermission } from '../party/party-permissions.mjs';
+import { createPartyStateDefault } from '../party/party-state.mjs';
 import {
   validateExplicitEditorUserIds,
   validateMinimumEditRole,
@@ -19,9 +22,13 @@ export function createFoundationApplications({
   ApplicationV2,
   HandlebarsApplicationMixin,
   game,
+  hooks = globalThis.Hooks,
+  logger = console,
   notifications = globalThis.ui?.notifications,
+  partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
 }) {
   const HandlebarsApplication = HandlebarsApplicationMixin(ApplicationV2);
+  let partySheetInstance = null;
 
   class FoundationApplication extends HandlebarsApplication {
     static DEFAULT_OPTIONS = {
@@ -171,6 +178,14 @@ export function createFoundationApplications({
   }
 
   class OpenPartySheetApplication extends HandlebarsApplication {
+    constructor(options = {}) {
+      if (partySheetInstance) return partySheetInstance;
+      super(options);
+      partySheetInstance = this;
+      this._activeTab = 'overview';
+      this._partyHookSubscriptions = [];
+    }
+
     static DEFAULT_OPTIONS = {
       id: `${MODULE_ID}-party-sheet`,
       classes: [CSS_NAMESPACE, `${CSS_NAMESPACE}--application`],
@@ -179,12 +194,97 @@ export function createFoundationApplications({
         minimizable: true,
         resizable: true,
       },
-      position: { width: 640, height: 'auto' },
+      position: { width: 760, height: 640 },
+      actions: { selectTab: OpenPartySheetApplication.selectTab },
     };
 
     static PARTS = {
-      main: { template: TEMPLATE_PATHS.partySheetPlaceholder },
+      main: { template: TEMPLATE_PATHS.partySheet, scrollable: [''] },
     };
+
+    static async selectTab(_event, target) {
+      const tab = target?.dataset?.tab;
+      if (!['overview', 'followers', 'marchingOrder', 'supplies', 'treasure', 'notes'].includes(tab)) return;
+      this._activeTab = tab;
+      await this.render({ force: true });
+    }
+
+    async _prepareContext(options) {
+      const context = await super._prepareContext?.(options) ?? {};
+      const decision = evaluatePartyEditPermission({
+        explicitEditorUserIds: game.settings.get(
+          MODULE_ID,
+          SETTING_KEYS.partySheetExplicitEditorUserIds,
+        ),
+        minimumEditRole: game.settings.get(
+          MODULE_ID,
+          SETTING_KEYS.partySheetMinimumEditRole,
+        ),
+        user: game.user,
+      });
+      const state = partyStoreProvider()?.getState()
+        ?? createPartyStateDefault();
+      const tabs = [
+        ['overview', `${APP_NAMESPACE}.partySheet.tabs.overview`],
+        ['followers', `${APP_NAMESPACE}.partySheet.tabs.followers`],
+        ['marchingOrder', `${APP_NAMESPACE}.partySheet.tabs.marchingOrder`],
+        ['supplies', `${APP_NAMESPACE}.partySheet.tabs.supplies`],
+        ['treasure', `${APP_NAMESPACE}.partySheet.tabs.treasure`],
+        ['notes', `${APP_NAMESPACE}.partySheet.tabs.notes`],
+      ].map(([id, label]) => ({
+        active: id === this._activeTab,
+        id,
+        label,
+      }));
+
+      return {
+        ...context,
+        activeTab: tabs.find((tab) => tab.active),
+        canEdit: decision.allowed,
+        permissionReason: decision.reason,
+        state,
+        tabs,
+      };
+    }
+
+    async _onFirstRender(context, options) {
+      await super._onFirstRender?.(context, options);
+      if (this._partyHookSubscriptions.length) return;
+      const rerender = () => {
+        if (!this.rendered) return;
+        void this.render({ force: true }).catch((error) => {
+          logger.warn?.('Party Sheet refresh failed.', error);
+        });
+      };
+      for (const hookName of [
+        HOOK_NAMES.partyStateUpdated,
+        HOOK_NAMES.partyPermissionsUpdated,
+      ]) {
+        this._partyHookSubscriptions.push([
+          hookName,
+          hooks.on(hookName, rerender),
+        ]);
+      }
+    }
+
+    async render(options) {
+      const rendered = await super.render(options);
+      this.bringToFront?.();
+      return rendered;
+    }
+
+    async close(options) {
+      for (const [hookName, hookId] of this._partyHookSubscriptions) {
+        hooks.off(hookName, hookId);
+      }
+      this._partyHookSubscriptions = [];
+      try {
+        return await super.close(options);
+      }
+      finally {
+        if (partySheetInstance === this) partySheetInstance = null;
+      }
+    }
   }
 
   return Object.freeze({

@@ -55,7 +55,19 @@
       },
       "partySheet": {
         "title": "Party Sheet",
-        "placeholder": "The Party Sheet foundation is ready. Party features will be added in the Party Sheet milestone."
+        "revision": "Revision {revision}",
+        "editable": "Editing enabled",
+        "readOnly": "Read only",
+        "navigation": "Party Sheet sections",
+        "shellMessage": "This section is ready for its Party Sheet workflow.",
+        "tabs": {
+          "overview": "Overview",
+          "followers": "Followers",
+          "marchingOrder": "Marching Order",
+          "supplies": "Supplies",
+          "treasure": "Treasure",
+          "notes": "Notes"
+        }
       }
     },
     "hud": {

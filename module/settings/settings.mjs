@@ -86,6 +86,11 @@ export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) 
     config: false,
     type: Number,
     default: 4,
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.partyPermissionsUpdated,
+      SETTING_KEYS.partySheetMinimumEditRole,
+      value,
+    ),
   });
   register(SETTING_KEYS.partySheetExplicitEditorUserIds, {
     name: `${SETTING_NAMESPACE}.partySheetExplicitEditorUserIds.name`,
@@ -93,6 +98,11 @@ export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) 
     config: false,
     type: Array,
     default: [],
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.partyPermissionsUpdated,
+      SETTING_KEYS.partySheetExplicitEditorUserIds,
+      value,
+    ),
   });
 
   const registerMenu = (key, options) => game.settings.registerMenu(

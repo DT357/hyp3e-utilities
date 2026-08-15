@@ -25,6 +25,7 @@ const results = {
   par001: {},
   par002: {},
   par004: {},
+  par005: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -413,6 +414,7 @@ async function testProductionFoundation(character, npc) {
     chatCardsPublished: Boolean(api?.chatCards),
     partyMutationsPublished: Boolean(api?.partyMutations),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
+    partyStorePublished: Boolean(api?.partyStore),
     socketPublished: Boolean(api?.socket),
   };
 
@@ -1637,6 +1639,72 @@ async function grantDiagnosticPartyAccess() {
   return playerUserIds;
 }
 
+async function testProductionPartySheetApplication() {
+  const api = game.modules.get(MODULE_ID).api;
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const menu = game.settings.menus.get(`${MODULE_ID}.openPartySheet`);
+  const first = new PartySheet();
+  const reopened = new PartySheet();
+  const singletonBeforeRender = first === reopened;
+  await first.render({ force: true });
+  const rendered = await waitUntil(
+    () => first.rendered && first.element?.isConnected,
+  );
+  const tabButtons = [...first.element.querySelectorAll('[role="tab"]')];
+  const initialRevisionText = first.element.textContent.includes(
+    String(api.partyStore.getState().revision),
+  );
+  const settingsMenuUsesSingletonClass = menu?.type === PartySheet;
+  const followersButton = first.element.querySelector(
+    '[data-action="selectTab"][data-tab="followers"]',
+  );
+  followersButton?.click();
+  const tabChanged = await waitUntil(() => (
+    first.element?.querySelector('[data-tab="followers"]')
+      ?.getAttribute('aria-selected') === 'true'
+  ));
+  let externalRenderCount = 0;
+  const originalRender = first.render.bind(first);
+  first.render = async (...args) => {
+    externalRenderCount += 1;
+    return originalRender(...args);
+  };
+  Hooks.callAll(`${MODULE_ID}.partyStateUpdated`, api.partyStore.getState());
+  const externalUpdateRerendered = await waitUntil(
+    () => externalRenderCount >= 1,
+  );
+  await reopened.render({ force: true });
+  const oneConnectedWindow = document.querySelectorAll(
+    `#${MODULE_ID}-party-sheet`,
+  ).length === 1;
+  await first.close();
+  const renderCountAfterClose = externalRenderCount;
+  Hooks.callAll(`${MODULE_ID}.partyStateUpdated`, api.partyStore.getState());
+  await wait(100);
+  const closedListenerRemoved = externalRenderCount === renderCountAfterClose;
+  const replacement = new PartySheet();
+  const replacementCreated = replacement !== first;
+  await replacement.render({ force: true });
+  const replacementRendered = await waitUntil(
+    () => replacement.rendered && replacement.element?.isConnected,
+  );
+  await replacement.close();
+
+  return {
+    singletonBeforeRender,
+    rendered,
+    sixTabs: tabButtons.length === 6,
+    initialRevisionText,
+    settingsMenuUsesSingletonClass,
+    tabChanged,
+    externalUpdateRerendered,
+    oneConnectedWindow,
+    closedListenerRemoved,
+    replacementCreated,
+    replacementRendered,
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1685,6 +1753,7 @@ async function runGmDiagnostics() {
     results.hud007 = await testProductionHudLifecycle(npc);
     results.hud008 = await testProductionHudAccessibility(npc);
     results.par001 = testProductionPartyPermissions();
+    results.par005 = await testProductionPartySheetApplication();
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,

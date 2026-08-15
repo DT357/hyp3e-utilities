@@ -21,6 +21,46 @@
   justify-content: flex-end;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-sheet {
+  display: grid;
+  gap: var(--hyp3e-utilities-gap);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  padding: var(--hyp3e-utilities-gap);
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-summary,
+.hyp3e-utilities .hyp3e-utilities__party-tabs {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-summary {
+  justify-content: space-between;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-access {
+  font-weight: 700;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-tabs button.active {
+  box-shadow: inset 0 -2px currentColor;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-panel {
+  border: 1px solid var(--color-border-light-tertiary, #777);
+  border-radius: 0.25rem;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--hyp3e-utilities-gap);
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-panel h2 {
+  margin-top: 0;
+}
+
 .hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__title {
   border-bottom: 1px solid var(--color-border-light-tertiary, #777);
   font-size: 1.1rem;
