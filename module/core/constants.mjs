@@ -31,6 +31,7 @@ export const FLAG_KEYS = Object.freeze({
 });
 
 export const HOOK_NAMES = Object.freeze({
+  partyStateUpdated: `${MODULE_ID}.partyStateUpdated`,
   ready: `${MODULE_ID}.ready`,
   settingsChanged: `${MODULE_ID}.settingsChanged`,
   socketReady: `${MODULE_ID}.socketReady`,

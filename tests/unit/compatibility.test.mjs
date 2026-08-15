@@ -131,6 +131,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
     'function',
   );
   assert.equal(typeof getApi().partyMutations.request, 'function');
+  assert.equal(typeof getApi().partyStore.getState, 'function');
   assert.equal(subscriptions.size > 0, true);
   assert.equal(moduleRecord.api, getApi());
 });

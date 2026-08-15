@@ -9,6 +9,7 @@ import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
+import { createPartyStore } from '../party/party-store.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -165,6 +166,11 @@ export function registerModuleLifecycle({
       logger,
       transport,
     });
+    const partyStore = createPartyStore({
+      game: currentGame,
+      logger,
+      protocol: partyMutations,
+    });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -179,6 +185,7 @@ export function registerModuleLifecycle({
       npcSelection,
       partyMutations,
       partyPermissions,
+      partyStore,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);
@@ -186,6 +193,9 @@ export function registerModuleLifecycle({
 
     hooks.once('ready', () => {
       if (!transport.available) transport.initialize();
+      void partyStore.initialize().catch((error) => {
+        logger.warn?.('Party state initialization failed.', error);
+      });
       npcSelection.start();
       void npcActionHud.start().catch((error) => {
         logger.warn?.('NPC Action HUD failed to start.', error);

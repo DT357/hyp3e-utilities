@@ -75,6 +75,10 @@ export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) 
     config: false,
     type: Object,
     default: createPartyStateDefault(),
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.partyStateUpdated,
+      value,
+    ),
   });
   register(SETTING_KEYS.partySheetMinimumEditRole, {
     name: `${SETTING_NAMESPACE}.partySheetMinimumEditRole.name`,

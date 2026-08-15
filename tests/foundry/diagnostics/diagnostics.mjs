@@ -24,6 +24,7 @@ const results = {
   pb008: {},
   par001: {},
   par002: {},
+  par004: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -1543,6 +1544,27 @@ function registerProductionPartyDiagnostic() {
     },
     validatePayload: validateProductionMutationPayload,
   });
+  api.partyStore.registerMutation('party.compatibilityStateMutation', {
+    async mutate({ payload, state }) {
+      await wait(50);
+      state.memberActorUuids.push(payload.actorUuid);
+    },
+    validatePayload(payload) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new TypeError('Compatibility state payload must be an object.');
+      }
+      const unknownKey = Object.keys(payload).find(
+        (key) => key !== 'actorUuid',
+      );
+      if (unknownKey) {
+        throw new TypeError(`Unknown compatibility state field "${unknownKey}".`);
+      }
+      if (typeof payload.actorUuid !== 'string') {
+        throw new TypeError('Compatibility actorUuid must be a string.');
+      }
+      return { actorUuid: payload.actorUuid };
+    },
+  });
 }
 
 function testProductionPartyPermissions() {
@@ -1667,6 +1689,7 @@ async function runGmDiagnostics() {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,
     };
+    results.par004 = { waitingForPlayer: true };
     results.status = 'complete';
   }
   catch (error) {
@@ -1749,13 +1772,75 @@ async function runPlayerSocketDiagnostic() {
         !malformedMutation.ok
         && malformedMutation.error.code === 'invalidRequest',
     };
+    const partyStore = game.modules.get(MODULE_ID).api.partyStore;
+    const beforeState = partyStore.getState();
+    const firstActorUuid = `Actor.par004${game.user.id}first`;
+    const secondActorUuid = `Actor.par004${game.user.id}second`;
+    const concurrentRequests = [firstActorUuid, secondActorUuid].map(
+      (actorUuid, index) => partyMutations.request(
+        'party.compatibilityStateMutation',
+        {
+          expectedRevision: beforeState.revision,
+          payload: { actorUuid },
+          requestId: `par004-${game.user.id}-${index}`,
+        },
+      ),
+    );
+    const concurrentResults = await Promise.all(concurrentRequests);
+    const successfulIndex = concurrentResults.findIndex((entry) => entry.ok);
+    const staleIndex = concurrentResults.findIndex(
+      (entry) => !entry.ok && entry.error.code === 'staleRevision',
+    );
+    const staleActorUuid = [firstActorUuid, secondActorUuid][staleIndex];
+    const retryResult = staleIndex >= 0
+      ? await partyMutations.request(
+        'party.compatibilityStateMutation',
+        {
+          expectedRevision:
+            concurrentResults[staleIndex].error.details.state.revision,
+          payload: { actorUuid: staleActorUuid },
+          requestId: `par004-${game.user.id}-retry`,
+        },
+      )
+      : null;
+    await waitUntil(
+      () => partyStore.getState().revision >= beforeState.revision + 2,
+    );
+    const finalState = partyStore.getState();
+    const partyStoreResult = {
+      beforeRevision: beforeState.revision,
+      concurrentResults,
+      retryResult,
+      finalState,
+      exactlyOneConcurrentSuccess:
+        concurrentResults.filter((entry) => entry.ok).length === 1,
+      exactlyOneStaleRejection:
+        concurrentResults.filter(
+          (entry) => !entry.ok && entry.error.code === 'staleRevision',
+        ).length === 1,
+      staleReturnedFreshState:
+        staleIndex >= 0
+        && concurrentResults[staleIndex].error.details.state.revision
+          === beforeState.revision + 1,
+      retrySucceeded:
+        retryResult?.ok
+        && retryResult.value.previousRevision === beforeState.revision + 1
+        && retryResult.value.state.revision === beforeState.revision + 2,
+      finalStateConserved:
+        successfulIndex >= 0
+        && finalState.revision === beforeState.revision + 2
+        && finalState.memberActorUuids.includes(firstActorUuid)
+        && finalState.memberActorUuids.includes(secondActorUuid),
+    };
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
+    results.par004 = partyStoreResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
       type: 'pb008-result',
       par002: partyMutationResult,
+      par004: partyStoreResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -1815,6 +1900,13 @@ Hooks.once('ready', async () => {
       foundrySocketSenderId: senderId,
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
+    };
+    results.par004 = {
+      ...message.par004,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      gmState: game.modules.get(MODULE_ID).api.partyStore.getState(),
     };
     publishResults();
   });

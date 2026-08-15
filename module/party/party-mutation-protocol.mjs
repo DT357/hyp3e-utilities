@@ -16,6 +16,10 @@ const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 export const PARTY_MUTATION_ERROR_CODES = Object.freeze({
   executionFailed: 'executionFailed',
   invalidRequest: 'invalidRequest',
+  notActiveGm: 'notActiveGm',
+  rollbackFailed: 'rollbackFailed',
+  staleRevision: 'staleRevision',
+  stateWriteFailed: 'stateWriteFailed',
   transportUnavailable: 'transportUnavailable',
   unauthorized: 'unauthorized',
   unknownOperation: 'unknownOperation',

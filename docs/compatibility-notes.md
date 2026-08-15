@@ -227,9 +227,26 @@ The world-setting integration is intentionally deferred to PAR-004, where the
 same model will be tested through serialized active-GM writes and stale client
 revisions in both supported Foundry generations.
 
+### GM-authoritative Party Sheet store (PAR-004)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the serialized-write gate using one GM and one Player
+client. In each world, the authorized Player sent two distinct requests at
+revision 0. The first committed revision 1; the second reached the queue after
+that write and returned `staleRevision` with revision-1 state without invoking
+its mutator. Retrying the rejected operation at revision 1 committed revision
+2.
+
+Both clients observed the same revision-2 state containing exactly the two
+requested durable Actor UUIDs. The independent Foundry socket callback again
+identified the Player as the sender. Automated fault injection separately
+proves exact prior-state restoration after a partially applied setting error,
+distinct reporting when compensation fails, no write after a mutator failure,
+and a final authority check if the active GM changes mid-operation.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-003 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-004 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the authoritative-write portion of Milestone 2.
+the Party Sheet application portion of Milestone 2.
