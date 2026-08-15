@@ -278,7 +278,7 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| HRD-001 | `TODO` | M1–M5 | Party-state and treasury migration coverage for every released schema | Upgrade fixtures from each released version |
+| HRD-001 | `DONE` | M1–M5 | Party-state and treasury migration coverage for every released schema | Upgrade fixtures from each released version |
 | HRD-002 | `TODO` | M1–M5 | Authorization and payload-validation audit | All player-triggerable handlers reviewed and adversarial tests pass |
 | HRD-003 | `TODO` | M1–M5 | Accessibility and localization pass | Keyboard-only flow, labels, focus, contrast, and missing-key scan |
 | HRD-004 | `TODO` | M1–M5 | Performance and hook-lifecycle pass | Large party, large treasury, rapid selection, scene change, and repeated app open/close |
