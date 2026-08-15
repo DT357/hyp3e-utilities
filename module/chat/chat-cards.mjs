@@ -152,6 +152,82 @@ function renderItemTransferCard(report, localize) {
   ].join('');
 }
 
+function validateXpDistributionReport(report) {
+  for (const key of ['requestId', 'requesterName', 'requesterUserId']) {
+    if (typeof report?.[key] !== 'string') {
+      throw new TypeError(`XP distribution ${key} must be a string.`);
+    }
+  }
+  for (const key of ['baseRemainderXp', 'revision', 'totalXp']) {
+    if (!Number.isSafeInteger(report?.[key]) || report[key] < 0) {
+      throw new TypeError(`XP distribution ${key} must be a non-negative safe integer.`);
+    }
+  }
+  if (
+    !Number.isFinite(report.totalShares)
+    || report.totalShares < 0
+    || !Number.isInteger(report.totalShares * 4)
+  ) {
+    throw new TypeError('XP distribution totalShares must use quarter shares.');
+  }
+  if (!Array.isArray(report.recipients) || report.recipients.length === 0) {
+    throw new TypeError('XP distribution requires at least one recipient.');
+  }
+  for (const recipient of report.recipients) {
+    if (
+      typeof recipient?.actorUuid !== 'string'
+      || typeof recipient?.name !== 'string'
+      || !['character', 'npc'].includes(recipient?.actorType)
+      || typeof recipient?.writeback !== 'boolean'
+    ) {
+      throw new TypeError('XP distribution recipient identity is invalid.');
+    }
+    for (const key of ['baseXp', 'finalAwardXp']) {
+      if (!Number.isSafeInteger(recipient[key]) || recipient[key] < 0) {
+        throw new TypeError(`XP distribution recipient ${key} is invalid.`);
+      }
+    }
+    if (!Number.isSafeInteger(recipient.adjustmentXp)) {
+      throw new TypeError('XP distribution recipient adjustment is invalid.');
+    }
+  }
+}
+
+function renderXpDistributionCard(report, localize) {
+  const key = `${MODULE_ID}.chat.xpDistribution`;
+  const summary = [
+    renderRow(localize(`${key}.total`), report.totalXp),
+    renderRow(localize(`${key}.shares`), report.totalShares),
+    renderRow(localize(`${key}.remainder`), report.baseRemainderXp),
+    renderRow(localize(`${key}.requester`), report.requesterName),
+  ];
+  const recipients = report.recipients.map((recipient) => {
+    const adjustment = recipient.adjustmentXp > 0
+      ? `+${recipient.adjustmentXp}`
+      : recipient.adjustmentXp;
+    return [
+      `<section class="${MODULE_ID}-chat-card__xp-recipient" data-actor-uuid="${escapeHtml(recipient.actorUuid)}">`,
+      `<h4>${escapeHtml(recipient.name)}</h4>`,
+      `<dl class="${MODULE_ID}-chat-card__details">`,
+      renderRow(localize(`${key}.base`), recipient.baseXp),
+      renderRow(localize(`${key}.adjustment`), adjustment),
+      renderRow(localize(`${key}.final`), recipient.finalAwardXp),
+      '</dl>',
+      `<p class="${MODULE_ID}-chat-card__note">${escapeHtml(localize(
+        `${key}.${recipient.writeback ? 'character' : 'npc'}`,
+      ))}</p>`,
+      '</section>',
+    ].join('');
+  });
+  return [
+    `<section class="${MODULE_ID} ${MODULE_ID}-chat-card" data-action="xpDistribution">`,
+    `<h3 class="${MODULE_ID}-chat-card__title">${escapeHtml(localize(`${key}.title`))}</h3>`,
+    `<dl class="${MODULE_ID}-chat-card__details">${summary.join('')}</dl>`,
+    recipients.join(''),
+    '</section>',
+  ].join('');
+}
+
 function renderNpcRollCard(instruction, evaluation, localize) {
   const actionLabel = localize(ACTION_LABEL_KEYS[instruction.kind]);
   let note = '';
@@ -322,6 +398,31 @@ export function createChatCardService({
     return Object.freeze({ message, revision: report.revision });
   }
 
+  async function createXpDistributionReport(report) {
+    validateXpDistributionReport(report);
+    if (typeof ChatMessageClass?.create !== 'function') {
+      throw new Error('Foundry chat APIs are unavailable.');
+    }
+    const message = await ChatMessageClass.create({
+      author: game?.user?.id,
+      content: renderXpDistributionCard(
+        report,
+        (key) => game.i18n.localize(key),
+      ),
+      flags: {
+        [MODULE_ID]: {
+          action: 'xpDistribution',
+          feature: 'partySheet',
+          requestId: report.requestId,
+          requesterUserId: report.requesterUserId,
+          revision: report.revision,
+          totalXp: report.totalXp,
+        },
+      },
+    });
+    return Object.freeze({ message });
+  }
+
   async function createNpcRollBatch(batch, { batchId } = {}) {
     validateBatch(batch);
     if (!game?.user?.isGM) {
@@ -416,5 +517,6 @@ export function createChatCardService({
     createItemTransferReport,
     createMarchingOrderReport,
     createNpcRollBatch,
+    createXpDistributionReport,
   });
 }

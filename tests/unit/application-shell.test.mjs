@@ -1563,6 +1563,7 @@ test('Party Sheet GM XP preview preserves calculator output and local selection'
   state.memberActorUuids = ['Actor.hero'];
   state.followerActorUuids = ['Actor.npc'];
   const calls = [];
+  const awardCalls = [];
   const makePreview = ({ selectedActorUuids, totalXp }) => ({
     baseRemainderXp: totalXp === '703' ? 2 : 0,
     consumedNpcXp: totalXp === '703' ? 100 : 0,
@@ -1600,7 +1601,14 @@ test('Party Sheet GM XP preview preserves calculator output and local selection'
       users: [],
     },
     partyStoreProvider: () => ({ getState: () => state }),
+    partyXpAwardsProvider: () => ({
+      distribute: async (...args) => {
+        awardCalls.push(args);
+        return { ok: true, value: { totalXp: 703 } };
+      },
+    }),
     partyXpProvider: () => xpService,
+    requestIdProvider: () => 'xp-confirm-id',
   });
   const app = new classes.OpenPartySheetApplication();
 
@@ -1630,4 +1638,9 @@ test('Party Sheet GM XP preview preserves calculator output and local selection'
     selectedActorUuids: ['Actor.hero'],
     totalXp: '703',
   });
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.distributeXp
+    .call(app);
+  assert.deepEqual(awardCalls, [[previewed.xpPreview, 31, 'xp-confirm-id']]);
+  assert.equal(app._xpDraft, null);
 });

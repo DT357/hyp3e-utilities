@@ -27,6 +27,7 @@ import { createPartyStore } from '../party/party-store.mjs';
 import { createPartySupplyService } from '../party/party-supplies.mjs';
 import { createPartyTreasuryService } from '../party/party-treasury.mjs';
 import { createPartyXpPreviewService } from '../party/party-xp-preview.mjs';
+import { createPartyXpAwardService } from '../party/party-xp-awards.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -125,6 +126,7 @@ export function registerModuleLifecycle({
   let partySupplies;
   let partyTreasury;
   let partyXp;
+  let partyXpAwards;
   let transport;
   let socketlibReady = false;
   let foundationInitialized = false;
@@ -181,6 +183,7 @@ export function registerModuleLifecycle({
       partyStoreProvider: () => partyStore,
       partySuppliesProvider: () => partySupplies,
       partyTreasuryProvider: () => partyTreasury,
+      partyXpAwardsProvider: () => partyXpAwards,
       partyXpProvider: () => partyXp,
     });
     hooks.on(
@@ -270,6 +273,15 @@ export function registerModuleLifecycle({
       game: currentGame,
       store: partyStore,
     });
+    partyXpAwards = createPartyXpAwardService({
+      adapter: hyp3eAdapter,
+      chatCards,
+      game: currentGame,
+      logger,
+      mutations: partyMutations,
+      previewService: partyXp,
+      store: partyStore,
+    });
     partyItemTransfers = createPartyItemTransferService({
       adapter: hyp3eAdapter,
       chatCards,
@@ -318,6 +330,7 @@ export function registerModuleLifecycle({
       partySupplies,
       partyTreasury,
       partyXp,
+      partyXpAwards,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);

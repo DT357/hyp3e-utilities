@@ -54,6 +54,7 @@ export function createFoundationApplications({
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
   partyTreasuryProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyTreasury,
+  partyXpAwardsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXpAwards,
   partyXpProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyXp,
   proseMirrorElementClass = globalThis.foundry?.applications?.elements
     ?.HTMLProseMirrorElement,
@@ -243,6 +244,7 @@ export function createFoundationApplications({
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
         bindPartyTreasury: OpenPartySheetApplication.bindPartyTreasury,
         discardPartyDrafts: OpenPartySheetApplication.discardPartyDrafts,
+        distributeXp: OpenPartySheetApplication.distributeXp,
         moveMarchingActor: OpenPartySheetApplication.moveMarchingActor,
         openFollower: OpenPartySheetApplication.openFollower,
         openMarchingActor: OpenPartySheetApplication.openMarchingActor,
@@ -500,6 +502,40 @@ export function createFoundationApplications({
         totalXp: this._xpDraft.totalXp,
       });
       await this.render({ force: true });
+    }
+
+    static async distributeXp() {
+      const state = partyStoreProvider()?.getState?.();
+      if (
+        game.user?.isGM !== true
+        || !this._xpDraft?.preview
+        || this._xpDraft.baseRevision !== state?.revision
+      ) return null;
+      const service = partyXpAwardsProvider();
+      if (typeof service?.distribute !== 'function') return null;
+      this._xpDraft.requestId ??= requestIdProvider();
+      const response = await service.distribute(
+        this._xpDraft.preview,
+        this._xpDraft.baseRevision,
+        this._xpDraft.requestId,
+      );
+      if (response?.ok) {
+        this._xpDraft = null;
+        notify(
+          notifications,
+          'info',
+          `${APP_NAMESPACE}.partySheet.xpDistributionComplete`,
+        );
+      }
+      else {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.xpDistributionFailed`,
+        );
+      }
+      await this.render({ force: true });
+      return response;
     }
 
     static async moveMarchingActor(_event, target) {
@@ -1260,6 +1296,9 @@ export function createFoundationApplications({
         : null;
       const xpPreview = this._xpDraft?.preview ?? null;
       const xpModel = xpPreview ?? xpInputModel;
+      const xpPreviewStale =
+        this._xpDraft !== null
+        && this._xpDraft.baseRevision !== state.revision;
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -1282,6 +1321,11 @@ export function createFoundationApplications({
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
         canDistributeXp,
+        canConfirmXp:
+          xpPreview !== null
+          && !xpPreviewStale
+          && xpPreview.totalXp > 0
+          && xpPreview.distributions.some((entry) => entry.included),
         canManageTreasury,
         canRollPartyActions: game.user?.isGM === true,
         followers,
@@ -1326,9 +1370,7 @@ export function createFoundationApplications({
         xpDistributions: xpModel?.distributions ?? [],
         xpPreview,
         xpPreviewReady: xpPreview !== null,
-        xpPreviewStale:
-          this._xpDraft !== null
-          && this._xpDraft.baseRevision !== state.revision,
+        xpPreviewStale,
         xpTotal: this._xpDraft?.totalXp ?? '',
       };
     }

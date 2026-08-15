@@ -48,6 +48,16 @@ const TRANSLATIONS = {
   'hyp3e-utilities.chat.itemTransfer.mode': 'Destination',
   'hyp3e-utilities.chat.itemTransfer.created': 'New Item',
   'hyp3e-utilities.chat.itemTransfer.merged': 'Merged Stack',
+  'hyp3e-utilities.chat.xpDistribution.title': 'Party XP Distribution',
+  'hyp3e-utilities.chat.xpDistribution.total': 'XP Pool',
+  'hyp3e-utilities.chat.xpDistribution.shares': 'Selected Shares',
+  'hyp3e-utilities.chat.xpDistribution.remainder': 'Undistributed Base XP',
+  'hyp3e-utilities.chat.xpDistribution.requester': 'Distributed By',
+  'hyp3e-utilities.chat.xpDistribution.base': 'Base',
+  'hyp3e-utilities.chat.xpDistribution.adjustment': 'Adjustment',
+  'hyp3e-utilities.chat.xpDistribution.final': 'Final',
+  'hyp3e-utilities.chat.xpDistribution.character': 'Added to character sheet',
+  'hyp3e-utilities.chat.xpDistribution.npc': 'NPC allocation consumed; no writeback',
 };
 
 function createHarness({
@@ -344,4 +354,56 @@ test('item transfer audit is public, escaped, and carries stable document flags'
   assert.match(harness.messages[0].content, /Player &amp; Friend/);
   assert.match(harness.messages[0].content, /Merged Stack/);
   assert.equal(harness.messages[0].content.includes('<script>'), false);
+});
+
+test('XP distribution audit is public, escaped, and distinguishes character and NPC awards', async () => {
+  const harness = createHarness();
+  const report = await harness.service.createXpDistributionReport({
+    baseRemainderXp: 1,
+    recipients: [
+      {
+        actorType: 'character',
+        actorUuid: 'Actor.hero',
+        adjustmentXp: 40,
+        baseXp: 400,
+        finalAwardXp: 440,
+        name: '<Hero>',
+        writeback: true,
+      },
+      {
+        actorType: 'npc',
+        actorUuid: 'Actor.npc',
+        adjustmentXp: 0,
+        baseXp: 100,
+        finalAwardXp: 100,
+        name: 'Hireling & Mule',
+        writeback: false,
+      },
+    ],
+    requestId: 'xp-request-id',
+    requesterName: 'GM <One>',
+    requesterUserId: 'gm-one',
+    revision: 7,
+    totalShares: 1.25,
+    totalXp: 501,
+  });
+
+  assert.equal(report.message.id, 'message-1');
+  assert.equal(Object.hasOwn(harness.messages[0], 'whisper'), false);
+  assert.deepEqual(harness.messages[0].flags['hyp3e-utilities'], {
+    action: 'xpDistribution',
+    feature: 'partySheet',
+    requestId: 'xp-request-id',
+    requesterUserId: 'gm-one',
+    revision: 7,
+    totalXp: 501,
+  });
+  const { content } = harness.messages[0];
+  assert.match(content, /Party XP Distribution/);
+  assert.match(content, /&lt;Hero&gt;/);
+  assert.match(content, /Hireling &amp; Mule/);
+  assert.match(content, /GM &lt;One&gt;/);
+  assert.match(content, /Added to character sheet/);
+  assert.match(content, /NPC allocation consumed; no writeback/);
+  assert.equal(content.includes('<Hero>'), false);
 });

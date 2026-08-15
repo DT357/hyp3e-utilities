@@ -69,6 +69,9 @@
         "xpRecipients": "Recipients",
         "xpShare": "{share} share(s)",
         "xpPreviewAction": "Preview XP Allocation",
+        "xpConfirmAction": "Confirm and Award XP",
+        "xpDistributionComplete": "XP was awarded and reported to chat.",
+        "xpDistributionFailed": "XP could not be awarded. No successful distribution was reported.",
         "xpNoRecipients": "Add a party member or follower before distributing XP.",
         "xpPreviewStale": "The Party Sheet changed after this preview. Preview again before confirming.",
         "xpTotalShares": "Selected Shares",
@@ -270,6 +273,18 @@
         "mode": "Destination",
         "created": "New Item",
         "merged": "Merged Stack"
+      },
+      "xpDistribution": {
+        "title": "Party XP Distribution",
+        "total": "XP Pool",
+        "shares": "Selected Shares",
+        "remainder": "Undistributed Base XP",
+        "requester": "Distributed By",
+        "base": "Base",
+        "adjustment": "Adjustment",
+        "final": "Final",
+        "character": "Added to character sheet",
+        "npc": "NPC allocation consumed; no writeback"
       },
       "actions": {
         "reaction": "Reaction Roll",

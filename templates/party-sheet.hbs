@@ -137,6 +137,11 @@
                   </tbody>
                 </table>
               </div>
+              <button
+                type="button"
+                data-action="distributeXp"
+                {{#unless canConfirmXp}}disabled{{/unless}}
+              >{{localize "hyp3e-utilities.applications.partySheet.xpConfirmAction"}}</button>
             {{/if}}
           </section>
         {{/if}}
