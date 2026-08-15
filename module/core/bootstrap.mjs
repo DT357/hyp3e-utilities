@@ -10,6 +10,9 @@ import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import { createPartyActionService } from '../party/party-actions.mjs';
 import { createPartyCleanupService } from '../party/party-cleanup.mjs';
 import { createPartyFollowerService } from '../party/party-followers.mjs';
+import {
+  createPartyMarchingOrderService,
+} from '../party/party-marching-order.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
@@ -98,6 +101,7 @@ export function registerModuleLifecycle({
   let partyActions;
   let partyCleanup;
   let partyFollowers;
+  let partyMarchingOrder;
   let partyMembers;
   let partyMutations;
   let partyStore;
@@ -216,6 +220,9 @@ export function registerModuleLifecycle({
       game: currentGame,
       store: partyStore,
     });
+    partyMarchingOrder = createPartyMarchingOrderService({
+      store: partyStore,
+    });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -231,6 +238,7 @@ export function registerModuleLifecycle({
       partyActions,
       partyCleanup,
       partyFollowers,
+      partyMarchingOrder,
       partyMembers,
       partyMutations,
       partyPermissions,

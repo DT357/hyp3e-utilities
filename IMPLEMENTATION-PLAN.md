@@ -224,7 +224,7 @@ M2 is complete when all PAR items are `DONE` and the 0.2.0 package passes the fu
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| MAR-001 | `TODO` | PAR-003, PB-009 | Pure row/slot marching-order model and mutation helpers | Insert, move, swap, remove, duplicate, and missing-Actor tests |
+| MAR-001 | `DONE` | PAR-003, PB-009 | Pure row/slot marching-order model and mutation helpers | Insert, move, swap, remove, duplicate, and missing-Actor tests |
 | MAR-002 | `TODO` | MAR-001, PAR-005 | Marching-order UI with accessible controls and drag/drop enhancement | Mouse, keyboard, stale update, and mobile-width checks |
 | MAR-003 | `TODO` | MAR-002, HUD-003 | Party marching-order chat report | Ordering, escaping, and empty-slot tests |
 | SUP-001 | `TODO` | PAR-004, PAR-005 | Supplies fields and validation | Authorized editing, invalid numbers, refresh, and persistence tests |
@@ -356,7 +356,7 @@ in PAR-006.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 2 are complete.
-- Immediate next batch: Implement the pure marching-order model and mutations in MAR-001.
+- Immediate next batch: Implement the accessible marching-order UI and drag/drop enhancement in MAR-002.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
