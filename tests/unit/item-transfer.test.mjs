@@ -147,6 +147,33 @@ test('partial transfers partition maximum and preserve bundle metadata', () => {
   });
 });
 
+test('partial transfers preserve nullable maximum and bundle metadata', () => {
+  const sourceActor = createActor('source');
+  const sourceItem = createItem({
+    actor: sourceActor,
+    bundle: null,
+    max: null,
+    quantity: 5,
+  });
+  const plan = planTransfer({
+    expectedSourceQuantity: 5,
+    quantity: 2,
+    sourceActor,
+    sourceItem,
+  });
+
+  assert.deepEqual(plan.source.quantityAfter, {
+    bundle: null,
+    max: null,
+    value: 3,
+  });
+  assert.deepEqual(plan.destination.quantityAfter, {
+    bundle: null,
+    max: null,
+    value: 2,
+  });
+});
+
 test('ordinary items merge only when an explicit compatibility check approves', () => {
   const sourceActor = createActor('source');
   const destinationActor = createActor('treasury', 'treasure');
@@ -187,6 +214,39 @@ test('ordinary items merge only when an explicit compatibility check approves', 
     quantityBefore: { bundle: 0, max: 4, value: 2 },
     quantityAfter: { bundle: 0, max: 6, value: 4 },
   });
+});
+
+test('full compatible-item merges conserve value, maximum, and bundle', () => {
+  const sourceActor = createActor('source');
+  const destinationActor = createActor('treasury', 'treasure');
+  const sourceItem = createItem({
+    actor: sourceActor,
+    bundle: 2,
+    max: 8,
+    quantity: 5,
+  });
+  const destinationItem = createItem({
+    actor: destinationActor,
+    bundle: 2,
+    id: 'destination-item',
+    max: 4,
+    quantity: 2,
+  });
+  const plan = planTransfer({
+    canMerge: hyp3eAdapter.areItemsStackCompatible,
+    destinationActor,
+    destinationItems: [destinationItem],
+    sourceActor,
+    sourceItem,
+  });
+
+  assert.equal(plan.destination.action, 'update');
+  assert.deepEqual(plan.destination.quantityAfter, {
+    bundle: 2,
+    max: 12,
+    value: 7,
+  });
+  assert.equal(plan.source.action, 'delete');
 });
 
 test('planner rejects same-Actor and synthetic-Actor transfers', () => {
@@ -649,6 +709,73 @@ test('failed compensation reports rollback failure without claiming success', as
     PARTY_ITEM_TRANSFER_ERROR_CODES.rollbackFailed,
   );
   assert.equal(harness.destinationActor.items.length, 1);
+});
+
+test('transfer service merges compatible ordinary items and restores them on failure', async () => {
+  const harness = createOperationHarness();
+  const existing = createItem({
+    actor: harness.destinationActor,
+    bundle: 2,
+    id: 'existing-item',
+    max: 4,
+    quantity: 2,
+    system: { location: 'Treasury' },
+  });
+  existing.update = async (update) => {
+    harness.calls.push(['destinationUpdate', structuredClone(update)]);
+    existing.system.quantity = {
+      bundle: update['system.quantity.bundle'],
+      max: update['system.quantity.max'],
+      value: update['system.quantity.value'],
+    };
+  };
+  harness.destinationActor.items.push(existing);
+
+  const response = await transferRequest(harness, { quantity: 2 });
+  assert.equal(response.ok, true);
+  assert.equal(response.value.merged, true);
+  assert.deepEqual(harness.calls.map(([name]) => name), [
+    'destinationUpdate',
+    'sourceUpdate',
+  ]);
+  assert.deepEqual(existing.system.quantity, {
+    bundle: 2,
+    max: 6,
+    value: 4,
+  });
+
+  const rollbackHarness = createOperationHarness();
+  const rollbackTarget = createItem({
+    actor: rollbackHarness.destinationActor,
+    bundle: 2,
+    id: 'rollback-item',
+    max: 4,
+    quantity: 2,
+  });
+  rollbackTarget.update = async (update) => {
+    rollbackHarness.calls.push(['destinationUpdate', structuredClone(update)]);
+    rollbackTarget.system.quantity = {
+      bundle: update['system.quantity.bundle'],
+      max: update['system.quantity.max'],
+      value: update['system.quantity.value'],
+    };
+  };
+  rollbackHarness.destinationActor.items.push(rollbackTarget);
+  rollbackHarness.failures.sourceWrite = true;
+
+  const failed = await transferRequest(rollbackHarness, { quantity: 2 });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.code, PARTY_ITEM_TRANSFER_ERROR_CODES.writeFailed);
+  assert.deepEqual(rollbackTarget.system.quantity, {
+    bundle: 2,
+    max: 4,
+    value: 2,
+  });
+  assert.deepEqual(rollbackHarness.calls.map(([name]) => name), [
+    'destinationUpdate',
+    'sourceUpdate',
+    'destinationUpdate',
+  ]);
 });
 
 test('transfer request uses the registered operation and strict payload', async () => {

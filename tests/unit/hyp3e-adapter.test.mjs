@@ -127,6 +127,71 @@ test('adapter classifies physical item types and reads quantity contracts', () =
   );
 });
 
+test('adapter merges only intrinsically identical ordinary items', () => {
+  const source = {
+    effects: [],
+    flags: { world: { quality: 'standard' } },
+    img: 'icons/svg/item-bag.svg',
+    name: 'Iron Spikes',
+    system: {
+      containerId: 'backpack-id',
+      cost: '1 gp',
+      description: 'A set of iron spikes.',
+      equipped: true,
+      inStorage: false,
+      location: 'Backpack',
+      quantity: { bundle: 6, max: 12, value: 8 },
+      weight: 1,
+    },
+    type: 'item',
+  };
+  const compatible = structuredClone(source);
+  compatible.system.containerId = '';
+  compatible.system.equipped = false;
+  compatible.system.inStorage = true;
+  compatible.system.location = 'Treasury';
+  compatible.system.quantity = { bundle: 6, max: 30, value: 20 };
+
+  assert.equal(
+    hyp3eAdapter.areItemsStackCompatible(source, compatible),
+    true,
+  );
+
+  for (const mutate of [
+    (item) => { item.name = 'Iron Spike'; },
+    (item) => { item.img = 'icons/svg/sword.svg'; },
+    (item) => { item.system.cost = '2 gp'; },
+    (item) => { item.system.quantity.bundle = 12; },
+    (item) => { item.system.upstreamField = true; },
+    (item) => { item.flags.world.quality = 'fine'; },
+    (item) => { item.effects.push({ name: 'Magic' }); },
+  ]) {
+    const different = structuredClone(compatible);
+    mutate(different);
+    assert.equal(
+      hyp3eAdapter.areItemsStackCompatible(source, different),
+      false,
+    );
+  }
+
+  for (const type of ['weapon', 'armor', 'shield']) {
+    assert.equal(
+      hyp3eAdapter.areItemsStackCompatible(
+        { ...source, type },
+        { ...compatible, type },
+      ),
+      false,
+    );
+  }
+  assert.equal(
+    hyp3eAdapter.areItemsStackCompatible(
+      { ...source, system: { ...source.system, isContainer: true } },
+      compatible,
+    ),
+    false,
+  );
+});
+
 test('adapter normalizes invalid numeric storage safely', () => {
   const malformedCharacter = {
     ...characterActor,

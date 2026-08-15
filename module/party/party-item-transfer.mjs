@@ -132,7 +132,7 @@ function applyFlatUpdate(target, update) {
 
 export function createPartyItemTransferService({
   adapter,
-  canMerge = () => false,
+  canMerge,
   game,
   logger = console,
   mutations,
@@ -155,6 +155,12 @@ export function createPartyItemTransferService({
     || typeof adapter?.buildItemTransferCreateUpdate !== 'function'
   ) {
     throw new TypeError('Party item transfers require the hyp3e adapter.');
+  }
+  const mergeCompatibility = typeof canMerge === 'function'
+    ? canMerge
+    : adapter.areItemsStackCompatible;
+  if (typeof mergeCompatibility !== 'function') {
+    throw new TypeError('Party item transfers require Item compatibility.');
   }
   let executionQueue = Promise.resolve();
 
@@ -295,7 +301,7 @@ export function createPartyItemTransferService({
     try {
       plan = buildItemTransferPlan({
         adapter,
-        canMerge,
+        canMerge: mergeCompatibility,
         destinationActor,
         destinationItems: destinationActor.items,
         expectedSourceQuantity: payload.expectedSourceQuantity,

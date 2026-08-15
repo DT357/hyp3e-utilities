@@ -109,6 +109,61 @@ function getItemQuantity(item) {
   };
 }
 
+const STACK_PLACEMENT_FIELDS = new Set([
+  'containerId',
+  'equipped',
+  'inStorage',
+  'location',
+]);
+
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .filter((key) => typeof value[key] !== 'function')
+      .sort()
+      .map((key) => [key, canonicalize(value[key])]),
+  );
+}
+
+function getSourceValue(value) {
+  return typeof value?.toObject === 'function' ? value.toObject() : value;
+}
+
+function getStackSystem(item) {
+  const system = getSourceValue(item?.system) ?? {};
+  return Object.fromEntries(Object.entries(system).flatMap(([key, value]) => {
+    if (STACK_PLACEMENT_FIELDS.has(key)) return [];
+    if (key === 'quantity') {
+      return [[key, { bundle: normalizeWhole(value?.bundle) }]];
+    }
+    return [[key, getSourceValue(value)]];
+  }));
+}
+
+function getStackProfile(item) {
+  return canonicalize({
+    effects: Array.from(item?.effects ?? []).map(getSourceValue),
+    flags: getSourceValue(item?.flags) ?? {},
+    img: item?.img ?? '',
+    name: item?.name ?? '',
+    system: getStackSystem(item),
+    type: item?.type ?? null,
+  });
+}
+
+function areItemsStackCompatible(source, destination) {
+  if (
+    source?.type !== 'item'
+    || destination?.type !== 'item'
+    || source.system?.isContainer === true
+    || destination.system?.isContainer === true
+  ) return false;
+  return JSON.stringify(getStackProfile(source))
+    === JSON.stringify(getStackProfile(destination));
+}
+
 function isManagedTreasury(actor) {
   if (actor?.type !== ACTOR_TYPES.treasure) return false;
   if (typeof actor.getFlag === 'function') {
@@ -134,6 +189,8 @@ export const hyp3eAdapter = Object.freeze({
   },
 
   isSupportedPhysicalItem,
+
+  areItemsStackCompatible,
 
   getActorSummary(actor) {
     return {
