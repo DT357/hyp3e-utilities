@@ -1916,6 +1916,14 @@ async function testProductionPartyMembers(character, npc) {
   const memberSaveButton = memberSaveActions?.querySelector(
     '[data-action="rollMemberSave"]',
   );
+  const memberRemoveButton = memberElement?.querySelector(
+    '.hyp3e-utilities__party-member-remove--icon',
+  );
+  const memberStatsRect = memberElement?.querySelector(
+    '.hyp3e-utilities__party-member-stats',
+  )?.getBoundingClientRect?.();
+  const memberSaveActionsRect = memberSaveActions?.getBoundingClientRect?.();
+  const memberRemoveRect = memberRemoveButton?.getBoundingClientRect?.();
   const saveSelectRect = memberSaveSelect?.getBoundingClientRect?.();
   const saveButtonRect = memberSaveButton?.getBoundingClientRect?.();
   const portraitPingIntegrated = Boolean(
@@ -1928,6 +1936,13 @@ async function testProductionPartyMembers(character, npc) {
     && memberSaveButton
     && saveSelectRect.width <= 120
     && Math.abs(saveSelectRect.top - saveButtonRect.top) <= 2,
+  );
+  const memberControlsDoNotOverlap = Boolean(
+    memberRemoveButton?.querySelector('.fa-xmark')
+    && memberRemoveButton.getAttribute('aria-label')
+    && memberRemoveButton.textContent.trim() === ''
+    && memberStatsRect.right <= memberSaveActionsRect.left
+    && memberSaveActionsRect.right <= memberRemoveRect.left,
   );
 
   sheet.element?.querySelector(
@@ -2000,6 +2015,7 @@ async function testProductionPartyMembers(character, npc) {
       ),
     portraitPingIntegrated,
     memberSaveActionsCompact,
+    memberControlsDoNotOverlap,
     actorSheetOpened,
     removedThroughUi,
     actorDropAdded,

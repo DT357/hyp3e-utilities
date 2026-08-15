@@ -214,20 +214,6 @@
                     <div><dt>{{localize "hyp3e-utilities.applications.partySheet.share"}}</dt><dd>{{share}}</dd></div>
                   </dl>
                 {{/unless}}
-                {{#if ../canEdit}}
-                  <button
-                    type="button"
-                    class="hyp3e-utilities__party-member-remove"
-                    data-action="removeMember"
-                    data-actor-uuid="{{actorUuid}}"
-                  >
-                    {{#if missing}}
-                      {{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}
-                    {{else}}
-                      {{localize "hyp3e-utilities.applications.partySheet.removeMember"}}
-                    {{/if}}
-                  </button>
-                {{/if}}
                 {{#unless missing}}
                   {{#if ../canRollPartyActions}}
                     {{#if canRollSave}}
@@ -249,6 +235,25 @@
                     {{/if}}
                   {{/if}}
                 {{/unless}}
+                {{#if ../canEdit}}
+                  {{#if missing}}
+                    <button
+                      type="button"
+                      class="hyp3e-utilities__party-member-remove"
+                      data-action="removeMember"
+                      data-actor-uuid="{{actorUuid}}"
+                    >{{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}</button>
+                  {{else}}
+                    <button
+                      type="button"
+                      class="hyp3e-utilities__party-member-remove hyp3e-utilities__party-member-remove--icon"
+                      data-action="removeMember"
+                      data-actor-uuid="{{actorUuid}}"
+                      data-tooltip="{{localize "hyp3e-utilities.applications.partySheet.removeMember"}}"
+                      aria-label="{{localize "hyp3e-utilities.applications.partySheet.removeMember"}}"
+                    ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                  {{/if}}
+                {{/if}}
               </li>
             {{/each}}
           </ol>

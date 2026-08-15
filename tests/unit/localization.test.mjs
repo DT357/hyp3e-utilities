@@ -258,6 +258,18 @@ test('Party Sheet member roster keeps portrait ping and save actions compact', a
     styles,
     /party-row-actions--member select\s*\{[^}]*width:\s*7rem;/s,
   );
+  assert.ok(
+    memberRoster.indexOf('party-row-actions--member')
+      < memberRoster.indexOf('party-member-remove--icon'),
+  );
+  assert.match(
+    memberRoster,
+    /party-member-remove--icon[\s\S]*data-action="removeMember"[\s\S]*data-tooltip=[\s\S]*aria-label=[\s\S]*fa-xmark/,
+  );
+  assert.match(
+    styles,
+    /party-member-remove--icon\s*\{[^}]*color:\s*var\(--color-level-error,[^}]*width:\s*2rem;/s,
+  );
 });
 
 test('fixed HUD foreground colors meet WCAG AA contrast', () => {

@@ -120,8 +120,9 @@ the Actor Directory users icon. Its six tabs share one revisioned world state.
   world Actor before the member is added.
 - Add controlled linked character tokens with **Add Controlled Characters**.
 - Drag a durable world `character` Actor onto the Overview drop area.
-- Open a member sheet, click its portrait to ping a placed token, or
-  remove/clean up the row.
+- Open a member sheet, click its portrait to ping a placed token, or use the
+  final red X to remove the member. Missing references retain a labeled
+  **Clean Up** control.
 - GMs can roll one of the five saves or preview and award XP.
 
 Only `character` Actors can be members. Removing a row changes Party State; it

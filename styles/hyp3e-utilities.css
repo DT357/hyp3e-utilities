@@ -425,6 +425,7 @@
 .hyp3e-utilities .hyp3e-utilities__party-member-identity {
   display: grid;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-link {
@@ -439,7 +440,7 @@
 .hyp3e-utilities .hyp3e-utilities__party-member-stats {
   display: grid;
   gap: 0.25rem 0.6rem;
-  grid-template-columns: repeat(5, minmax(2.5rem, 1fr));
+  grid-template-columns: repeat(5, minmax(2.75rem, 1fr));
   margin: 0;
 }
 
@@ -502,6 +503,14 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--member button {
   white-space: nowrap;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-remove--icon {
+  color: var(--color-level-error, #c62828);
+  flex: 0 0 2rem;
+  min-height: 2rem;
+  padding: 0;
+  width: 2rem;
 }
 
 .hyp3e-utilities .hyp3e-utilities__marching-order,
