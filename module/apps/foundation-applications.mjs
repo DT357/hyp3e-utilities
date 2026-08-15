@@ -201,6 +201,7 @@ export function createFoundationApplications({
       super(options);
       partySheetInstance = this;
       this._activeTab = 'overview';
+      this._followerDrafts = new Map();
       this._partyHookSubscriptions = [];
     }
 
@@ -216,6 +217,7 @@ export function createFoundationApplications({
       actions: {
         addControlledMembers: OpenPartySheetApplication.addControlledMembers,
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
+        discardPartyDrafts: OpenPartySheetApplication.discardPartyDrafts,
         openFollower: OpenPartySheetApplication.openFollower,
         openMember: OpenPartySheetApplication.openMember,
         pingActor: OpenPartySheetApplication.pingActor,
@@ -359,12 +361,19 @@ export function createFoundationApplications({
     }
 
     static async removeFollower(_event, target) {
-      await this._requestPartyOperation(
+      const actorUuid = target?.dataset?.actorUuid;
+      const response = await this._requestPartyOperation(
         PARTY_FOLLOWER_OPERATIONS.remove,
-        { actorUuid: target?.dataset?.actorUuid },
+        { actorUuid },
         undefined,
         `${APP_NAMESPACE}.partySheet.followerOperationFailed`,
       );
+      if (response?.ok) this._followerDrafts.delete(actorUuid);
+    }
+
+    static async discardPartyDrafts() {
+      this._followerDrafts.clear();
+      await this.render({ force: true });
     }
 
     static async pingActor(_event, target) {
@@ -423,16 +432,21 @@ export function createFoundationApplications({
 
     static async saveFollower(_event, target) {
       const row = target?.closest?.('[data-follower-row]');
-      await this._requestPartyOperation(
+      const actorUuid = target?.dataset?.actorUuid;
+      const draft = this._followerDrafts.get(actorUuid);
+      const response = await this._requestPartyOperation(
         PARTY_FOLLOWER_OPERATIONS.setEmployment,
         {
-          actorUuid: target?.dataset?.actorUuid,
+          actorUuid,
           share: row?.querySelector?.('[data-field="follower-share"]')?.value,
           wageGp: row?.querySelector?.('[data-field="follower-wage"]')?.value,
         },
-        undefined,
+        draft?.baseRevision,
         `${APP_NAMESPACE}.partySheet.followerOperationFailed`,
       );
+      if (!response?.ok) return;
+      this._followerDrafts.delete(actorUuid);
+      await this.render({ force: true });
     }
 
     async _requestPartyOperation(
@@ -477,6 +491,20 @@ export function createFoundationApplications({
         notify(notifications, 'error', failureMessage);
         return null;
       }
+    }
+
+    _captureFollowerDraft(event) {
+      const row = event.target?.closest?.('[data-follower-row]');
+      const actorUuid = row?.dataset?.actorUuid;
+      if (!actorUuid) return;
+      const existing = this._followerDrafts.get(actorUuid);
+      this._followerDrafts.set(actorUuid, {
+        baseRevision: existing?.baseRevision
+          ?? partyStoreProvider()?.getState()?.revision
+          ?? 0,
+        share: row.querySelector('[data-field="follower-share"]')?.value ?? '',
+        wageGp: row.querySelector('[data-field="follower-wage"]')?.value ?? '',
+      });
     }
 
     async _handleActorDrop(event) {
@@ -532,8 +560,17 @@ export function createFoundationApplications({
       });
       const state = partyStoreProvider()?.getState()
         ?? createPartyStateDefault();
-      const followers = partyFollowersProvider()?.getFollowerRows?.(state)
-        ?? [];
+      const followers = (partyFollowersProvider()?.getFollowerRows?.(state)
+        ?? []).map((row) => {
+        const draft = decision.allowed
+          ? this._followerDrafts.get(row.actorUuid)
+          : null;
+        return draft ? {
+          ...row,
+          share: draft.share,
+          wageGp: draft.wageGp,
+        } : row;
+      });
       const members = partyMembersProvider()?.getMemberRows?.(state) ?? [];
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
@@ -560,6 +597,10 @@ export function createFoundationApplications({
         followers,
         hasFollowers: followers.length > 0,
         hasFollowerMorale: followers.some((row) => row.canRollMorale),
+        hasStaleDraft: decision.allowed && [...this._followerDrafts.values()]
+          .some((draft) => draft.baseRevision !== state.revision),
+        hasUnsavedChanges:
+          decision.allowed && this._followerDrafts.size > 0,
         hasMembers: members.length > 0,
         members,
         permissionReason: decision.reason,
@@ -580,6 +621,10 @@ export function createFoundationApplications({
         '[data-party-follower-drop-zone]',
       );
       if (context.canEdit !== true) return;
+      followerDropZone?.addEventListener(
+        'input',
+        this._captureFollowerDraft.bind(this),
+      );
       for (const [element, handler] of [
         [dropZone, this._handleActorDrop.bind(this)],
         [followerDropZone, this._handleFollowerDrop.bind(this)],
@@ -625,6 +670,7 @@ export function createFoundationApplications({
         hooks.off(hookName, hookId);
       }
       this._partyHookSubscriptions = [];
+      this._followerDrafts.clear();
       try {
         return await super.close(options);
       }

@@ -11,6 +11,18 @@
         {{localize "hyp3e-utilities.applications.partySheet.readOnly"}}
       {{/if}}
     </span>
+    {{#if hasUnsavedChanges}}
+      <aside class="hyp3e-utilities__party-draft-status" role="status">
+        {{#if hasStaleDraft}}
+          <strong>{{localize "hyp3e-utilities.applications.partySheet.staleDraft"}}</strong>
+        {{else}}
+          <span>{{localize "hyp3e-utilities.applications.partySheet.unsavedDraft"}}</span>
+        {{/if}}
+        <button type="button" data-action="discardPartyDrafts">
+          {{localize "hyp3e-utilities.applications.partySheet.discardDrafts"}}
+        </button>
+      </aside>
+    {{/if}}
   </header>
 
   <nav
@@ -156,6 +168,7 @@
               {{#each followers}}
                 <li
                   class="hyp3e-utilities__party-member hyp3e-utilities__party-follower {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
+                  data-actor-uuid="{{actorUuid}}"
                   data-follower-row
                   data-party-actor-row
                 >

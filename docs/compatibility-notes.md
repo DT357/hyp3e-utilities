@@ -316,9 +316,25 @@ rejection, and GM-only roll execution. The first runtime attempt exposed a
 diagnostic tab-selection mistake rather than a product defect; the corrected
 v13/v14 runs completed with no diagnostic errors.
 
+### External updates and stale Party Sheet drafts (PAR-009)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the two-client draft-conflict gate. In both generations
+an authorized Player entered follower wage and share values, a connected GM
+committed an unrelated Party State update, and the Player's rerender retained
+the exact local draft while displaying the stale warning.
+
+Saving submitted the draft's original base revision. The existing
+GM-authoritative store rejected it as `staleRevision`, preserved the newer
+state, and left the draft available. Explicit discard restored the GM-held
+follower values. GM-side diagnostics received the Player result through the
+production socket path, and the existing sender-identity and concurrent-write
+gates remained green in both generations. Automated coverage independently
+proves the draft lifecycle and exact revision submitted on save.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-008 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-009 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-external-update and cleanup behavior in Milestone 2.
+deleted-Actor cleanup and the complete Milestone 2 matrix.

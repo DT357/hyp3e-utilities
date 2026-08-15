@@ -29,6 +29,7 @@ const results = {
   par006: {},
   par007: {},
   par008: {},
+  par009: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -1573,6 +1574,42 @@ function registerProductionPartyDiagnostic() {
       return { actorUuid: payload.actorUuid };
     },
   });
+  api.partyStore.registerMutation('party.compatibilityFollowerMutation', {
+    async mutate({ payload, state }) {
+      state.followerActorUuids.push(payload.actorUuid);
+      state.followerWages[payload.actorUuid] = 2;
+      state.shares[payload.actorUuid] = 1;
+    },
+    validatePayload(payload) {
+      if (
+        !payload
+        || typeof payload !== 'object'
+        || Array.isArray(payload)
+        || Object.keys(payload).some((key) => key !== 'actorUuid')
+        || typeof payload.actorUuid !== 'string'
+      ) {
+        throw new TypeError('Compatibility follower payload is invalid.');
+      }
+      return { actorUuid: payload.actorUuid };
+    },
+  });
+  api.partyStore.registerMutation('party.compatibilityNotesMutation', {
+    async mutate({ payload, state }) {
+      state.notes = payload.notes;
+    },
+    validatePayload(payload) {
+      if (
+        !payload
+        || typeof payload !== 'object'
+        || Array.isArray(payload)
+        || Object.keys(payload).some((key) => key !== 'notes')
+        || typeof payload.notes !== 'string'
+      ) {
+        throw new TypeError('Compatibility notes payload is invalid.');
+      }
+      return { notes: payload.notes };
+    },
+  });
 }
 
 function testProductionPartyPermissions() {
@@ -2194,6 +2231,7 @@ async function runGmDiagnostics() {
       waitingForPlayer: true,
     };
     results.par004 = { waitingForPlayer: true };
+    results.par009 = { waitingForPlayer: true };
     results.status = 'complete';
   }
   catch (error) {
@@ -2208,6 +2246,117 @@ async function runGmDiagnostics() {
 
   console.info(`${DIAGNOSTIC_ID} | Results`, results);
   publishResults();
+}
+
+async function testPlayerDraftConflict(partyMutations) {
+  const api = game.modules.get(MODULE_ID).api;
+  const actorUuid = `Actor.par009${game.user.id}`;
+  const addResult = await partyMutations.request(
+    'party.compatibilityFollowerMutation',
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload: { actorUuid },
+      requestId: `par009-${game.user.id}-add`,
+    },
+  );
+  await waitUntil(() => api.partyStore.getState().followerActorUuids.includes(
+    actorUuid,
+  ));
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const sheet = new PartySheet();
+
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="followers"]',
+    ).click();
+    await waitUntil(() => (
+      sheet.element?.querySelector('[data-tab="followers"]')
+        ?.getAttribute('aria-selected') === 'true'
+    ));
+    const row = sheet.element.querySelector(
+      `[data-follower-row][data-actor-uuid="${actorUuid}"]`,
+    );
+    const wageInput = row?.querySelector('[data-field="follower-wage"]');
+    const shareInput = row?.querySelector('[data-field="follower-share"]');
+    wageInput.value = '9';
+    shareInput.value = '1.5';
+    wageInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const draftRevision = api.partyStore.getState().revision;
+
+    const externalResult = await partyMutations.request(
+      'party.compatibilityNotesMutation',
+      {
+        expectedRevision: draftRevision,
+        payload: { notes: `PAR-009 external ${game.user.id}` },
+        requestId: `par009-${game.user.id}-external`,
+      },
+    );
+    const externalRevisionObserved = await waitUntil(() => (
+      api.partyStore.getState().revision === draftRevision + 1
+    ));
+    const draftPreserved = await waitUntil(() => (
+      sheet.element?.querySelector(
+        `[data-follower-row][data-actor-uuid="${actorUuid}"] [data-field="follower-wage"]`,
+      )?.value === '9'
+      && sheet.element?.querySelector(
+        `[data-follower-row][data-actor-uuid="${actorUuid}"] [data-field="follower-share"]`,
+      )?.value === '1.5'
+    ));
+    const staleWarningRendered = Boolean(
+      sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
+    );
+
+    sheet.element.querySelector(
+      `[data-action="saveFollower"][data-actor-uuid="${actorUuid}"]`,
+    ).click();
+    await wait(300);
+    const afterRejectedSave = api.partyStore.getState();
+    const staleSaveRejected = afterRejectedSave.revision === draftRevision + 1
+      && afterRejectedSave.followerWages[actorUuid] === 2
+      && afterRejectedSave.shares[actorUuid] === 1
+      && Boolean(sheet.element?.querySelector(
+        '.hyp3e-utilities__party-draft-status strong',
+      ));
+
+    sheet.element.querySelector('[data-action="discardPartyDrafts"]').click();
+    const discardRestoredAuthoritative = await waitUntil(() => (
+      sheet.element?.querySelector(
+        `[data-follower-row][data-actor-uuid="${actorUuid}"] [data-field="follower-wage"]`,
+      )?.value === '2'
+      && !sheet.element?.querySelector('.hyp3e-utilities__party-draft-status')
+    ));
+    const cleanupResult = await partyMutations.request(
+      'party.removeFollower',
+      {
+        expectedRevision: api.partyStore.getState().revision,
+        payload: { actorUuid },
+        requestId: `par009-${game.user.id}-cleanup`,
+      },
+    );
+
+    return {
+      addSucceeded: addResult.ok,
+      authorizedPlayerCanEdit: Boolean(wageInput && shareInput),
+      externalMutationSucceeded: externalResult.ok,
+      externalRevisionObserved,
+      draftPreserved,
+      staleWarningRendered,
+      staleSaveRejected,
+      discardRestoredAuthoritative,
+      cleanupSucceeded: cleanupResult.ok,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    if (api.partyStore.getState().followerActorUuids.includes(actorUuid)) {
+      await partyMutations.request('party.removeFollower', {
+        expectedRevision: api.partyStore.getState().revision,
+        payload: { actorUuid },
+        requestId: `par009-${game.user.id}-finally`,
+      });
+    }
+  }
 }
 
 async function runPlayerSocketDiagnostic() {
@@ -2336,15 +2485,18 @@ async function runPlayerSocketDiagnostic() {
         && finalState.memberActorUuids.includes(firstActorUuid)
         && finalState.memberActorUuids.includes(secondActorUuid),
     };
+    const partyDraftResult = await testPlayerDraftConflict(partyMutations);
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
+    results.par009 = partyDraftResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
       type: 'pb008-result',
       par002: partyMutationResult,
       par004: partyStoreResult,
+      par009: partyDraftResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -2412,6 +2564,7 @@ Hooks.once('ready', async () => {
         senderId === message.result.actualPlayerUserId,
       gmState: game.modules.get(MODULE_ID).api.partyStore.getState(),
     };
+    results.par009 = message.par009;
     publishResults();
   });
 

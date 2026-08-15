@@ -41,6 +41,17 @@
   justify-content: space-between;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-draft-status {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-level-warning, #9f6500) 16%, transparent);
+  border: 1px solid var(--color-level-warning, #9f6500);
+  display: flex;
+  flex-basis: 100%;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.5rem;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-access {
   font-weight: 700;
 }

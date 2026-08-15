@@ -388,7 +388,7 @@ test('Party Sheet Followers renders rows and routes employment, removal, and dro
   const context = await app._prepareContext({});
   assert.equal(context.showFollowers, true);
   assert.equal(context.hasFollowers, true);
-  assert.equal(context.followers, rows);
+  assert.deepEqual(context.followers, rows);
 
   await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.openFollower
     .call(app, undefined, { dataset: { actorUuid: 'Actor.retainer' } });
@@ -523,4 +523,75 @@ test('Party Sheet row actions reuse the party action service for ping, saves, an
     ['morale', ['Actor.npc']],
     ['morale', ['Actor.npc']],
   ]);
+});
+
+test('Party Sheet preserves follower drafts and rejects stale saves at their base revision', async () => {
+  let state = createPartyStateDefault();
+  state.revision = 2;
+  state.followerActorUuids = ['Actor.retainer'];
+  state.followerWages = { 'Actor.retainer': 2 };
+  state.shares = { 'Actor.retainer': 1 };
+  const requests = [];
+  const followerService = {
+    getFollowerRows: (currentState) => [{
+      actorUuid: 'Actor.retainer',
+      missing: false,
+      share: currentState.shares['Actor.retainer'],
+      wageGp: currentState.followerWages['Actor.retainer'],
+    }],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyFollowersProvider: () => followerService,
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        return { error: { code: 'staleRevision' }, ok: false };
+      },
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    requestIdProvider: () => 'stale-follower-save',
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const draftRow = {
+    dataset: { actorUuid: 'Actor.retainer' },
+    querySelector: (selector) => ({
+      value: selector.includes('wage') ? '9' : '1.5',
+    }),
+  };
+  app._captureFollowerDraft({
+    target: { closest: () => draftRow },
+  });
+
+  state = {
+    ...state,
+    revision: 3,
+    followerWages: { 'Actor.retainer': 4 },
+  };
+  const staleContext = await app._prepareContext({});
+  assert.equal(staleContext.hasUnsavedChanges, true);
+  assert.equal(staleContext.hasStaleDraft, true);
+  assert.equal(staleContext.followers[0].wageGp, '9');
+  assert.equal(staleContext.followers[0].share, '1.5');
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.saveFollower
+    .call(app, undefined, {
+      closest: () => draftRow,
+      dataset: { actorUuid: 'Actor.retainer' },
+    });
+  assert.equal(requests[0].envelope.expectedRevision, 2);
+  assert.equal((await app._prepareContext({})).hasStaleDraft, true);
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions
+    .discardPartyDrafts.call(app);
+  const discardedContext = await app._prepareContext({});
+  assert.equal(discardedContext.hasUnsavedChanges, false);
+  assert.equal(discardedContext.hasStaleDraft, false);
+  assert.equal(discardedContext.followers[0].wageGp, 4);
 });
