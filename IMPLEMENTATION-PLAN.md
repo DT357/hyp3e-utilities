@@ -204,7 +204,7 @@ M1 is complete when all FND and HUD items are `DONE`, `npm run check` passes, th
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
 | PAR-001 | `DONE` | PB-009 | Pure permission policy for GM, minimum role, explicit grants, and denial | Matrix tests for every role/grant combination |
-| PAR-002 | `TODO` | PB-008, PAR-001 | Authenticated named mutation operations with schema validation | Spoofing, malformed payload, unauthorized, no-GM, and duplicate-request tests |
+| PAR-002 | `DONE` | PB-008, PAR-001 | Authenticated named mutation operations with schema validation | Spoofing, malformed payload, unauthorized, no-GM, and duplicate-request tests |
 | PAR-003 | `TODO` | PB-006 | Versioned party-state defaults, normalization, migration, and revision model | Round-trip, missing field, unknown field, and old-version tests |
 | PAR-004 | `TODO` | PAR-002, PAR-003 | GM-authoritative party store with serialized writes and stale-revision rejection | Concurrent-edit and rollback tests |
 | PAR-005 | `TODO` | FND-005, PAR-004 | Singleton Party Sheet app and GM-facing open controls | Only one instance; reopen focuses/rerenders; close cleans listeners |
@@ -344,10 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-The foundation, pure roll-planning, shared chat-output, controlled-NPC
-selection, visible action overlay, per-client HUD position, synchronization
-lifecycle, localization, accessibility, disabled-state, and error-notice work
-are complete. Proceed next with the Party Core permission policy in PAR-001.
+The foundation, NPC Action HUD, Party Sheet permission policy, and authenticated
+party-mutation protocol are complete. Proceed next with the versioned Party
+Sheet state model in PAR-003.
 
 ## 15. Current Project Status
 
@@ -356,7 +355,7 @@ are complete. Proceed next with the Party Core permission policy in PAR-001.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 and 1 are complete.
-- Immediate next batch: Implement authenticated named mutation operations and payload validation in PAR-002.
+- Immediate next batch: Implement versioned Party Sheet defaults, normalization, migration, and revision handling in PAR-003.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

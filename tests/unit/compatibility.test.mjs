@@ -130,6 +130,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
     typeof getApi().partyPermissions.canEditPartySheet,
     'function',
   );
+  assert.equal(typeof getApi().partyMutations.request, 'function');
   assert.equal(subscriptions.size > 0, true);
   assert.equal(moduleRecord.api, getApi());
 });

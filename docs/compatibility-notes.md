@@ -195,9 +195,29 @@ The English localization scan covers all static template keys and the dynamic
 HUD/chat families. Focus-visible styles and native form controls provide the
 keyboard path without replacing the approved Pointer Events drag behavior.
 
+### Authenticated Party Sheet mutations (PAR-001 and PAR-002)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the first multi-client Party Core gate. Each disposable
+world used one active GM and one Player granted explicit Party Sheet edit
+permission.
+
+The Player sent a payload containing the GM's ID as a claimed identity. The
+production handler authorized the server-derived SocketLib caller instead,
+executed on the active GM, and returned the actual Player ID. An independent
+Foundry socket callback reported the same sender. Repeating an identical
+request ID returned the first result with an execution count of one, while an
+unknown payload field returned the structured `invalidRequest` error without
+executing. Both generations also passed the complete GM, role-threshold,
+explicit-grant, and denied-user permission matrix.
+
+The protocol does not yet write Party Sheet state. PAR-003 defines state and
+revision semantics; PAR-004 supplies serialized GM-authoritative writes and
+stale-revision rejection.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-008 are
-complete. No compatibility finding contradicts the approved architecture.
-Milestone 1 is complete; the next compatibility work belongs to the
-multi-client Party Core gates in Milestone 2.
+PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
+PAR-001 through PAR-002 are complete. No compatibility finding contradicts the
+approved architecture. Milestone 1 is complete; the next compatibility work is
+the versioned state and authoritative-write portion of Milestone 2.

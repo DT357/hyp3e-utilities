@@ -13,7 +13,16 @@ export function createSocketTransport({
   logger = console,
 }) {
   let socket = null;
-  const operations = new Set(['ping']);
+  const operations = new Map([[
+    'ping',
+    function ping() {
+      return {
+        requesterUserId: this.socketdata.userId,
+        executingUserId: game.user.id,
+        executingUserIsGM: game.user.isGM,
+      };
+    },
+  ]]);
 
   return {
     get available() {
@@ -31,14 +40,24 @@ export function createSocketTransport({
       }
 
       socket = socketlib.registerModule(MODULE_ID);
-      socket.register('ping', function ping() {
-        return {
-          requesterUserId: this.socketdata.userId,
-          executingUserId: game.user.id,
-          executingUserIsGM: game.user.isGM,
-        };
-      });
+      for (const [name, handler] of operations) {
+        socket.register(name, handler);
+      }
       return true;
+    },
+
+    registerOperation(name, handler) {
+      if (typeof name !== 'string' || !name.trim()) {
+        throw new TypeError('Socket operation name must be a non-empty string.');
+      }
+      if (typeof handler !== 'function') {
+        throw new TypeError(`Socket operation "${name}" requires a handler.`);
+      }
+      if (operations.has(name)) {
+        throw new TypeError(`Socket operation "${name}" is already registered.`);
+      }
+      socket?.register(name, handler);
+      operations.set(name, handler);
     },
 
     async executeAsActiveGM(operationName, ...args) {

@@ -8,6 +8,7 @@ import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
+import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -159,6 +160,11 @@ export function registerModuleLifecycle({
       socketlib: socketlibProvider(),
       logger,
     });
+    const partyMutations = createPartyMutationProtocol({
+      game: currentGame,
+      logger,
+      transport,
+    });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -171,6 +177,7 @@ export function registerModuleLifecycle({
       npcActionHud,
       npcRolls,
       npcSelection,
+      partyMutations,
       partyPermissions,
       socket: transport,
     });

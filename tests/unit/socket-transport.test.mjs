@@ -33,6 +33,12 @@ function createHarness({ active = true } = {}) {
 test('transport registers named operations and derives caller identity', async () => {
   const harness = createHarness();
   const transport = createSocketTransport(harness);
+  transport.registerOperation('party.inspect', function inspect(payload) {
+    return {
+      payload,
+      requesterUserId: this.socketdata.userId,
+    };
+  });
 
   assert.equal(transport.initialize(), true);
   const response = await transport.executeAsActiveGM('ping', {
@@ -45,9 +51,33 @@ test('transport registers named operations and derives caller identity', async (
     executingUserIsGM: true,
   });
   assert.equal(transport.available, true);
+  assert.deepEqual(
+    await transport.executeAsActiveGM('party.inspect', { value: 1 }),
+    {
+      payload: { value: 1 },
+      requesterUserId: 'requesting-player',
+    },
+  );
+  assert.throws(
+    () => transport.registerOperation('party.inspect', () => {}),
+    /already registered/i,
+  );
   await assert.rejects(
     transport.executeAsActiveGM('replacePartyState', {}),
     /not registered/i,
+  );
+});
+
+test('transport binds operations registered after initialization', async () => {
+  const harness = createHarness();
+  const transport = createSocketTransport(harness);
+  transport.initialize();
+
+  transport.registerOperation('party.late', () => 'late-bound');
+
+  assert.equal(
+    await transport.executeAsActiveGM('party.late'),
+    'late-bound',
   );
 });
 

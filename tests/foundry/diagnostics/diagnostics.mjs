@@ -11,6 +11,7 @@ const SAVE_KEYS = [
 const RUN_PREFIX = 'Hyp3e Utilities Compatibility';
 
 let diagnosticSocket;
+let productionMutationExecutions = 0;
 
 const results = {
   status: 'initializing',
@@ -21,6 +22,8 @@ const results = {
   pb006: {},
   pb007: {},
   pb008: {},
+  par001: {},
+  par002: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -407,6 +410,7 @@ async function testProductionFoundation(character, npc) {
     adapterPublished: Boolean(api?.adapter),
     applicationsPublished: Boolean(api?.applications),
     chatCardsPublished: Boolean(api?.chatCards),
+    partyMutationsPublished: Boolean(api?.partyMutations),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     socketPublished: Boolean(api?.socket),
   };
@@ -1498,6 +1502,119 @@ async function testProductionHudAccessibility(npc) {
   }
 }
 
+function validateProductionMutationPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new TypeError('Diagnostic mutation payload must be an object.');
+  }
+  const allowedKeys = ['claimedUserId', 'value'];
+  const unknownKey = Object.keys(payload).find(
+    (key) => !allowedKeys.includes(key),
+  );
+  if (unknownKey) {
+    throw new TypeError(`Unknown diagnostic payload field "${unknownKey}".`);
+  }
+  if (
+    typeof payload.claimedUserId !== 'string'
+    || !Number.isInteger(payload.value)
+  ) {
+    throw new TypeError('Diagnostic mutation payload fields are invalid.');
+  }
+  return {
+    claimedUserId: payload.claimedUserId,
+    value: payload.value,
+  };
+}
+
+function registerProductionPartyDiagnostic() {
+  const api = game.modules.get(MODULE_ID)?.api;
+  api.partyMutations.registerOperation('party.compatibilityMutation', {
+    execute: ({ expectedRevision, payload, requester, requestId }) => {
+      productionMutationExecutions += 1;
+      return {
+        claimedUserId: payload.claimedUserId,
+        executingUserId: game.user.id,
+        executingUserIsGm: game.user.isGM,
+        executionCount: productionMutationExecutions,
+        expectedRevision,
+        requestId,
+        requesterUserId: requester.id,
+        value: payload.value,
+      };
+    },
+    validatePayload: validateProductionMutationPayload,
+  });
+}
+
+function testProductionPartyPermissions() {
+  const { evaluatePartyEditPermission } = game.modules.get(MODULE_ID)
+    .api.partyPermissions;
+  const decide = (user, minimumEditRole, explicitEditorUserIds = []) => (
+    evaluatePartyEditPermission({
+      explicitEditorUserIds,
+      minimumEditRole,
+      user,
+    })
+  );
+  const gm = decide({ id: 'gm', isGM: true, role: 0 }, 4, 'malformed');
+  const threshold = decide(
+    { id: 'trusted', isGM: false, role: 2 },
+    2,
+  );
+  const explicit = decide(
+    { id: 'explicit', isGM: false, role: 1 },
+    4,
+    ['explicit'],
+  );
+  const denied = decide(
+    { id: 'denied', isGM: false, role: 1 },
+    4,
+  );
+  const invalid = decide(
+    { id: 'invalid', isGM: false, role: 4 },
+    '4',
+  );
+  return {
+    gm,
+    threshold,
+    explicit,
+    denied,
+    invalid,
+    matrixPassed:
+      gm.allowed
+      && gm.reason === 'gm'
+      && threshold.allowed
+      && threshold.reason === 'minimumRole'
+      && explicit.allowed
+      && explicit.reason === 'explicitGrant'
+      && !denied.allowed
+      && denied.reason === 'denied'
+      && !invalid.allowed
+      && invalid.reason === 'invalidConfiguration',
+  };
+}
+
+async function grantDiagnosticPartyAccess() {
+  const diagnosticPlayerName = `${RUN_PREFIX} Player`;
+  let diagnosticPlayer = game.users.find(
+    (user) => user.name === diagnosticPlayerName,
+  );
+  diagnosticPlayer ??= await User.create({
+    name: diagnosticPlayerName,
+    role: CONST.USER_ROLES.PLAYER,
+  });
+  const playerUserIds = [diagnosticPlayer.id];
+  const current = game.settings.get(
+    MODULE_ID,
+    'partySheetExplicitEditorUserIds',
+  );
+  await game.settings.set(
+    MODULE_ID,
+    'partySheetExplicitEditorUserIds',
+    [...new Set([...current, ...playerUserIds])],
+  );
+  return playerUserIds;
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1545,6 +1662,11 @@ async function runGmDiagnostics() {
     results.hud006 = await testProductionHudPosition(npc);
     results.hud007 = await testProductionHudLifecycle(npc);
     results.hud008 = await testProductionHudAccessibility(npc);
+    results.par001 = testProductionPartyPermissions();
+    results.par002 = {
+      grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
+      waitingForPlayer: true,
+    };
     results.status = 'complete';
   }
   catch (error) {
@@ -1583,11 +1705,57 @@ async function runPlayerSocketDiagnostic() {
         response.senderUserId === game.user.id
         && response.senderUserId !== claimedUserId,
     };
+    const partyMutations = game.modules.get(MODULE_ID).api.partyMutations;
+    const requestId = `par002-${game.user.id}`;
+    const mutationRequest = {
+      expectedRevision: 7,
+      payload: { claimedUserId, value: 42 },
+      requestId,
+    };
+    const firstMutation = await partyMutations.request(
+      'party.compatibilityMutation',
+      mutationRequest,
+    );
+    const duplicateMutation = await partyMutations.request(
+      'party.compatibilityMutation',
+      mutationRequest,
+    );
+    const malformedMutation = await partyMutations.request(
+      'party.compatibilityMutation',
+      {
+        expectedRevision: 7,
+        payload: { claimedUserId, extra: true, value: 42 },
+        requestId: `${requestId}-malformed`,
+      },
+    );
+    const partyMutationResult = {
+      firstMutation,
+      duplicateMutation,
+      malformedMutation,
+      actualCallerAuthorized:
+        firstMutation.ok
+        && firstMutation.value.requesterUserId === game.user.id
+        && firstMutation.value.claimedUserId === claimedUserId
+        && firstMutation.value.requesterUserId !== claimedUserId,
+      gmExecuted:
+        firstMutation.ok
+        && firstMutation.value.executingUserIsGm
+        && firstMutation.value.executingUserId === claimedUserId,
+      duplicateExecutedOnce:
+        duplicateMutation.ok
+        && duplicateMutation.value.executionCount === 1
+        && duplicateMutation.requestId === firstMutation.requestId,
+      malformedRejected:
+        !malformedMutation.ok
+        && malformedMutation.error.code === 'invalidRequest',
+    };
     results.pb008 = playerResult;
+    results.par002 = partyMutationResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
       type: 'pb008-result',
+      par002: partyMutationResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -1632,11 +1800,18 @@ Hooks.once('ready', async () => {
     diagnosticModuleActive:
       game.modules.get(DIAGNOSTIC_ID)?.active === true,
   };
+  registerProductionPartyDiagnostic();
 
   game.socket.on(DIAGNOSTIC_SOCKET, (message, senderId) => {
     if (!game.user.isGM || message?.type !== 'pb008-result') return;
     results.pb008 = {
       ...message.result,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+    };
+    results.par002 = {
+      ...message.par002,
       foundrySocketSenderId: senderId,
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
