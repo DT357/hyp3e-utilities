@@ -57,6 +57,7 @@ test('adapter reads character display, saves, XP, and money fields', () => {
 });
 
 test('adapter reads NPC-only fields without treating NPC XP as writable', () => {
+  assert.equal(hyp3eAdapter.getNpcSubtype(npcActor), 'monster');
   assert.equal(hyp3eAdapter.getMorale(npcActor), 8);
   assert.equal(hyp3eAdapter.getLoyalty(npcActor), 6);
   assert.equal(hyp3eAdapter.getEncounterExperience(npcActor), 35);

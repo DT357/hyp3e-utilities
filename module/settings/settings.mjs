@@ -1,4 +1,8 @@
-import { MODULE_ID, SETTING_KEYS } from '../core/constants.mjs';
+import {
+  HOOK_NAMES,
+  MODULE_ID,
+  SETTING_KEYS,
+} from '../core/constants.mjs';
 
 const SETTING_NAMESPACE = `${MODULE_ID}.settings`;
 
@@ -50,7 +54,7 @@ export function validateExplicitEditorUserIds(value) {
     .filter(Boolean))];
 }
 
-export function registerSettings({ game, menuTypes }) {
+export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) {
   const register = (key, options) => game.settings.register(
     MODULE_ID,
     key,
@@ -64,6 +68,11 @@ export function registerSettings({ game, menuTypes }) {
     config: true,
     type: Boolean,
     default: false,
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.enableNpcActionHud,
+      value,
+    ),
   });
   register(SETTING_KEYS.npcActionHudPosition, {
     name: `${SETTING_NAMESPACE}.npcActionHudPosition.name`,

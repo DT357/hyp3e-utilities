@@ -36,6 +36,7 @@ export const npcActor = {
   name: 'Cave Hyena',
   type: 'npc',
   system: {
+    npcType: 'monster',
     hp: { value: 9, max: 9 },
     ac: { value: 7, dr: 0 },
     movement: { base: { value: 50 } },

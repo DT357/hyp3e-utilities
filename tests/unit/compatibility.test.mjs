@@ -62,8 +62,19 @@ test('unsupported systems do not register feature lifecycle hooks', async () => 
 
 test('bootstrap waits for init data and survives dependency-first hook ordering', () => {
   const callbacks = new Map();
+  const subscriptions = new Map();
+  let nextSubscriptionId = 1;
   const hooks = {
     once: (name, callback) => callbacks.set(name, callback),
+    on: (name, callback) => {
+      const id = nextSubscriptionId;
+      nextSubscriptionId += 1;
+      subscriptions.set(id, { callback, name });
+      return id;
+    },
+    off: (name, id) => {
+      if (subscriptions.get(id)?.name === name) subscriptions.delete(id);
+    },
     callAll: () => {},
   };
   const moduleRecord = {};
@@ -75,6 +86,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
       ['socketlib', { active: true }],
     ]),
     settings: {
+      get: () => false,
       register: () => {},
       registerMenu: () => {},
     },
@@ -112,5 +124,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
   assert.equal(getApi().socket.available, true);
   assert.equal(typeof getApi().npcRolls.planReactionBatch, 'function');
   assert.equal(typeof getApi().chatCards.createNpcRollBatch, 'function');
+  assert.equal(typeof getApi().npcSelection.getViewModel, 'function');
+  assert.equal(subscriptions.size > 0, true);
   assert.equal(moduleRecord.api, getApi());
 });

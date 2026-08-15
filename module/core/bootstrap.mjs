@@ -5,6 +5,7 @@ import {
 import { hyp3eAdapter } from '../adapters/hyp3e-adapter.mjs';
 import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
+import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -80,6 +81,7 @@ export function registerModuleLifecycle({
   foundryApi = globalThis.foundry?.applications?.api,
   loadTemplates,
   socketlibProvider = () => globalThis.socketlib,
+  canvasProvider = () => globalThis.canvas,
   notifications = globalThis.ui?.notifications,
 }) {
   let compatibility;
@@ -127,7 +129,13 @@ export function registerModuleLifecycle({
       game: currentGame,
       logger,
     });
-    registerSettings({ game: currentGame, menuTypes: applications });
+    const npcSelection = createNpcSelectionController({
+      canvasProvider,
+      game: currentGame,
+      hooks,
+      logger,
+    });
+    registerSettings({ game: currentGame, hooks, menuTypes: applications });
     const templateLoader = loadTemplates
       ?? globalThis.foundry?.applications?.handlebars?.loadTemplates;
     void preloadFoundationTemplates(templateLoader).catch((error) => {
@@ -149,6 +157,7 @@ export function registerModuleLifecycle({
       chatCards,
       compatibility,
       npcRolls,
+      npcSelection,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);
@@ -156,6 +165,7 @@ export function registerModuleLifecycle({
 
     hooks.once('ready', () => {
       if (!transport.available) transport.initialize();
+      npcSelection.start();
       hooks.callAll?.(HOOK_NAMES.ready, api);
       logger.info?.('Ready', getEnvironment(currentGame));
     });

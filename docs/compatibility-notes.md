@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-003 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-003 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-004 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-004 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -118,8 +118,25 @@ final corrected run. The invalid-mode attempt failed closed without creating a
 public message. The corrected final runs produced no module-originated warning
 or error.
 
+### Controlled-NPC selection (HUD-004)
+
+Foundry 13.351 and 14.365 passed the production selection controller against
+real canvas tokens. Both generations verified that:
+
+- mixed character/NPC selections retain only NPC rows;
+- two linked tokens for one Actor remain separate rows keyed by token UUID;
+- an unlinked token retains its token-scoped synthetic Actor identity;
+- rows are alphabetized by token display name and expose exact roll candidates;
+- an unchanged synchronization preserves the same immutable view-model object;
+- synthetic Actor updates, token deletion, selection release, and the HUD world
+  setting refresh visibility and row data without a reload.
+
+The diagnostic used three selected NPC tokens plus one selected character and
+completed with no module-originated browser warning or error. The controller
+publishes data only; HUD-005 remains responsible for rendering the overlay.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-003 are
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-004 are
 complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is HUD-004 controlled-NPC selection behavior.
+next compatibility gate is HUD-005 overlay rendering and interaction behavior.

@@ -23,6 +23,7 @@ export const HYP3E_FIELD_PATHS = Object.freeze({
   armorClass: 'system.ac.value',
   damageReduction: 'system.ac.dr',
   movement: 'system.movement.base.value',
+  npcSubtype: 'system.npcType',
   characterExperience: 'system.details.xp.value',
   characterExperienceBonus: 'system.details.xp.bonus',
   npcExperience: 'system.xp',
@@ -164,6 +165,12 @@ export const hyp3eAdapter = Object.freeze({
   getMorale(actor) {
     if (actor?.type !== ACTOR_TYPES.npc) return null;
     return normalizeOptionalNumber(actor.system?.morale);
+  },
+
+  getNpcSubtype(actor) {
+    if (actor?.type !== ACTOR_TYPES.npc) return '';
+    const subtype = readPath(actor, HYP3E_FIELD_PATHS.npcSubtype);
+    return typeof subtype === 'string' ? subtype.trim() : '';
   },
 
   getLoyalty(actor) {

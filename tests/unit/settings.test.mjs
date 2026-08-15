@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { MODULE_ID, SETTING_KEYS } from '../../module/core/constants.mjs';
+import {
+  HOOK_NAMES,
+  MODULE_ID,
+  SETTING_KEYS,
+} from '../../module/core/constants.mjs';
 import {
   createPartyStateDefault,
   registerSettings,
@@ -13,6 +17,7 @@ import {
 function createSettingsHarness() {
   const settings = [];
   const menus = [];
+  const hookCalls = [];
   const game = {
     settings: {
       register: (namespace, key, options) => {
@@ -28,7 +33,10 @@ function createSettingsHarness() {
     PartyPermissionsApplication: class {},
     OpenPartySheetApplication: class {},
   };
-  return { game, menuTypes, menus, settings };
+  const hooks = {
+    callAll: (...args) => hookCalls.push(args),
+  };
+  return { game, hookCalls, hooks, menuTypes, menus, settings };
 }
 
 test('settings register required scopes, visibility, defaults, and menus', () => {
@@ -60,6 +68,12 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
     harness.menus.map(({ options }) => options.restricted),
     [false, true, false],
   );
+  byKey.enableNpcActionHud.onChange(true);
+  assert.deepEqual(harness.hookCalls, [[
+    HOOK_NAMES.settingsChanged,
+    SETTING_KEYS.enableNpcActionHud,
+    true,
+  ]]);
 });
 
 test('party state defaults are independent complete values', () => {

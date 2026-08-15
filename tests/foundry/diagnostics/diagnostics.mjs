@@ -30,6 +30,7 @@ const results = {
   hud001: {},
   hud002: {},
   hud003: {},
+  hud004: {},
   errors: [],
 };
 
@@ -700,6 +701,155 @@ async function testProductionHudChat(npc) {
   }
 }
 
+async function testProductionHudSelection(character, npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalScene = game.scenes.active;
+  const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} HUD Selection`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+
+  try {
+    const tokenDocuments = await scene.createEmbeddedDocuments('Token', [
+      {
+        name: `${RUN_PREFIX} Zulu`,
+        actorId: npc.id,
+        actorLink: true,
+        x: 100,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Alpha`,
+        actorId: npc.id,
+        actorLink: true,
+        x: 300,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Beta`,
+        actorId: npc.id,
+        actorLink: false,
+        x: 500,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Hero`,
+        actorId: character.id,
+        actorLink: true,
+        x: 700,
+        y: 100,
+      },
+    ]);
+    const tokenBySuffix = new Map(tokenDocuments.map((token) => [
+      token.name.replace(`${RUN_PREFIX} `, ''),
+      token,
+    ]));
+
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    if (!canvasActivated) throw new Error('HUD-004 scene did not activate.');
+
+    const tokenObject = (suffix) => canvas.tokens.get(tokenBySuffix.get(suffix).id);
+    canvas.tokens.releaseAll();
+    tokenObject('Zulu').control({ releaseOthers: true });
+    tokenObject('Hero').control({ releaseOthers: false });
+    tokenObject('Beta').control({ releaseOthers: false });
+    tokenObject('Alpha').control({ releaseOthers: false });
+    const selectionReady = await waitUntil(
+      () => api.npcSelection.getViewModel().selectedCount === 3,
+    );
+    const initialModel = api.npcSelection.getViewModel();
+    const initialCandidates = api.npcSelection.getRollCandidates();
+    const stableModelIdentity = await api.npcSelection.requestSync()
+      === initialModel;
+    const linkedRows = initialModel.rows.filter((row) => !row.isSynthetic);
+    const syntheticRow = initialModel.rows.find((row) => row.isSynthetic);
+    const syntheticCandidate = initialCandidates.find(
+      (candidate) => candidate.tokenUuid === syntheticRow?.tokenUuid,
+    );
+
+    await tokenObject('Beta').actor.update({ 'system.hp.value': 2 });
+    const actorUpdateRefreshed = await waitUntil(() => (
+      api.npcSelection.getViewModel().rows
+        .find((row) => row.tokenUuid === syntheticRow?.tokenUuid)
+        ?.hp.value === 2
+    ));
+
+    const deletedTokenId = tokenBySuffix.get('Alpha').id;
+    await scene.deleteEmbeddedDocuments('Token', [deletedTokenId]);
+    const deletionRefreshed = await waitUntil(
+      () => api.npcSelection.getViewModel().selectedCount === 2,
+    );
+
+    canvas.tokens.releaseAll();
+    const emptySelectionHidden = await waitUntil(
+      () => api.npcSelection.getViewModel().visible === false,
+    );
+    tokenObject('Zulu').control({ releaseOthers: true });
+    const selectionVisible = await waitUntil(
+      () => api.npcSelection.getViewModel().visible === true,
+    );
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', false);
+    const settingHidesSelection = await waitUntil(
+      () => api.npcSelection.getViewModel().visible === false,
+    );
+
+    return {
+      canvasActivated,
+      selectionReady,
+      selectedCount: initialModel.selectedCount,
+      tokenNames: initialModel.rows.map((row) => row.name),
+      rowsAlphabetized:
+        initialModel.rows.map((row) => row.name).join('|')
+        === [...initialModel.rows]
+          .sort((left, right) => left.name.localeCompare(right.name))
+          .map((row) => row.name)
+          .join('|'),
+      mixedCharacterFiltered:
+        initialModel.skipped.length === 1
+        && initialModel.skipped[0].reason === 'unsupportedActor',
+      linkedTokensDistinct:
+        linkedRows.length === 2
+        && linkedRows[0].tokenUuid !== linkedRows[1].tokenUuid
+        && linkedRows[0].actorUuid === linkedRows[1].actorUuid,
+      syntheticIdentityRetained:
+        Boolean(syntheticRow?.actorUuid.startsWith('Scene.'))
+        && syntheticCandidate?.actor?.uuid === syntheticRow.actorUuid,
+      rollCandidatesExact: initialCandidates.length === 3,
+      stableModelIdentity,
+      actorUpdateRefreshed,
+      deletionRefreshed,
+      emptySelectionHidden,
+      selectionVisible,
+      settingHidesSelection,
+    };
+  }
+  finally {
+    canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'enableNpcActionHud',
+      originalEnabled,
+    );
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -714,6 +864,7 @@ async function createDiagnosticActors() {
       hp: { value: 5, max: 10 },
       saves: saveData,
       ...(type === 'npc' ? { morale: 8 } : {}),
+      ...(type === 'npc' ? { npcType: 'monster' } : {}),
     },
   });
 
@@ -741,6 +892,7 @@ async function runGmDiagnostics() {
     await testProductionFoundation(character, npc);
     testProductionHudRules(character, npc);
     results.hud003 = await testProductionHudChat(npc);
+    results.hud004 = await testProductionHudSelection(character, npc);
     results.status = 'complete';
   }
   catch (error) {
