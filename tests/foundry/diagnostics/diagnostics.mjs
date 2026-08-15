@@ -36,6 +36,7 @@ const results = {
   sup001: {},
   not001: {},
   ref001: {},
+  try001: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -431,6 +432,7 @@ async function testProductionFoundation(character, npc) {
     partyNotesPublished: Boolean(api?.partyNotes),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     partyStorePublished: Boolean(api?.partyStore),
+    partyTreasuryPublished: Boolean(api?.partyTreasury),
     socketPublished: Boolean(api?.socket),
   };
 
@@ -2820,6 +2822,146 @@ async function testProductionPartyRefreshPolicy(character, untrackedActor) {
   }
 }
 
+async function testProductionPartyTreasuryLifecycle() {
+  const api = game.modules.get(MODULE_ID).api;
+  const service = api.partyTreasury;
+  const initialStatus = service.getStatus();
+  let primary = initialStatus.actor;
+  let duplicate;
+  let sheet;
+
+  if (!primary) {
+    const prepared = initialStatus.kind === 'recoverable'
+      ? await service.bindTreasury(initialStatus.candidates[0].uuid)
+      : await service.recreateTreasury();
+    if (!prepared.ok) {
+      throw new Error(
+        `TRY-001 could not prepare a managed treasury: ${prepared.error?.code}`,
+      );
+    }
+    primary = service.getStatus().actor;
+  }
+  if (!primary) throw new Error('TRY-001 did not resolve a managed treasury.');
+
+  const originalName = primary.name;
+  const originalUuid = primary.uuid;
+  const exported = primary.toObject();
+  delete exported._id;
+
+  try {
+    await primary.update({ name: `${RUN_PREFIX} TRY-001 Renamed` });
+    const renamedStatus = service.getStatus();
+    const renameStable = renamedStatus.kind === 'ready'
+      && renamedStatus.actor?.uuid === originalUuid;
+    const folderCreated = primary.folder?.name === 'Hyp3e Utilities';
+    const flagPersisted = primary.getFlag(MODULE_ID, 'partyTreasury') === true;
+    const activeGmOwns = primary.ownership[game.user.id]
+      === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+    const defaultOwnershipNone = primary.ownership.default
+      === CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE;
+
+    await primary.delete();
+    primary = null;
+    const revisionBeforeMissingInitialize = api.partyStore.getState().revision;
+    const missingInitialize = await service.initialize();
+    const missingRequiresExplicitRecovery = !missingInitialize.ok
+      && missingInitialize.error?.code === 'missingTreasury'
+      && service.getStatus().kind === 'missing'
+      && api.partyStore.getState().revision === revisionBeforeMissingInitialize;
+
+    const recreated = await service.recreateTreasury();
+    primary = recreated.actor ?? service.getStatus().actor;
+    const recreationSucceeded = recreated.ok
+      && recreated.created
+      && primary?.uuid !== originalUuid
+      && service.getStatus().actor?.uuid === primary?.uuid;
+
+    await primary.delete();
+    primary = null;
+    exported.name = `${RUN_PREFIX} TRY-001 Imported`;
+    const imported = await Actor.create(exported);
+    primary = imported;
+    const importedUuid = imported.uuid;
+    const importedRebound = await service.initialize();
+    const importExportRecovered = importedRebound.ok
+      && importedRebound.rebound
+      && service.getStatus().actor?.uuid === importedUuid;
+
+    duplicate = await Actor.create({
+      flags: { [MODULE_ID]: { partyTreasury: true } },
+      folder: imported.folder?.id ?? null,
+      name: `${RUN_PREFIX} TRY-001 Duplicate`,
+      ownership: {
+        default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE,
+        [game.user.id]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER,
+      },
+      type: 'treasure',
+    });
+    const duplicateStatus = service.getStatus();
+    const duplicateWarningDetected = duplicateStatus.kind === 'ready'
+      && duplicateStatus.hasDuplicates
+      && duplicateStatus.candidates.length >= 2;
+
+    sheet = new api.applications.OpenPartySheetApplication();
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="treasure"]',
+    )?.click();
+    const treasuryTabRendered = await waitUntil(() => (
+      sheet.element?.querySelector('[data-tab="treasure"]')
+        ?.getAttribute('aria-selected') === 'true'
+    ));
+    const duplicateWarningRendered = Boolean(sheet.element?.querySelector(
+      '.hyp3e-utilities__party-treasury-warning',
+    ));
+    const candidateRowsRendered = sheet.element?.querySelectorAll(
+      '.hyp3e-utilities__party-treasury-candidates li',
+    ).length >= 2;
+    const bindButton = [...sheet.element.querySelectorAll(
+      '[data-action="bindPartyTreasury"]',
+    )].find((button) => button.dataset.actorUuid === duplicate.uuid);
+    bindButton?.click();
+    const explicitSelectionSucceeded = await waitUntil(() => (
+      api.partyStore.getState().treasuryActorUuid === duplicate.uuid
+    ));
+    const duplicatesPreserved = game.actors.has(imported.id)
+      && game.actors.has(duplicate.id);
+
+    await imported.delete();
+    primary = null;
+    await duplicate.update({ name: `${RUN_PREFIX} TRY-001 Final Treasury` });
+    const finalStatus = service.getStatus();
+
+    return {
+      activeGmOwns,
+      candidateRowsRendered,
+      defaultOwnershipNone,
+      duplicateWarningDetected,
+      duplicateWarningRendered,
+      duplicatesPreserved,
+      explicitSelectionSucceeded,
+      finalManagedActorUuid: duplicate.uuid,
+      finalReadyAfterRename:
+        finalStatus.kind === 'ready'
+        && finalStatus.actor?.uuid === duplicate.uuid
+        && !finalStatus.hasDuplicates,
+      flagPersisted,
+      folderCreated,
+      importExportRecovered,
+      missingRequiresExplicitRecovery,
+      recreationSucceeded,
+      renameStable,
+      treasuryTabRendered,
+    };
+  }
+  finally {
+    if (sheet?.rendered) await sheet.close();
+    if (primary && game.actors.has(primary.id) && duplicate?.id !== primary.id) {
+      await primary.update({ name: originalName });
+    }
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2892,6 +3034,10 @@ async function runGmDiagnostics() {
     };
     results.ref001 = {
       gm: await testProductionPartyRefreshPolicy(character, npc),
+      waitingForPlayer: true,
+    };
+    results.try001 = {
+      gm: await testProductionPartyTreasuryLifecycle(),
       waitingForPlayer: true,
     };
     results.par002 = {
@@ -3413,7 +3559,8 @@ async function runPlayerSocketDiagnostic() {
         response.senderUserId === game.user.id
         && response.senderUserId !== claimedUserId,
     };
-    const partyMutations = game.modules.get(MODULE_ID).api.partyMutations;
+    const api = game.modules.get(MODULE_ID).api;
+    const partyMutations = api.partyMutations;
     const requestId = `par002-${game.user.id}`;
     const mutationRequest = {
       expectedRevision: 7,
@@ -3541,6 +3688,42 @@ async function runPlayerSocketDiagnostic() {
       activeTabPreserved: noteResult.activeTabPreserved,
       staleStateRejected: noteResult.staleSaveRejected,
     };
+    const treasuryRevision = api.partyStore.getState().revision;
+    const treasuryBind = await api.partyTreasury.bindTreasury(
+      api.partyStore.getState().treasuryActorUuid,
+    );
+    const treasurySheet = new api.applications.OpenPartySheetApplication();
+    let treasuryPlayerResult;
+    try {
+      await treasurySheet.render({ force: true });
+      treasurySheet.element.querySelector(
+        '[data-action="selectTab"][data-tab="treasure"]',
+      )?.click();
+      const treasureTabRendered = await waitUntil(() => (
+        treasurySheet.element?.querySelector('[data-tab="treasure"]')
+          ?.getAttribute('aria-selected') === 'true'
+      ));
+      treasuryPlayerResult = {
+        bindDenied:
+          !treasuryBind.ok
+          && treasuryBind.error?.code === 'treasuryGmRequired',
+        noLifecycleControls:
+          treasurySheet.element?.querySelectorAll(
+            '[data-action="bindPartyTreasury"], '
+            + '[data-action="recreatePartyTreasury"], '
+            + '[data-action="openPartyTreasury"]',
+          ).length === 0,
+        revisionUnchanged:
+          api.partyStore.getState().revision === treasuryRevision,
+        statusVisible: Boolean(treasurySheet.element?.querySelector(
+          '.hyp3e-utilities__party-treasury',
+        )),
+        treasureTabRendered,
+      };
+    }
+    finally {
+      if (treasurySheet.rendered) await treasurySheet.close();
+    }
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
@@ -3550,6 +3733,7 @@ async function runPlayerSocketDiagnostic() {
     results.sup001 = supplyResult;
     results.not001 = noteResult;
     results.ref001 = refreshResult;
+    results.try001 = treasuryPlayerResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3562,6 +3746,7 @@ async function runPlayerSocketDiagnostic() {
       sup001: supplyResult,
       not001: noteResult,
       ref001: refreshResult,
+      try001: treasuryPlayerResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3668,6 +3853,14 @@ Hooks.once('ready', async () => {
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
       player: message.ref001,
+      waitingForPlayer: false,
+    };
+    results.try001 = {
+      ...results.try001,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.try001,
       waitingForPlayer: false,
     };
     publishResults();

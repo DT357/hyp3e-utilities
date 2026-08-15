@@ -421,9 +421,31 @@ a real external Party State mutation, rejected a stale save, and reported the
 result to the GM with a matching raw Foundry sender ID. All prior Milestone 3
 diagnostics remained green, with no recorded diagnostic errors.
 
+### Managed Party Treasury lifecycle (TRY-001)
+
+Foundry 13.351 and 14.365 created and bound a flagged world `treasure` Actor
+through the production service. Both generations placed the Actor in the
+top-level `Hyp3e Utilities` Actor folder, retained default None ownership, and
+granted the active GM Owner permission. Renaming did not disturb the binding.
+
+Deleting the configured Actor left its UUID intact and startup initialization
+returned the explicit missing-treasury state without creating a replacement.
+The GM Recreate path then produced and bound one replacement. Exported Actor
+data imported with a new ID was discovered by flag and rebound automatically.
+When a second flagged Actor existed, the Treasure tab displayed both candidates
+and its duplicate warning; selecting one rebound Party State and preserved both
+Actors until the diagnostic explicitly removed the unselected fixture.
+
+Connected authorized Players in both generations saw read-only treasury status
+without open, bind, or recreate controls. A direct binding request was rejected
+as GM-only without advancing Party State. Raw Foundry sender identity matched
+both Players, all earlier diagnostics remained green, and no diagnostic errors
+were recorded.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, and REF-001
-are complete. No compatibility finding contradicts the approved architecture.
-Milestones 1 through 3 are complete; managed treasury work begins in TRY-001.
+PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, NOT-001, REF-001,
+and TRY-001 are complete. No compatibility finding contradicts the approved
+architecture. Milestones 1 through 3 are complete; Milestone 4 continues with
+treasury coin and inventory views in TRY-002.

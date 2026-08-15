@@ -19,6 +19,7 @@ import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
 import { createPartyStore } from '../party/party-store.mjs';
 import { createPartySupplyService } from '../party/party-supplies.mjs';
+import { createPartyTreasuryService } from '../party/party-treasury.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -93,11 +94,14 @@ export function registerModuleLifecycle({
   logger,
   foundryApi = globalThis.foundry?.applications?.api,
   cleanHtml = globalThis.foundry?.utils?.cleanHTML,
+  ActorClass = globalThis.Actor,
+  FolderClass = globalThis.Folder,
   loadTemplates,
   renderTemplate,
   socketlibProvider = () => globalThis.socketlib,
   canvasProvider = () => globalThis.canvas,
   notifications = globalThis.ui?.notifications,
+  ownershipLevels = globalThis.CONST?.DOCUMENT_OWNERSHIP_LEVELS,
 }) {
   let compatibility;
   let api;
@@ -110,6 +114,7 @@ export function registerModuleLifecycle({
   let partyNotes;
   let partyStore;
   let partySupplies;
+  let partyTreasury;
   let transport;
   let socketlibReady = false;
   let foundationInitialized = false;
@@ -164,6 +169,7 @@ export function registerModuleLifecycle({
       partyNotesProvider: () => partyNotes,
       partyStoreProvider: () => partyStore,
       partySuppliesProvider: () => partySupplies,
+      partyTreasuryProvider: () => partyTreasury,
     });
     hooks.on(
       'activateActorDirectory',
@@ -237,6 +243,16 @@ export function registerModuleLifecycle({
       store: partyStore,
     });
     partySupplies = createPartySupplyService({ store: partyStore });
+    partyTreasury = createPartyTreasuryService({
+      ActorClass,
+      adapter: hyp3eAdapter,
+      FolderClass,
+      game: currentGame,
+      logger,
+      mutations: partyMutations,
+      ownershipLevels,
+      store: partyStore,
+    });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
       hooks.callAll?.(HOOK_NAMES.socketReady, transport);
@@ -259,6 +275,7 @@ export function registerModuleLifecycle({
       partyPermissions,
       partyStore,
       partySupplies,
+      partyTreasury,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);
@@ -268,6 +285,15 @@ export function registerModuleLifecycle({
       if (!transport.available) transport.initialize();
       partyCleanup.start();
       void partyStore.initialize()
+        .then(() => partyTreasury.initialize())
+        .then((treasuryResult) => {
+          if (!treasuryResult?.ok) {
+            logger.warn?.(
+              'Party Treasury requires GM recovery.',
+              treasuryResult?.error,
+            );
+          }
+        })
         .then(() => partyCleanup.pruneMissingReferences())
         .catch((error) => {
           logger.warn?.('Party state initialization or cleanup failed.', error);

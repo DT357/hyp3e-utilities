@@ -50,6 +50,7 @@ export function createFoundationApplications({
   partyNotesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyNotes,
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
+  partyTreasuryProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyTreasury,
   proseMirrorElementClass = globalThis.foundry?.applications?.elements
     ?.HTMLProseMirrorElement,
   requestIdProvider = createRequestId,
@@ -235,15 +236,18 @@ export function createFoundationApplications({
       actions: {
         addControlledMembers: OpenPartySheetApplication.addControlledMembers,
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
+        bindPartyTreasury: OpenPartySheetApplication.bindPartyTreasury,
         discardPartyDrafts: OpenPartySheetApplication.discardPartyDrafts,
         moveMarchingActor: OpenPartySheetApplication.moveMarchingActor,
         openFollower: OpenPartySheetApplication.openFollower,
         openMarchingActor: OpenPartySheetApplication.openMarchingActor,
         openMember: OpenPartySheetApplication.openMember,
+        openPartyTreasury: OpenPartySheetApplication.openPartyTreasury,
         pingActor: OpenPartySheetApplication.pingActor,
         reportMarchingOrder: OpenPartySheetApplication.reportMarchingOrder,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
+        recreatePartyTreasury: OpenPartySheetApplication.recreatePartyTreasury,
         rollAllFollowerMorale:
           OpenPartySheetApplication.rollAllFollowerMorale,
         rollFollowerMorale: OpenPartySheetApplication.rollFollowerMorale,
@@ -349,6 +353,60 @@ export function createFoundationApplications({
         PARTY_MEMBER_OPERATIONS.add,
         { actorUuid: actor.uuid },
       );
+    }
+
+    static async bindPartyTreasury(_event, target) {
+      const response = await partyTreasuryProvider()?.bindTreasury?.(
+        target?.dataset?.actorUuid,
+      );
+      if (!response?.ok) {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.treasuryOperationFailed`,
+        );
+        return response ?? null;
+      }
+      notify(
+        notifications,
+        'info',
+        `${APP_NAMESPACE}.partySheet.treasuryBound`,
+      );
+      await this.render({ force: true });
+      return response;
+    }
+
+    static async recreatePartyTreasury() {
+      const response = await partyTreasuryProvider()?.recreateTreasury?.();
+      if (!response?.ok) {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.treasuryOperationFailed`,
+        );
+        return response ?? null;
+      }
+      notify(
+        notifications,
+        'info',
+        `${APP_NAMESPACE}.partySheet.treasuryCreated`,
+      );
+      await this.render({ force: true });
+      return response;
+    }
+
+    static async openPartyTreasury() {
+      const actor = partyTreasuryProvider()?.getStatus?.()?.actor;
+      if (!actor) {
+        notify(
+          notifications,
+          'warn',
+          `${APP_NAMESPACE}.partySheet.treasuryMissing`,
+        );
+        return null;
+      }
+      await actor.sheet?.render?.(true);
+      return actor;
     }
 
     static async openFollower(_event, target) {
@@ -1037,6 +1095,33 @@ export function createFoundationApplications({
         notes: enrichedNotes,
         treasureNotes: { gems: enrichedGems, misc: enrichedMisc },
       };
+      const treasuryStatus = partyTreasuryProvider()?.getStatus?.(state) ?? {
+        actor: null,
+        candidates: [],
+        configuredUuid: state.treasuryActorUuid ?? '',
+        hasDuplicates: false,
+        kind: state.treasuryActorUuid ? 'missing' : 'unbound',
+      };
+      const treasury = {
+        actorUuid: treasuryStatus.actor?.uuid ?? '',
+        candidates: treasuryStatus.candidates.map((actor) => ({
+          actorUuid: actor.uuid,
+          bound: actor.uuid === treasuryStatus.actor?.uuid,
+          name: actor.name,
+        })),
+        configuredUuid: treasuryStatus.configuredUuid,
+        hasDuplicates: treasuryStatus.hasDuplicates,
+        kind: treasuryStatus.kind,
+        name: treasuryStatus.actor?.name ?? '',
+        needsRecreation: ['missing', 'unbound'].includes(treasuryStatus.kind),
+        needsSelection: ['ambiguous', 'recoverable'].includes(
+          treasuryStatus.kind,
+        ),
+        ready: treasuryStatus.kind === 'ready',
+        showCandidates:
+          treasuryStatus.hasDuplicates
+          || ['ambiguous', 'recoverable'].includes(treasuryStatus.kind),
+      };
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -1058,6 +1143,7 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        canManageTreasury: game.user?.isGM === true,
         canRollPartyActions: game.user?.isGM === true,
         followers,
         hasFollowers: followers.length > 0,
@@ -1091,6 +1177,7 @@ export function createFoundationApplications({
         state,
         supplies,
         tabs,
+        treasury,
       };
     }
 

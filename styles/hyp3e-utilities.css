@@ -72,6 +72,39 @@
   margin-top: 0;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-treasury {
+  border: 1px solid var(--color-border-light-tertiary, #777);
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: var(--hyp3e-utilities-gap);
+  padding: 0.65rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-treasury h3,
+.hyp3e-utilities .hyp3e-utilities__party-treasury p {
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-treasury-warning {
+  color: var(--color-level-warning, #9f6500);
+  font-weight: 700;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-treasury-candidates {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-treasury-candidates li {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-overview {
   display: grid;
   gap: var(--hyp3e-utilities-gap);

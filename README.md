@@ -12,8 +12,10 @@ reused save/morale actions, conflict-safe local drafts, and automatic cleanup
 of deleted member/follower references. Marching order, validated manual
 supplies, and sanitized rich-text party/treasure notes are also implemented.
 Targeted refreshes now preserve local drafts, active tabs, and scroll positions
-while ignoring unrelated Actor and Item changes. These features are validated
-on the supported Foundry and `hyp3e` versions below; Milestone 3 is complete.
+while ignoring unrelated Actor and Item changes. The active GM also receives a
+managed, flagged Party Treasury with explicit missing-Actor recovery and
+duplicate selection. These features are validated on the supported Foundry and
+`hyp3e` versions below; Milestone 4 is in progress.
 
 ## Compatibility
 

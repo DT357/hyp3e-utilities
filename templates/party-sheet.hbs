@@ -441,6 +441,60 @@
             </section>
           {{else}}
             {{#if showTreasure}}
+              <section class="hyp3e-utilities__party-treasury" data-party-treasury>
+                <h3>{{localize "hyp3e-utilities.applications.partySheet.treasuryHeading"}}</h3>
+                {{#if treasury.ready}}
+                  <p>
+                    {{localize "hyp3e-utilities.applications.partySheet.treasuryReady" name=treasury.name}}
+                  </p>
+                  {{#if canManageTreasury}}
+                    <button type="button" data-action="openPartyTreasury">
+                      {{localize "hyp3e-utilities.applications.partySheet.openTreasury"}}
+                    </button>
+                  {{/if}}
+                {{else}}
+                  {{#if treasury.needsRecreation}}
+                    <p role="status">
+                      {{localize "hyp3e-utilities.applications.partySheet.treasuryMissing"}}
+                    </p>
+                    {{#if canManageTreasury}}
+                      <button type="button" data-action="recreatePartyTreasury">
+                        {{localize "hyp3e-utilities.applications.partySheet.recreateTreasury"}}
+                      </button>
+                    {{/if}}
+                  {{/if}}
+                  {{#if treasury.needsSelection}}
+                    <p role="status">
+                      {{localize "hyp3e-utilities.applications.partySheet.treasurySelectionRequired"}}
+                    </p>
+                  {{/if}}
+                {{/if}}
+                {{#if treasury.hasDuplicates}}
+                  <p class="hyp3e-utilities__party-treasury-warning" role="status">
+                    {{localize "hyp3e-utilities.applications.partySheet.treasuryDuplicates"}}
+                  </p>
+                {{/if}}
+                {{#if treasury.showCandidates}}
+                  <ul class="hyp3e-utilities__party-treasury-candidates">
+                    {{#each treasury.candidates}}
+                      <li>
+                        <span>{{name}}</span>
+                        {{#if bound}}
+                          <strong>{{localize "hyp3e-utilities.applications.partySheet.treasuryBoundLabel"}}</strong>
+                        {{else}}
+                          {{#if @root.canManageTreasury}}
+                            <button
+                              type="button"
+                              data-action="bindPartyTreasury"
+                              data-actor-uuid="{{actorUuid}}"
+                            >{{localize "hyp3e-utilities.applications.partySheet.bindTreasury"}}</button>
+                          {{/if}}
+                        {{/if}}
+                      </li>
+                    {{/each}}
+                  </ul>
+                {{/if}}
+              </section>
               <section class="hyp3e-utilities__party-notes" data-party-notes>
                 <p>{{localize "hyp3e-utilities.applications.partySheet.treasureNotesHelp"}}</p>
                 <div class="hyp3e-utilities__party-note-grid">

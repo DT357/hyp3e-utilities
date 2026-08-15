@@ -1217,3 +1217,92 @@ test('Party Sheet rich-text notes preserve drafts and save all fields atomically
     true,
   );
 });
+
+test('Party Sheet Treasure tab exposes GM treasury recovery and selection actions', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 14;
+  state.treasuryActorUuid = 'Actor.missing';
+  const opened = [];
+  const bound = [];
+  let recreated = 0;
+  const primary = {
+    name: 'Imported Treasury A',
+    sheet: { render: async (force) => opened.push(force) },
+    uuid: 'Actor.treasury-a',
+  };
+  const secondary = {
+    name: 'Imported Treasury B',
+    uuid: 'Actor.treasury-b',
+  };
+  const treasuryService = {
+    bindTreasury: async (actorUuid) => {
+      bound.push(actorUuid);
+      return { ok: true };
+    },
+    getStatus: () => ({
+      actor: null,
+      candidates: [primary, secondary],
+      configuredUuid: state.treasuryActorUuid,
+      hasDuplicates: true,
+      kind: 'ambiguous',
+    }),
+    recreateTreasury: async () => {
+      recreated += 1;
+      return { ok: true };
+    },
+  };
+  const game = {
+    settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+    user: { id: 'gm', isGM: true, role: 4 },
+    users: [],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game,
+    notifications: { error: () => {}, info: () => {} },
+    partyStoreProvider: () => ({ getState: () => state }),
+    partyTreasuryProvider: () => treasuryService,
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
+  await actions.selectTab.call(app, undefined, { dataset: { tab: 'treasure' } });
+
+  const context = await app._prepareContext({});
+  assert.equal(context.canManageTreasury, true);
+  assert.deepEqual(context.treasury, {
+    actorUuid: '',
+    candidates: [
+      { actorUuid: primary.uuid, bound: false, name: primary.name },
+      { actorUuid: secondary.uuid, bound: false, name: secondary.name },
+    ],
+    configuredUuid: state.treasuryActorUuid,
+    hasDuplicates: true,
+    kind: 'ambiguous',
+    name: '',
+    needsRecreation: false,
+    needsSelection: true,
+    ready: false,
+    showCandidates: true,
+  });
+
+  await actions.bindPartyTreasury.call(app, undefined, {
+    dataset: { actorUuid: secondary.uuid },
+  });
+  assert.deepEqual(bound, [secondary.uuid]);
+  await actions.recreatePartyTreasury.call(app);
+  assert.equal(recreated, 1);
+
+  treasuryService.getStatus = () => ({
+    actor: primary,
+    candidates: [primary],
+    configuredUuid: primary.uuid,
+    hasDuplicates: false,
+    kind: 'ready',
+  });
+  await actions.openPartyTreasury.call(app);
+  assert.deepEqual(opened, [true]);
+
+  game.user = { id: 'player', isGM: false, role: 1 };
+  assert.equal((await app._prepareContext({})).canManageTreasury, false);
+});

@@ -237,7 +237,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
-| TRY-001 | `TODO` | PB-006, PAR-004 | Treasury Actor creation, flagging, binding, lookup, recovery, and duplicate warning | Rename, deletion, recreation, duplicate, import/export, and permission tests |
+| TRY-001 | `DONE` | PB-006, PAR-004 | Treasury Actor creation, flagging, binding, lookup, recovery, and duplicate warning | Rename, deletion, recreation, duplicate, import/export, and permission tests |
 | TRY-002 | `TODO` | TRY-001, FND-002 | Party Sheet treasury coins and item inventory views | All five coin types, missing images, unknown item types, and empty inventory |
 | ITM-001 | `TODO` | PB-009, FND-002 | Pure transfer-plan builder for source, target, quantity, merge, and validation | Quantity/bundle/max, same-Actor, stale quantity, and unsupported type tests |
 | ITM-002 | `TODO` | TRY-001, ITM-001, PAR-002 | Character-to-treasury transfer operation | Full/partial transfer, ownership, stale state, and rollback checks |
@@ -344,8 +344,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 3 are complete. Proceed next with managed treasury
-creation and recovery in TRY-001.
+Milestones 0 through 3 are complete. TRY-001 has established the managed
+treasury lifecycle; proceed next with treasury coin and inventory views in
+TRY-002.
 
 ## 15. Current Project Status
 
@@ -354,7 +355,7 @@ creation and recovery in TRY-001.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 3 are complete.
-- Immediate next batch: Implement managed treasury creation and recovery in TRY-001.
+- Immediate next batch: Implement treasury coin and inventory views in TRY-002.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
