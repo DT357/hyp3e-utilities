@@ -164,9 +164,21 @@ inspection confirmed the positioned HUD remained readable after Foundry's own
 minimum-window warning was dismissed. The overlay removed its resize listener
 when hidden, and the HUD service removed its settings hook when destroyed.
 
+### NPC Action HUD synchronization lifecycle (HUD-007)
+
+Foundry 13.351 and 14.365 coalesced five Actor updates spaced 10 milliseconds
+apart into one selection-model publication containing the final HP value.
+Three world-setting enable/disable cycles, two explicit controller/HUD
+destroy-and-restart cycles, and repeated idempotent `start()` calls retained
+exactly one overlay in both generations.
+
+Unit coverage independently verifies one registration per Foundry hook, one
+settings hook, one resize listener while visible, cancellation of pending
+debounce work, and complete listener removal during destruction.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-006 are
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-007 are
 complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is HUD-007 synchronization debounce and lifecycle
-cleanup.
+next compatibility gate is the HUD-008 accessibility, localization, and error
+audit.

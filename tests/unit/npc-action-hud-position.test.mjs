@@ -179,6 +179,7 @@ test('HUD dragging persists per-client position and cleanup removes listeners', 
   let model = createModel();
   let subscriber;
   let storedPosition = {};
+  let renderCount = 0;
   const writes = [];
   const game = {
     i18n: { localize: (key) => key },
@@ -203,7 +204,10 @@ test('HUD dragging persists per-client position and cleanup removes listeners', 
     game,
     hooks,
     npcRolls: {},
-    renderTemplate: async () => '<section>Guard</section>',
+    renderTemplate: async () => {
+      renderCount += 1;
+      return '<section>Guard</section>';
+    },
     selection: {
       getRollCandidates: () => [],
       getViewModel: () => model,
@@ -218,12 +222,14 @@ test('HUD dragging persists per-client position and cleanup removes listeners', 
   });
 
   await hud.start();
+  await hud.start();
   const overlay = hud.getElement();
   assert.equal(overlay.style.left, '148px');
   assert.equal(overlay.style.top, '12px');
   assert.equal(overlay.style.width, '704px');
   assert.equal(windowObject.listenerCount('resize'), 1);
   assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 1);
+  assert.equal(renderCount, 1);
 
   const handle = createPointerTarget();
   await overlay.dispatch('pointerdown', {
@@ -286,6 +292,21 @@ test('HUD dragging persists per-client position and cleanup removes listeners', 
   assert.equal(windowObject.listenerCount('resize'), 0);
   assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 1);
 
+  model = createModel(true);
+  await subscriber(model);
+  assert.equal(windowObject.listenerCount('resize'), 1);
+  assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 1);
+  assert.equal(renderCount, 2);
+
   hud.destroy();
   assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 0);
+  assert.equal(windowObject.listenerCount('resize'), 0);
+
+  await hud.start();
+  assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 1);
+  assert.equal(windowObject.listenerCount('resize'), 1);
+  assert.equal(renderCount, 3);
+  hud.destroy();
+  assert.equal(hooks.count(HOOK_NAMES.settingsChanged), 0);
+  assert.equal(windowObject.listenerCount('resize'), 0);
 });

@@ -190,7 +190,7 @@ Planned production areas: `module/core/`, `module/adapters/`, `module/settings/`
 | HUD-004 | `DONE` | FND-002, PB-005 | Controlled-NPC selection controller and stable HUD view model | Linked/unlinked, duplicate, mixed selection, deletion, and empty-selection tests |
 | HUD-005 | `DONE` | FND-005, HUD-004 | HUD overlay with HP bars, AC/DR, movement, actor-sheet link, selectors, and action buttons | Render and interaction checks at common screen sizes |
 | HUD-006 | `DONE` | HUD-005 | Per-client drag position, viewport clamping, and reset control | Reload, resize, zoom, and off-screen recovery checks |
-| HUD-007 | `TODO` | HUD-005 | Debounced hook synchronization and cleanup | No duplicate hooks, renders, or listeners after enable/disable and world reload |
+| HUD-007 | `DONE` | HUD-005 | Debounced hook synchronization and cleanup | No duplicate hooks, renders, or listeners after enable/disable and world reload |
 | HUD-008 | `TODO` | HUD-003, HUD-007 | HUD settings, localization, accessibility labels, disabled states, and error notices | Keyboard use, localization-key scan, and unavailable-action checks |
 
 ### M1 acceptance matrix
@@ -345,9 +345,9 @@ The pre-build portion of this sequence is complete:
 4. PB-009 made the test runner part of `npm run check`.
 
 The foundation, pure roll-planning, shared chat-output, controlled-NPC
-selection, visible action overlay, and per-client HUD position portions of
-Milestone 1 are complete. Proceed next with debounced hook synchronization and
-cleanup in HUD-007.
+selection, visible action overlay, per-client HUD position, and synchronization
+lifecycle portions of Milestone 1 are complete. Proceed next with the final HUD
+settings, localization, accessibility, and error audit in HUD-008.
 
 ## 15. Current Project Status
 
@@ -355,8 +355,8 @@ cleanup in HUD-007.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001 through HUD-006 are complete.
-- Immediate next batch: Implement debounced HUD hook synchronization and repeated-lifecycle cleanup verification in HUD-007.
+- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001 through HUD-007 are complete.
+- Immediate next batch: Complete the HUD settings, localization, accessibility, disabled-state, and error-notice audit in HUD-008.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

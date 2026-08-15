@@ -33,6 +33,7 @@ const results = {
   hud004: {},
   hud005: {},
   hud006: {},
+  hud007: {},
   errors: [],
 };
 
@@ -1245,6 +1246,111 @@ async function testProductionHudPosition(npc) {
   }
 }
 
+async function testProductionHudLifecycle(npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalScene = game.scenes.active;
+  const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} HUD Lifecycle`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+  const getOverlayCount = () => document.querySelectorAll(
+    '#hyp3e-utilities-npc-action-hud',
+  ).length;
+
+  try {
+    const [tokenDocument] = await scene.createEmbeddedDocuments('Token', [{
+      name: `${RUN_PREFIX} Lifecycle Target`,
+      actorId: npc.id,
+      actorLink: false,
+      x: 100,
+      y: 100,
+    }]);
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    if (!canvasActivated) throw new Error('HUD-007 scene did not activate.');
+
+    const token = canvas.tokens.get(tokenDocument.id);
+    canvas.tokens.releaseAll();
+    token.control({ releaseOthers: true });
+    const overlayReady = await waitUntil(() => getOverlayCount() === 1);
+    if (!overlayReady) throw new Error('HUD-007 overlay did not render.');
+
+    let modelNotifications = 0;
+    const unsubscribe = api.npcSelection.subscribe(() => {
+      modelNotifications += 1;
+    });
+    const hpValues = [6, 5, 4, 3, 2];
+    for (const hpValue of hpValues) {
+      token.actor.updateSource({ 'system.hp.value': hpValue });
+      Hooks.callAll('updateActor', token.actor, {}, {}, game.user.id);
+      await wait(10);
+    }
+    await wait(100);
+    const finalModel = api.npcSelection.getViewModel();
+    const burstDebounced = modelNotifications === 1
+      && finalModel.rows[0]?.hp.value === hpValues.at(-1);
+    unsubscribe();
+
+    let enableDisableClean = true;
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await game.settings.set(MODULE_ID, 'enableNpcActionHud', false);
+      enableDisableClean &&= await waitUntil(() => getOverlayCount() === 0);
+      await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+      enableDisableClean &&= await waitUntil(() => getOverlayCount() === 1);
+    }
+
+    let lifecycleCyclesClean = true;
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      api.npcActionHud.destroy();
+      api.npcSelection.destroy();
+      lifecycleCyclesClean &&= getOverlayCount() === 0;
+      api.npcSelection.start();
+      await api.npcActionHud.start();
+      lifecycleCyclesClean &&= await waitUntil(() => getOverlayCount() === 1);
+    }
+
+    api.npcSelection.start();
+    await api.npcActionHud.start();
+    const idempotentStarts = getOverlayCount() === 1;
+
+    return {
+      canvasActivated,
+      overlayReady,
+      burstDebounced,
+      finalHp: finalModel.rows[0]?.hp.value,
+      modelNotifications,
+      enableDisableClean,
+      lifecycleCyclesClean,
+      idempotentStarts,
+      singleOverlay: getOverlayCount() === 1,
+    };
+  }
+  finally {
+    canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'enableNpcActionHud',
+      originalEnabled,
+    );
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1290,6 +1396,7 @@ async function runGmDiagnostics() {
     results.hud004 = await testProductionHudSelection(character, npc);
     results.hud005 = await testProductionHudOverlay(npc);
     results.hud006 = await testProductionHudPosition(npc);
+    results.hud007 = await testProductionHudLifecycle(npc);
     results.status = 'complete';
   }
   catch (error) {

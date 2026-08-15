@@ -8,10 +8,13 @@ import {
 const REFRESH_HOOKS = Object.freeze([
   'controlToken',
   'createToken',
-  'updateToken',
   'deleteToken',
-  'updateActor',
   HOOK_NAMES.settingsChanged,
+]);
+
+const HIGH_FREQUENCY_REFRESH_HOOKS = Object.freeze([
+  'updateToken',
+  'updateActor',
 ]);
 
 function freezeModel({ rows = [], skipped = [] } = {}) {
@@ -113,14 +116,18 @@ function modelSignature(model) {
 export function createNpcSelectionController({
   adapter = hyp3eAdapter,
   canvasProvider = () => globalThis.canvas,
+  clearTimeout = globalThis.clearTimeout,
+  debounceMilliseconds = 50,
   game = globalThis.game,
   hooks = globalThis.Hooks,
   logger = console,
+  setTimeout = globalThis.setTimeout,
 } = {}) {
   let activeCanvas = canvasProvider()?.ready === true;
   let candidates = EMPTY_CANDIDATES;
   let currentModel = EMPTY_MODEL;
   let currentSignature = modelSignature(currentModel);
+  let pendingDebounce = null;
   let pendingSync = null;
   let started = false;
   const hookRegistrations = [];
@@ -183,6 +190,34 @@ export function createNpcSelectionController({
     return pendingSync;
   }
 
+  function requestDebouncedSync() {
+    if (!started) return Promise.resolve(currentModel);
+    if (!pendingDebounce) {
+      let resolve;
+      const promise = new Promise((resolver) => {
+        resolve = resolver;
+      });
+      pendingDebounce = { promise, resolve, timerId: null };
+    }
+
+    const scheduled = pendingDebounce;
+    if (scheduled.timerId !== null) clearTimeout(scheduled.timerId);
+    scheduled.timerId = setTimeout(async () => {
+      if (pendingDebounce === scheduled) pendingDebounce = null;
+      scheduled.resolve(await requestSync());
+    }, debounceMilliseconds);
+    return scheduled.promise;
+  }
+
+  function cancelDebouncedSync() {
+    if (!pendingDebounce) return;
+    if (pendingDebounce.timerId !== null) {
+      clearTimeout(pendingDebounce.timerId);
+    }
+    pendingDebounce.resolve(currentModel);
+    pendingDebounce = null;
+  }
+
   function registerHook(name, callback) {
     hookRegistrations.push({ name, id: hooks.on(name, callback) });
   }
@@ -205,10 +240,14 @@ export function createNpcSelectionController({
     for (const hookName of REFRESH_HOOKS) {
       registerHook(hookName, requestSync);
     }
+    for (const hookName of HIGH_FREQUENCY_REFRESH_HOOKS) {
+      registerHook(hookName, requestDebouncedSync);
+    }
     return sync();
   }
 
   function destroy() {
+    cancelDebouncedSync();
     for (const { name, id } of hookRegistrations.splice(0)) {
       hooks.off?.(name, id);
     }

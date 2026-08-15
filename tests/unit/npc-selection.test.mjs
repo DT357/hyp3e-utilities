@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { hyp3eAdapter } from '../../module/adapters/hyp3e-adapter.mjs';
 import { HOOK_NAMES, MODULE_ID, SETTING_KEYS } from '../../module/core/constants.mjs';
 import {
   buildNpcSelectionViewModel,
@@ -48,7 +49,11 @@ function createHookBus() {
   };
 }
 
-function createControllerHarness({ enabled = true, isGM = true } = {}) {
+function createControllerHarness({
+  controllerOptions = {},
+  enabled = true,
+  isGM = true,
+} = {}) {
   const actor = structuredClone(npcActor);
   const token = createToken({ actor, id: 'npc-token', name: 'Guard' });
   const controlled = [token];
@@ -71,6 +76,7 @@ function createControllerHarness({ enabled = true, isGM = true } = {}) {
     game,
     hooks: hookBus,
     logger: { warn: (...args) => warnings.push(args) },
+    ...controllerOptions,
   });
 
   return {
@@ -85,6 +91,30 @@ function createControllerHarness({ enabled = true, isGM = true } = {}) {
     },
     token,
     warnings,
+  };
+}
+
+function createScheduler() {
+  const callbacks = new Map();
+  let nextId = 1;
+  return {
+    clearTimeout(id) {
+      callbacks.delete(id);
+    },
+    get size() {
+      return callbacks.size;
+    },
+    async flush() {
+      const pending = [...callbacks.values()];
+      callbacks.clear();
+      await Promise.all(pending.map((callback) => callback()));
+    },
+    setTimeout(callback) {
+      const id = nextId;
+      nextId += 1;
+      callbacks.set(id, callback);
+      return id;
+    },
   };
 }
 
@@ -211,5 +241,60 @@ test('controller visibility follows the world setting, GM role, and canvas readi
   await harness.hookBus.emit('controlToken', harness.token, true);
   assert.equal(harness.controller.getViewModel().visible, false);
 
+  harness.controller.destroy();
+});
+
+test('high-frequency updates debounce once and lifecycle hooks never duplicate', async () => {
+  const scheduler = createScheduler();
+  let summaryReads = 0;
+  const adapter = {
+    ...hyp3eAdapter,
+    getActorSummary(actor) {
+      summaryReads += 1;
+      return hyp3eAdapter.getActorSummary(actor);
+    },
+  };
+  const harness = createControllerHarness({
+    controllerOptions: {
+      adapter,
+      clearTimeout: (id) => scheduler.clearTimeout(id),
+      debounceMilliseconds: 50,
+      setTimeout: (callback) => scheduler.setTimeout(callback),
+    },
+  });
+  const observed = [];
+  harness.controller.subscribe((model) => observed.push(model));
+
+  harness.controller.start();
+  harness.controller.start();
+  const initialHookCount = [...harness.hookBus.callbacks.values()]
+    .reduce((count, registrations) => count + registrations.size, 0);
+  assert.equal(initialHookCount, 8);
+  assert.equal(summaryReads, 1);
+
+  harness.actor.system.hp.value = 3;
+  const first = harness.hookBus.emit('updateActor', harness.actor);
+  const second = harness.hookBus.emit('updateActor', harness.actor);
+  const third = harness.hookBus.emit('updateToken', harness.token.document);
+  assert.equal(scheduler.size, 1);
+  assert.equal(summaryReads, 1);
+
+  await scheduler.flush();
+  await Promise.all([first, second, third]);
+  assert.equal(summaryReads, 2);
+  assert.equal(observed.at(-1).rows[0].hp.value, 3);
+
+  harness.controller.destroy();
+  assert.equal(scheduler.size, 0);
+  assert.equal(
+    [...harness.hookBus.callbacks.values()]
+      .every((registrations) => registrations.size === 0),
+    true,
+  );
+
+  harness.controller.start();
+  const restartedHookCount = [...harness.hookBus.callbacks.values()]
+    .reduce((count, registrations) => count + registrations.size, 0);
+  assert.equal(restartedHookCount, 8);
   harness.controller.destroy();
 });
