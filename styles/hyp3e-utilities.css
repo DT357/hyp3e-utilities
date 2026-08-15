@@ -131,6 +131,11 @@
   min-height: 2rem;
 }
 
+.hyp3e-utilities-npc-action-hud :is(button, select):focus-visible {
+  outline: 2px solid var(--hyp3e-utilities-hud-text);
+  outline-offset: 2px;
+}
+
 .hyp3e-utilities-npc-action-hud__save-action label {
   align-self: center;
   font-size: 0.75rem;

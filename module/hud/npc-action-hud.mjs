@@ -111,19 +111,25 @@ export function buildNpcActionHudContext(
       ...row,
       armor: Object.freeze({ ...row.armor }),
       hp: createHpContext(row.hp),
+      saves: Object.freeze({ ...row.saves }),
     })
   )));
+  const saveOptions = Object.freeze(SAVE_KEYS.map((key) => Object.freeze({
+    available: rows.some((row) => Number.isFinite(row.saves?.[key])),
+    key,
+    label: `${MODULE_ID}.hud.saves.${key}`,
+    selected: key === activeSaveKey,
+  })));
+  const activeSave = saveOptions.find((save) => save.selected);
 
   return Object.freeze({
     selectedCount: rows.length,
     rows,
     moraleAvailable: rows.some((row) => row.hasMorale),
     selectedSaveKey: activeSaveKey,
-    saveOptions: Object.freeze(SAVE_KEYS.map((key) => Object.freeze({
-      key,
-      label: `${MODULE_ID}.hud.saves.${key}`,
-      selected: key === activeSaveKey,
-    }))),
+    anySaveAvailable: saveOptions.some((save) => save.available),
+    saveAvailable: activeSave?.available === true,
+    saveOptions,
   });
 }
 
@@ -156,6 +162,10 @@ export function createNpcActionHud({
   let dragState = null;
   let resizeBound = false;
   let settingsHookId = null;
+
+  function getNotifications() {
+    return notifications ?? globalThis.ui?.notifications;
+  }
 
   function getOverlay() {
     return document?.getElementById?.(NPC_ACTION_HUD_ID) ?? null;
@@ -231,7 +241,7 @@ export function createNpcActionHud({
     const skipped = report?.skipped?.length ?? 0;
     const failed = report?.failures?.length ?? 0;
     if (skipped === 0 && failed === 0) return;
-    notifications?.warn?.(formatMessage(
+    getNotifications()?.warn?.(formatMessage(
       game,
       `${MODULE_ID}.hud.partialWarning`,
       { skipped, failed },
@@ -241,6 +251,9 @@ export function createNpcActionHud({
   async function createRollBatch(batch) {
     if (typeof chatCards?.createNpcRollBatch !== 'function') {
       throw new Error('The NPC chat-card service is unavailable.');
+    }
+    if (!Array.isArray(batch?.rolls) || batch.rolls.length === 0) {
+      throw new Error(`The NPC ${batch?.kind ?? 'action'} action is unavailable.`);
     }
     const report = await chatCards.createNpcRollBatch(batch);
     notifyPartialReport(report);
@@ -278,7 +291,7 @@ export function createNpcActionHud({
 
   function reportActionError(error) {
     logger.warn?.('NPC Action HUD action failed.', error);
-    notifications?.error?.(formatMessage(
+    getNotifications()?.error?.(formatMessage(
       game,
       `${MODULE_ID}.hud.actionFailed`,
     ));
@@ -307,10 +320,17 @@ export function createNpcActionHud({
     return selectedSaveKey;
   }
 
-  function onChange(event) {
+  async function onChange(event) {
     if (event.target?.matches?.('[data-role="save-category"]')) {
       setSelectedSaveKey(event.target.value);
+      try {
+        return await render(selection?.getViewModel?.());
+      }
+      catch (error) {
+        reportActionError(error);
+      }
     }
+    return null;
   }
 
   function getDragPosition(event) {
@@ -385,6 +405,10 @@ export function createNpcActionHud({
     }
     catch (error) {
       logger.warn?.('NPC Action HUD position could not be saved.', error);
+      getNotifications()?.error?.(formatMessage(
+        game,
+        `${MODULE_ID}.hud.positionSaveFailed`,
+      ));
     }
     return position;
   }

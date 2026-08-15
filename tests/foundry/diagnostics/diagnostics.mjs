@@ -34,6 +34,7 @@ const results = {
   hud005: {},
   hud006: {},
   hud007: {},
+  hud008: {},
   errors: [],
 };
 
@@ -1351,6 +1352,151 @@ async function testProductionHudLifecycle(npc) {
   }
 }
 
+async function testProductionHudAccessibility(npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalScene = game.scenes.active;
+  const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} HUD Accessibility`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+  const getOverlay = () => document.getElementById(
+    'hyp3e-utilities-npc-action-hud',
+  );
+
+  try {
+    const [tokenDocument] = await scene.createEmbeddedDocuments('Token', [{
+      name: `${RUN_PREFIX} Accessibility Target`,
+      actorId: npc.id,
+      actorLink: false,
+      x: 100,
+      y: 100,
+    }]);
+    await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    if (!canvasActivated) throw new Error('HUD-008 scene did not activate.');
+
+    const token = canvas.tokens.get(tokenDocument.id);
+    for (const saveKey of SAVE_KEYS) {
+      token.actor.system.saves[saveKey].curr = null;
+    }
+    token.actor.system.morale = null;
+    canvas.tokens.releaseAll();
+    token.control({ releaseOthers: true });
+    Hooks.callAll('updateActor', token.actor, {}, {}, game.user.id);
+    const overlayReady = await waitUntil(() => Boolean(getOverlay()));
+    if (!overlayReady) throw new Error('HUD-008 overlay did not render.');
+    await wait(100);
+
+    const overlay = getOverlay();
+    const region = overlay.querySelector('[role="region"]');
+    const titleId = region?.getAttribute('aria-labelledby');
+    const count = overlay.querySelector(
+      '.hyp3e-utilities-npc-action-hud__count',
+    );
+    const dragHandle = overlay.querySelector('[data-drag-handle]');
+    const reactionButton = overlay.querySelector('[data-action="reaction"]');
+    const saveSelector = overlay.querySelector('[data-role="save-category"]');
+    const saveButton = overlay.querySelector('[data-action="save"]');
+    const moraleButton = overlay.querySelector('[data-action="morale"]');
+    const actorButton = overlay.querySelector('[data-action="openActorSheet"]');
+    const options = Array.from(saveSelector.options);
+    const localizedActionFailure = game.i18n.localize(
+      `${MODULE_ID}.hud.actionFailed`,
+    );
+
+    const chatCount = game.messages.size;
+    let unavailableActionRejected = false;
+    try {
+      await api.npcActionHud.executeAction('save');
+    }
+    catch (error) {
+      unavailableActionRejected = /unavailable/i.test(error.message);
+    }
+    const unavailableActionCreatesNoChat = game.messages.size === chatCount;
+
+    const errorButton = getOverlay().querySelector('[data-action="reaction"]');
+    errorButton.dataset.action = 'unsupported-diagnostic-action';
+    errorButton.click();
+    const localizedErrorNotice = await waitUntil(() => (
+      Array.from(document.querySelectorAll('.notification'))
+        .some((notification) => notification.textContent.includes(
+          localizedActionFailure,
+        ))
+    ));
+
+    token.actor.system.saves.device.curr = 11;
+    Hooks.callAll('updateActor', token.actor, {}, {}, game.user.id);
+    const partialSaveStateReady = await waitUntil(() => {
+      const currentSelector = getOverlay()?.querySelector(
+        '[data-role="save-category"]',
+      );
+      return currentSelector?.querySelector('option[value="device"]')
+        ?.disabled === false;
+    });
+    const partialSaveSelector = getOverlay().querySelector(
+      '[data-role="save-category"]',
+    );
+    partialSaveSelector.value = 'device';
+    partialSaveSelector.dispatchEvent(new Event('change', { bubbles: true }));
+    const selectedSaveEnablesAction = await waitUntil(() => (
+      getOverlay()?.querySelector('[data-action="save"]')?.disabled === false
+    ));
+
+    return {
+      canvasActivated,
+      overlayReady,
+      regionLabelled: Boolean(titleId && overlay.querySelector(`#${titleId}`)),
+      selectionCountAnnounced: count?.getAttribute('aria-live') === 'polite',
+      dragInstructionLocalized:
+        dragHandle?.title === game.i18n.localize(`${MODULE_ID}.hud.dragHandle`),
+      fiveSaveChoicesVisible:
+        options.map((option) => option.value).join(',') === SAVE_KEYS.join(','),
+      unavailableSaveChoicesDisabled: options.every((option) => option.disabled),
+      unavailableSaveControlsDisabled:
+        saveSelector.disabled && saveButton.disabled,
+      unavailableMoraleDisabled: moraleButton.disabled,
+      reactionRemainsAvailable: !reactionButton.disabled,
+      nativeKeyboardControls: [reactionButton, actorButton].every(
+        (control) => control instanceof HTMLButtonElement && control.tabIndex >= 0,
+      ),
+      actorLabelLocalized:
+        actorButton.getAttribute('aria-label')
+          === game.i18n.format(`${MODULE_ID}.hud.openActorSheetFor`, {
+            name: token.document.name,
+          }),
+      unavailableActionRejected,
+      unavailableActionCreatesNoChat,
+      localizedErrorNotice,
+      partialSaveStateReady,
+      selectedSaveEnablesAction,
+    };
+  }
+  finally {
+    canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'enableNpcActionHud',
+      originalEnabled,
+    );
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1397,6 +1543,7 @@ async function runGmDiagnostics() {
     results.hud005 = await testProductionHudOverlay(npc);
     results.hud006 = await testProductionHudPosition(npc);
     results.hud007 = await testProductionHudLifecycle(npc);
+    results.hud008 = await testProductionHudAccessibility(npc);
     results.status = 'complete';
   }
   catch (error) {

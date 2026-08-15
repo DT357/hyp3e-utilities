@@ -1,8 +1,12 @@
-<section class="hyp3e-utilities-npc-action-hud" aria-labelledby="hyp3e-utilities-npc-action-hud-title">
-  <header class="hyp3e-utilities-npc-action-hud__header" data-drag-handle>
+<section class="hyp3e-utilities-npc-action-hud" role="region" aria-labelledby="hyp3e-utilities-npc-action-hud-title">
+  <header
+    class="hyp3e-utilities-npc-action-hud__header"
+    data-drag-handle
+    title="{{localize 'hyp3e-utilities.hud.dragHandle'}}"
+  >
     <div>
       <h2 id="hyp3e-utilities-npc-action-hud-title">{{localize "hyp3e-utilities.hud.title"}}</h2>
-      <span class="hyp3e-utilities-npc-action-hud__count">
+      <span class="hyp3e-utilities-npc-action-hud__count" aria-live="polite">
         {{localize "hyp3e-utilities.hud.selectedCount" count=selectedCount}}
       </span>
     </div>
@@ -14,18 +18,34 @@
         <label for="hyp3e-utilities-npc-action-hud-save">
           {{localize "hyp3e-utilities.hud.saveCategory"}}
         </label>
-        <select id="hyp3e-utilities-npc-action-hud-save" data-role="save-category">
+        <select
+          id="hyp3e-utilities-npc-action-hud-save"
+          data-role="save-category"
+          {{#unless anySaveAvailable}}disabled title="{{localize 'hyp3e-utilities.hud.saveUnavailable'}}"{{/unless}}
+        >
           {{#each saveOptions as |save|}}
-            <option value="{{save.key}}" {{#if save.selected}}selected{{/if}}>
+            <option
+              value="{{save.key}}"
+              {{#if save.selected}}selected{{/if}}
+              {{#unless save.available}}disabled{{/unless}}
+            >
               {{localize save.label}}
             </option>
           {{/each}}
         </select>
-        <button type="button" data-action="save">
+        <button
+          type="button"
+          data-action="save"
+          {{#unless saveAvailable}}disabled title="{{localize 'hyp3e-utilities.hud.saveUnavailable'}}"{{/unless}}
+        >
           {{localize "hyp3e-utilities.hud.save"}}
         </button>
       </div>
-      <button type="button" data-action="morale" {{#unless moraleAvailable}}disabled{{/unless}}>
+      <button
+        type="button"
+        data-action="morale"
+        {{#unless moraleAvailable}}disabled title="{{localize 'hyp3e-utilities.hud.moraleUnavailable'}}"{{/unless}}
+      >
         {{localize "hyp3e-utilities.hud.morale"}}
       </button>
     </div>
@@ -41,6 +61,7 @@
             data-action="openActorSheet"
             data-token-uuid="{{row.tokenUuid}}"
             title="{{localize 'hyp3e-utilities.hud.openActorSheet'}}"
+            aria-label="{{localize 'hyp3e-utilities.hud.openActorSheetFor' name=row.name}}"
           >
             {{row.name}}
           </button>

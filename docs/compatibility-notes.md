@@ -176,9 +176,28 @@ Unit coverage independently verifies one registration per Foundry hook, one
 settings hook, one resize listener while visible, cancellation of pending
 debounce work, and complete listener removal during destruction.
 
+### NPC Action HUD accessibility and unavailable actions (HUD-008)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official
+`hyp3e` dev 4.1.0 system passed the final HUD acceptance gate. Both generations
+verified a labelled region, announced selection counts, localized drag and
+Actor-sheet labels, native keyboard-focusable buttons, all five visible save
+choices, and disabled save or morale controls when no selected target can roll
+that action. Reaction remained available for every selected NPC.
+
+Unavailable save batches were rejected before chat creation. A live
+UI-triggered invalid action produced the localized GM error notice in both
+generations. That check exposed and then verified a lifecycle correction:
+notification services are resolved when a notice is emitted because Foundry's
+`ui` object may not exist when the module first registers its lifecycle.
+
+The English localization scan covers all static template keys and the dynamic
+HUD/chat families. Focus-visible styles and native form controls provide the
+keyboard path without replacing the approved Pointer Events drag behavior.
+
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-007 are
-complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is the HUD-008 accessibility, localization, and error
-audit.
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-008 are
+complete. No compatibility finding contradicts the approved architecture.
+Milestone 1 is complete; the next compatibility work belongs to the
+multi-client Party Core gates in Milestone 2.

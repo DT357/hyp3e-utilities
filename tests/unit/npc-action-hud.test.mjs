@@ -14,6 +14,7 @@ function createRow({
   hp = { value: 5, max: 10 },
   morale = 8,
   hasMorale = true,
+  saves = Object.fromEntries(SAVE_KEYS.map((key, index) => [key, 10 + index])),
 } = {}) {
   return {
     key: tokenUuid,
@@ -26,6 +27,7 @@ function createRow({
     movement: 40,
     morale,
     hasMorale,
+    saves,
   };
 }
 
@@ -76,7 +78,10 @@ function createFakeDocument() {
   };
 }
 
-function createHudHarness({ report = { skipped: [], failures: [] } } = {}) {
+function createHudHarness({
+  injectNotifications = true,
+  report = { skipped: [], failures: [] },
+} = {}) {
   const model = createModel([createRow({ name: 'Guard' })]);
   const actor = {
     sheet: {
@@ -128,7 +133,8 @@ function createHudHarness({ report = { skipped: [], failures: [] } } = {}) {
   };
   const document = createFakeDocument();
   const notifications = { errors: [], warnings: [] };
-  const hud = createNpcActionHud({
+  const renderedContexts = [];
+  const hudOptions = {
     chatCards,
     document,
     fromUuid: async (uuid) => {
@@ -142,16 +148,20 @@ function createHudHarness({ report = { skipped: [], failures: [] } } = {}) {
       },
     },
     logger: { warn: () => {} },
-    notifications: {
+    npcRolls,
+    renderTemplate: async (_path, context) => {
+      renderedContexts.push(context);
+      return `<section>${context.rows.map((row) => row.name).join(',')}</section>`;
+    },
+    selection,
+  };
+  if (injectNotifications) {
+    hudOptions.notifications = {
       error: (message) => notifications.errors.push(message),
       warn: (message) => notifications.warnings.push(message),
-    },
-    npcRolls,
-    renderTemplate: async (_path, context) => (
-      `<section>${context.rows.map((row) => row.name).join(',')}</section>`
-    ),
-    selection,
-  });
+    };
+  }
+  const hud = createNpcActionHud(hudOptions);
 
   return {
     actor,
@@ -165,6 +175,7 @@ function createHudHarness({ report = { skipped: [], failures: [] } } = {}) {
     npcRolls,
     plans,
     publish: (nextModel) => subscriber?.(nextModel),
+    renderedContexts,
   };
 }
 
@@ -181,6 +192,8 @@ test('HUD context clamps HP and provides the approved five-save selector', () =>
   ]), { selectedSaveKey: 'invalid' });
 
   assert.deepEqual(context.saveOptions.map(({ key }) => key), SAVE_KEYS);
+  assert.equal(context.saveOptions.every(({ available }) => available), true);
+  assert.equal(context.saveAvailable, true);
   assert.equal(context.saveOptions[0].selected, true);
   assert.deepEqual(context.rows.map(({ hp }) => hp.percent), [100, 0, 0]);
   assert.equal(context.rows[0].armor.ac, 7);
@@ -189,6 +202,22 @@ test('HUD context clamps HP and provides the approved five-save selector', () =>
   assert.equal(context.moraleAvailable, true);
   assert.equal(Object.isFrozen(context), true);
   assert.equal(Object.isFrozen(context.rows[0].hp), true);
+});
+
+test('HUD context disables unavailable saves and morale without hiding choices', () => {
+  const context = buildNpcActionHudContext(createModel([
+    createRow({
+      name: 'Unprepared',
+      hasMorale: false,
+      morale: null,
+      saves: Object.fromEntries(SAVE_KEYS.map((key) => [key, null])),
+    }),
+  ]), { selectedSaveKey: 'sorcery' });
+
+  assert.deepEqual(context.saveOptions.map(({ key }) => key), SAVE_KEYS);
+  assert.equal(context.saveOptions.every(({ available }) => !available), true);
+  assert.equal(context.saveAvailable, false);
+  assert.equal(context.moraleAvailable, false);
 });
 
 test('HUD renders one stable overlay and removes it when selection is hidden', async () => {
@@ -238,6 +267,84 @@ test('HUD actions reuse planners, chat cards, and exact token Actor sheets', asy
     harness.hud.executeAction('unknown'),
     /unknown HUD action/i,
   );
+});
+
+test('HUD actions reject an unavailable target batch without creating chat', async () => {
+  const harness = createHudHarness();
+  harness.candidates.splice(0);
+
+  await assert.rejects(harness.hud.executeAction('reaction'), /unavailable/i);
+  await assert.rejects(harness.hud.executeAction('save'), /unavailable/i);
+  await assert.rejects(harness.hud.executeAction('morale'), /unavailable/i);
+  assert.equal(harness.createdBatches.length, 0);
+});
+
+test('changing the save category refreshes its unavailable action state', async () => {
+  const harness = createHudHarness();
+  harness.model.rows[0].saves.death = null;
+  await harness.hud.start();
+  const overlay = harness.document.getElementById(NPC_ACTION_HUD_ID);
+
+  await overlay.dispatch('change', {
+    target: {
+      matches: () => true,
+      value: 'device',
+    },
+  });
+
+  assert.equal(harness.renderedContexts[0].saveAvailable, false);
+  assert.equal(harness.renderedContexts.at(-1).selectedSaveKey, 'device');
+  assert.equal(harness.renderedContexts.at(-1).saveAvailable, true);
+});
+
+test('delegated UI failures produce one localized error notice', async () => {
+  const harness = createHudHarness();
+  await harness.hud.start();
+  const overlay = harness.document.getElementById(NPC_ACTION_HUD_ID);
+
+  await overlay.dispatch('click', {
+    preventDefault() {},
+    target: {
+      closest: () => ({
+        dataset: {
+          action: 'openActorSheet',
+          tokenUuid: 'Scene.scene.Token.missing',
+        },
+      }),
+    },
+  });
+
+  assert.deepEqual(harness.notifications.errors, [
+    'hyp3e-utilities.hud.actionFailed',
+  ]);
+});
+
+test('HUD resolves Foundry notifications when UI initializes after module setup', async () => {
+  const originalUi = globalThis.ui;
+  const errors = [];
+  try {
+    globalThis.ui = undefined;
+    const harness = createHudHarness({ injectNotifications: false });
+    globalThis.ui = {
+      notifications: {
+        error: (message) => errors.push(message),
+      },
+    };
+    await harness.hud.start();
+    const overlay = harness.document.getElementById(NPC_ACTION_HUD_ID);
+
+    await overlay.dispatch('click', {
+      preventDefault() {},
+      target: {
+        closest: () => ({ dataset: { action: 'unknown' } }),
+      },
+    });
+
+    assert.deepEqual(errors, ['hyp3e-utilities.hud.actionFailed']);
+  }
+  finally {
+    globalThis.ui = originalUi;
+  }
 });
 
 test('a stale async render cannot replace a newer HUD model', async () => {

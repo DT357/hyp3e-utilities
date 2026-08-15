@@ -88,6 +88,7 @@ export function buildNpcSelectionViewModel(
 
     const actorSummary = adapter.getActorSummary(actor);
     const morale = adapter.getMorale(actor);
+    const saves = adapter.getSaves(actor);
     rows.push(Object.freeze({
       key: tokenUuid,
       tokenUuid,
@@ -102,6 +103,7 @@ export function buildNpcSelectionViewModel(
       movement: actorSummary.movement,
       morale,
       hasMorale: Number.isFinite(morale),
+      saves: Object.freeze({ ...saves }),
     }));
   }
 
