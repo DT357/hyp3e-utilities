@@ -20,3 +20,35 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__title {
+  border-bottom: 1px solid var(--color-border-light-tertiary, #777);
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__details {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__row {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(5rem, auto) 1fr;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__row dt {
+  font-weight: 700;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__row dd {
+  margin: 0;
+}
+
+.hyp3e-utilities-chat-card .hyp3e-utilities-chat-card__note {
+  font-style: italic;
+  margin: 0.25rem 0 0;
+}

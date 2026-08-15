@@ -29,6 +29,7 @@ const results = {
   fnd006: {},
   hud001: {},
   hud002: {},
+  hud003: {},
   errors: [],
 };
 
@@ -400,6 +401,7 @@ async function testProductionFoundation(character, npc) {
     apiPublished: Boolean(api),
     adapterPublished: Boolean(api?.adapter),
     applicationsPublished: Boolean(api?.applications),
+    chatCardsPublished: Boolean(api?.chatCards),
     socketPublished: Boolean(api?.socket),
   };
 
@@ -589,6 +591,115 @@ function testProductionHudRules(character, npc) {
   };
 }
 
+async function testProductionHudChat(npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalName = npc.name;
+  const unsafeName = `${RUN_PREFIX} <script>alert("unsafe")</script>`;
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} Chat Cards`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+
+  try {
+    await npc.update({ name: unsafeName });
+    const tokens = await scene.createEmbeddedDocuments('Token', [
+      {
+        name: `${RUN_PREFIX} Chat First`,
+        actorId: npc.id,
+        actorLink: true,
+        x: 100,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Chat Second`,
+        actorId: npc.id,
+        actorLink: true,
+        x: 300,
+        y: 100,
+      },
+    ]);
+    const reactionBatch = api.npcRolls.planReactionBatch(
+      tokens.map((token) => ({ tokenUuid: token.uuid, actor: token.actor })),
+    );
+    const reports = [
+      await api.chatCards.createNpcRollBatch(reactionBatch),
+      await api.chatCards.createNpcRollBatch(
+        api.npcRolls.planSaveBatch([npc], 'death'),
+      ),
+      await api.chatCards.createNpcRollBatch(
+        api.npcRolls.planMoraleBatch([npc]),
+      ),
+    ];
+    const messages = reports.flatMap(
+      (report) => report.created.map(({ message }) => message),
+    );
+    const gmRecipientIds = ChatMessage.getWhisperRecipients('GM')
+      .map((user) => user.id)
+      .sort();
+    const reactionMessages = messages.filter(
+      (message) => message.flags[MODULE_ID].action === 'reaction',
+    );
+    const cardsRendered = await waitUntil(
+      () => document.querySelectorAll(`.${MODULE_ID}-chat-card`).length >= 4,
+    );
+
+    return {
+      messageIds: messages.map((message) => message.id),
+      messageCount: messages.length,
+      oneMessagePerInstruction: messages.length === 4,
+      oneRollPerMessage: messages.every(
+        (message) => message.rolls.length === 1,
+      ),
+      gmOnly: messages.every(
+        (message) => [...message.whisper].sort().join(',')
+          === gmRecipientIds.join(','),
+      ),
+      actorAttributed: messages.every(
+        (message) => message.speaker.actor === npc.id,
+      ),
+      tokenAttributed:
+        reactionMessages.length === 2
+        && reactionMessages.every((message) => Boolean(message.speaker.token)),
+      tokenOrderStable:
+        reactionMessages[0]?.speaker.token === tokens[0].id
+        && reactionMessages[1]?.speaker.token === tokens[1].id,
+      rollsEvaluated: messages.every(
+        (message) => Number.isFinite(message.rolls[0].total),
+      ),
+      sharedReactionBatchId:
+        reactionMessages.length === 2
+        && reactionMessages[0].flags[MODULE_ID].batchId
+          === reactionMessages[1].flags[MODULE_ID].batchId,
+      saveCategoryFlagged: messages.some(
+        (message) => message.flags[MODULE_ID].action === 'save'
+          && message.flags[MODULE_ID].category === 'death',
+      ),
+      unsafeNameEscaped: messages.every(
+        (message) => !message.content.includes('<script>')
+          && message.content.includes('&lt;script&gt;'),
+      ),
+      cardsRendered,
+      cardCount: document.querySelectorAll(`.${MODULE_ID}-chat-card`).length,
+      reportsComplete: reports.every(
+        (report) => report.failures.length === 0 && report.skipped.length === 0,
+      ),
+    };
+  }
+  finally {
+    await npc.update({ name: originalName });
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -629,6 +740,7 @@ async function runGmDiagnostics() {
     results.pb007 = await testApplicationV2();
     await testProductionFoundation(character, npc);
     testProductionHudRules(character, npc);
+    results.hud003 = await testProductionHudChat(npc);
     results.status = 'complete';
   }
   catch (error) {

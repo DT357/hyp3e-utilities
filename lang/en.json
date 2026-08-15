@@ -57,6 +57,38 @@
         "title": "Party Sheet",
         "placeholder": "The Party Sheet foundation is ready. Party features will be added in the Party Sheet milestone."
       }
+    },
+    "chat": {
+      "actor": "NPC",
+      "total": "Total",
+      "outcome": "Outcome",
+      "category": "Category",
+      "target": "Target",
+      "result": "Result",
+      "success": "Success",
+      "failure": "Failure",
+      "reroll": "Reroll once.",
+      "actions": {
+        "reaction": "Reaction Roll",
+        "save": "Saving Throw",
+        "morale": "Morale Check"
+      },
+      "saves": {
+        "death": "Death",
+        "device": "Device",
+        "transformation": "Transformation",
+        "avoidance": "Avoidance",
+        "sorcery": "Sorcery"
+      },
+      "reactions": {
+        "violent": "Violent: immediate attack",
+        "hostile": "Hostile: antagonistic; attack likely",
+        "unfriendly": "Unfriendly: negative inclination",
+        "neutral": "Neutral: disinterested or uncertain",
+        "friendly": "Friendly: considers ideas or proposals",
+        "agreeable": "Agreeable: willing and helpful",
+        "affable": "Affable: extremely accommodating"
+      }
     }
   }
 }

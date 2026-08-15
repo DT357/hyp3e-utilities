@@ -3,6 +3,7 @@ import {
   preloadFoundationTemplates,
 } from '../apps/foundation-applications.mjs';
 import { hyp3eAdapter } from '../adapters/hyp3e-adapter.mjs';
+import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
 import {
   HOOK_NAMES,
@@ -122,6 +123,10 @@ export function registerModuleLifecycle({
       game: currentGame,
       notifications,
     });
+    const chatCards = createChatCardService({
+      game: currentGame,
+      logger,
+    });
     registerSettings({ game: currentGame, menuTypes: applications });
     const templateLoader = loadTemplates
       ?? globalThis.foundry?.applications?.handlebars?.loadTemplates;
@@ -141,6 +146,7 @@ export function registerModuleLifecycle({
     api = Object.freeze({
       adapter: hyp3eAdapter,
       applications,
+      chatCards,
       compatibility,
       npcRolls,
       socket: transport,

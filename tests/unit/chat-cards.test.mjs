@@ -1,0 +1,253 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  createChatCardService,
+  getRollMessageModeOptions,
+} from '../../module/chat/chat-cards.mjs';
+import {
+  planMoraleBatch,
+  planReactionBatch,
+  planSaveBatch,
+} from '../../module/hud/npc-rolls.mjs';
+import {
+  characterActor,
+  npcActor,
+} from '../fixtures/hyp3e-documents.mjs';
+
+const TRANSLATIONS = {
+  'hyp3e-utilities.chat.actor': 'NPC',
+  'hyp3e-utilities.chat.total': 'Total',
+  'hyp3e-utilities.chat.outcome': 'Outcome',
+  'hyp3e-utilities.chat.category': 'Category',
+  'hyp3e-utilities.chat.target': 'Target',
+  'hyp3e-utilities.chat.result': 'Result',
+  'hyp3e-utilities.chat.success': 'Success',
+  'hyp3e-utilities.chat.failure': 'Failure',
+  'hyp3e-utilities.chat.reroll': 'Reroll once.',
+  'hyp3e-utilities.chat.actions.reaction': 'Reaction Roll',
+  'hyp3e-utilities.chat.actions.save': 'Saving Throw',
+  'hyp3e-utilities.chat.actions.morale': 'Morale Check',
+  'hyp3e-utilities.chat.saves.death': 'Death',
+  'hyp3e-utilities.chat.reactions.neutral':
+    'Neutral: disinterested or uncertain',
+  'hyp3e-utilities.chat.reactions.affable':
+    'Affable: extremely accommodating',
+};
+
+function createHarness({
+  generation = 14,
+  gmRecipients = [{ id: 'gm-one' }, { id: 'gm-two' }],
+  targets = new Map(),
+  totals = [],
+  userIsGm = true,
+} = {}) {
+  const events = [];
+  const messages = [];
+  const messageOptions = [];
+  const warnings = [];
+  let rollIndex = 0;
+
+  class FakeRoll {
+    constructor(formula) {
+      this.formula = formula;
+      this.index = rollIndex;
+      rollIndex += 1;
+    }
+
+    async evaluate() {
+      this.total = totals[this.index];
+      events.push(`evaluate:${this.index}`);
+      return this;
+    }
+  }
+
+  class FakeChatMessage {
+    static getWhisperRecipients(recipient) {
+      assert.equal(recipient, 'GM');
+      return gmRecipients;
+    }
+
+    static getSpeaker({ actor, token }) {
+      return {
+        actor: actor.id,
+        token: token?.id ?? null,
+      };
+    }
+
+    static async create(messageData, createOptions) {
+      events.push(`create:${messageData.speaker.token ?? messageData.speaker.actor}`);
+      messages.push(messageData);
+      messageOptions.push(createOptions);
+      return { id: `message-${messages.length}`, ...messageData };
+    }
+  }
+
+  const service = createChatCardService({
+    ChatMessageClass: FakeChatMessage,
+    RollClass: FakeRoll,
+    config: { sounds: { dice: 'dice.wav' } },
+    fromUuid: async (uuid) => targets.get(uuid) ?? null,
+    game: {
+      release: { generation },
+      user: { id: 'current-user', isGM: userIsGm },
+      i18n: {
+        localize: (key) => TRANSLATIONS[key] ?? key,
+      },
+    },
+    logger: { warn: (...args) => warnings.push(args) },
+    randomId: () => 'shared-batch-id',
+  });
+
+  return { events, messageOptions, messages, service, warnings };
+}
+
+test('reaction batches create escaped, attributed GM whispers in stable order', async () => {
+  const unsafeNpc = {
+    ...npcActor,
+    name: '<img src=x onerror="alert(1)">',
+  };
+  const firstUuid = 'Scene.scene.Token.first';
+  const secondUuid = 'Scene.scene.Token.second';
+  const firstActor = { id: 'synthetic-first' };
+  const secondActor = { id: 'synthetic-second' };
+  const targets = new Map([
+    [firstUuid, { id: 'first', actor: firstActor }],
+    [secondUuid, { id: 'second', actor: secondActor }],
+  ]);
+  const batch = planReactionBatch([
+    { tokenUuid: firstUuid, actor: unsafeNpc },
+    { tokenUuid: secondUuid, actor: unsafeNpc },
+  ]);
+  const harness = createHarness({ targets, totals: [6, 12] });
+
+  const report = await harness.service.createNpcRollBatch(batch);
+
+  assert.deepEqual(harness.events, [
+    'evaluate:0',
+    'create:first',
+    'evaluate:1',
+    'create:second',
+  ]);
+  assert.equal(report.created.length, 2);
+  assert.equal(report.failures.length, 0);
+  assert.equal(report.batchId, 'shared-batch-id');
+  assert.deepEqual(
+    report.created.map(({ evaluation }) => evaluation.outcome.id),
+    ['neutral', 'affable'],
+  );
+
+  for (const [index, message] of harness.messages.entries()) {
+    assert.deepEqual(message.whisper, ['gm-one', 'gm-two']);
+    assert.deepEqual(harness.messageOptions[index], { messageMode: 'gm' });
+    assert.equal(message.rolls.length, 1);
+    assert.equal(message.rolls[0].total, [6, 12][index]);
+    assert.equal(message.sound, 'dice.wav');
+    assert.deepEqual(message.flags['hyp3e-utilities'], {
+      feature: 'npcActionHud',
+      action: 'reaction',
+      category: null,
+      tokenUuid: [firstUuid, secondUuid][index],
+      actorUuid: 'Actor.npc-id',
+      batchId: 'shared-batch-id',
+    });
+    assert.equal(message.content.includes('<img src=x'), false);
+    assert.match(message.content, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+  }
+  assert.match(harness.messages[0].content, /Neutral: disinterested/);
+  assert.match(harness.messages[0].content, /Reroll once\./);
+  assert.match(harness.messages[1].content, /Affable: extremely accommodating/);
+});
+
+test('save and morale cards use Foundry 13 roll mode and evaluated targets', async () => {
+  const targets = new Map([
+    [npcActor.uuid, npcActor],
+  ]);
+  const harness = createHarness({
+    generation: 13,
+    targets,
+    totals: [npcActor.system.saves.death.curr, npcActor.system.morale + 1],
+  });
+
+  const saveReport = await harness.service.createNpcRollBatch(
+    planSaveBatch([npcActor], 'death'),
+    { batchId: 'save-batch' },
+  );
+  const moraleReport = await harness.service.createNpcRollBatch(
+    planMoraleBatch([npcActor]),
+    { batchId: 'morale-batch' },
+  );
+
+  assert.equal(saveReport.created[0].evaluation.success, true);
+  assert.equal(moraleReport.created[0].evaluation.success, false);
+  assert.deepEqual(harness.messageOptions, [
+    { rollMode: 'gmroll' },
+    { rollMode: 'gmroll' },
+  ]);
+  assert.equal(harness.messages[0].speaker.actor, npcActor.id);
+  assert.equal(harness.messages[0].speaker.token, null);
+  assert.equal(
+    harness.messages[0].flags['hyp3e-utilities'].category,
+    'death',
+  );
+  assert.match(harness.messages[0].content, /Death/);
+  assert.match(harness.messages[0].content, /Success/);
+  assert.match(harness.messages[1].content, /Failure/);
+});
+
+test('partial skips and failures are collected and reported once', async () => {
+  const validUuid = 'Scene.scene.Token.valid';
+  const missingUuid = 'Scene.scene.Token.missing';
+  const targets = new Map([
+    [validUuid, { id: 'valid', actor: { id: 'valid-actor' } }],
+  ]);
+  const harness = createHarness({ targets, totals: [9] });
+  const batch = planReactionBatch([
+    { tokenUuid: validUuid, actor: npcActor },
+    { tokenUuid: missingUuid, actor: npcActor },
+    characterActor,
+  ]);
+
+  const report = await harness.service.createNpcRollBatch(batch);
+
+  assert.equal(report.created.length, 1);
+  assert.equal(report.failures.length, 1);
+  assert.equal(report.failures[0].target.tokenUuid, missingUuid);
+  assert.match(report.failures[0].message, /resolve/i);
+  assert.equal(report.skipped.length, 1);
+  assert.equal(report.skipped[0].reason, 'unsupportedActor');
+  assert.equal(harness.messages.length, 1);
+  assert.equal(harness.warnings.length, 1);
+  assert.match(harness.warnings[0][0], /1 skipped target.*1 failed target/i);
+});
+
+test('chat service fails closed for players or an empty GM recipient list', async () => {
+  const targets = new Map([[npcActor.uuid, npcActor]]);
+  const playerHarness = createHarness({
+    targets,
+    totals: [8],
+    userIsGm: false,
+  });
+  const noRecipientHarness = createHarness({
+    gmRecipients: [],
+    targets,
+    totals: [8],
+  });
+  const batch = planMoraleBatch([npcActor]);
+
+  await assert.rejects(
+    playerHarness.service.createNpcRollBatch(batch),
+    /only a gm/i,
+  );
+  await assert.rejects(
+    noRecipientHarness.service.createNpcRollBatch(batch),
+    /gm recipients/i,
+  );
+  assert.equal(playerHarness.messages.length, 0);
+  assert.equal(noRecipientHarness.messages.length, 0);
+});
+
+test('roll-message mode options follow the Foundry generation', () => {
+  assert.deepEqual(getRollMessageModeOptions(13), { rollMode: 'gmroll' });
+  assert.deepEqual(getRollMessageModeOptions(14), { messageMode: 'gm' });
+});

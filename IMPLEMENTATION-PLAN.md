@@ -186,7 +186,7 @@ Planned production areas: `module/core/`, `module/adapters/`, `module/settings/`
 | --- | --- | --- | --- | --- |
 | HUD-001 | `DONE` | PB-009 | Pure Hyperborea reaction table and one-roll-per-NPC batch planner | Boundary tests from 0 through 12+ and multi-NPC roll count |
 | HUD-002 | `DONE` | FND-002 | Save and morale roll planners using verified `hyp3e` targets | Tests for all five saves, missing data, modifiers, and morale success/failure |
-| HUD-003 | `TODO` | HUD-001, HUD-002 | GM-whisper chat-card service for reaction, save, and morale batches | Sanitization and recipient tests; manual chat-card inspection |
+| HUD-003 | `DONE` | HUD-001, HUD-002 | GM-whisper chat-card service for reaction, save, and morale batches | Sanitization and recipient tests; manual chat-card inspection |
 | HUD-004 | `TODO` | FND-002, PB-005 | Controlled-NPC selection controller and stable HUD view model | Linked/unlinked, duplicate, mixed selection, deletion, and empty-selection tests |
 | HUD-005 | `TODO` | FND-005, HUD-004 | HUD overlay with HP bars, AC/DR, movement, actor-sheet link, selectors, and action buttons | Render and interaction checks at common screen sizes |
 | HUD-006 | `TODO` | HUD-005 | Per-client drag position, viewport clamping, and reset control | Reload, resize, zoom, and off-screen recovery checks |
@@ -342,8 +342,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-The foundation and pure roll-planning portions of Milestone 1 are complete.
-Proceed next with the shared chat-card service in HUD-003.
+The foundation, pure roll-planning, and shared chat-output portions of
+Milestone 1 are complete.
+Proceed next with the controlled-NPC selection controller in HUD-004.
 
 ## 15. Current Project Status
 
@@ -351,8 +352,8 @@ Proceed next with the shared chat-card service in HUD-003.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001/HUD-002 are complete.
-- Immediate next batch: Implement the GM-whisper chat-card service in HUD-003.
+- Implementation: Milestone 0, the Milestone 1 foundation, and HUD-001 through HUD-003 are complete.
+- Immediate next batch: Implement the controlled-NPC selection controller and stable HUD view model in HUD-004.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

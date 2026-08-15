@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-002 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-002 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-003 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-003 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -91,7 +91,7 @@ Automated tests cover no-GM and changed-GM behavior. Mutation authorization,
 revision control, and idempotency remain intentionally deferred to PAR-002 and
 PAR-004.
 
-### NPC roll rules (HUD-001 and HUD-002)
+### NPC roll rules and chat output (HUD-001 through HUD-003)
 
 Foundry 13.351 and 14.365 produced identical results from the production API:
 
@@ -106,11 +106,20 @@ Foundry 13.351 and 14.365 produced identical results from the production API:
 - save success used `1d20 >= target`, morale success used `2d6 <= target`, and
   missing save or morale values were skipped.
 
-The live runs produced no module-originated browser warning or error. Chat
-creation and actual Foundry Roll evaluation remain HUD-003 responsibilities.
+The HUD-003 diagnostic evaluated actual Foundry Rolls and created one message
+per instruction. Both generations verified GM-only recipients, Actor and token
+speaker attribution, stable token order, one attached Roll per message, shared
+batch flags, save-category flags, escaped hostile Actor names, and rendered
+localized reaction, save, and morale cards.
+
+Foundry 13 uses `rollMode: "gmroll"`; Foundry 14 uses
+`messageMode: "gm"`. An initial v14 check caught the legacy value before the
+final corrected run. The invalid-mode attempt failed closed without creating a
+public message. The corrected final runs produced no module-originated warning
+or error.
 
 ## Current gate
 
-PB-003 through PB-009, FND-001 through FND-006, HUD-001, and HUD-002 are
+PB-003 through PB-009, FND-001 through FND-006, and HUD-001 through HUD-003 are
 complete. No compatibility finding contradicts the approved architecture. The
-next compatibility gate is HUD-003 GM-whisper chat output.
+next compatibility gate is HUD-004 controlled-NPC selection behavior.
