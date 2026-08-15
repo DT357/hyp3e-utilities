@@ -296,9 +296,29 @@ character/NPC type acceptance, member/follower exclusivity, non-GM ownership,
 synthetic and treasure rejection, strict wage/share validation, and preservation
 of unrelated member metadata. Both live runs completed without errors.
 
+### Reused Party Sheet row actions (PAR-008)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the Party action gate. Member and follower rows each
+displayed all five approved save categories. Foundry's shared canvas ping was
+called with the exact linked character and NPC token centers.
+
+Each generation created exactly four messages through the existing roll and
+chat services: a member Device save, follower Sorcery save, individual NPC
+morale, and bulk NPC morale. The messages retained the existing HUD feature,
+action, Actor, and category flags and were whispered only to GM users. Deleting
+the character token caused no additional ping and produced one localized
+missing-token notice.
+
+Automated coverage proves controlled-token preference, stable fallback token
+ordering, no-token rejection, unchanged planner/chat delegation, empty-batch
+rejection, and GM-only roll execution. The first runtime attempt exposed a
+diagnostic tab-selection mistake rather than a product defect; the corrected
+v13/v14 runs completed with no diagnostic errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-007 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-008 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the reused Party Sheet row actions in Milestone 2.
+external-update and cleanup behavior in Milestone 2.

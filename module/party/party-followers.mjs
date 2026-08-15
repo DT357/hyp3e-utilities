@@ -102,6 +102,8 @@ export function createPartyFollowerService({
       if (!actor) {
         return {
           actorUuid,
+          canRollMorale: false,
+          canRollSave: false,
           img: 'icons/svg/mystery-man.svg',
           invalidType: false,
           missing: true,
@@ -115,6 +117,8 @@ export function createPartyFollowerService({
 
       return {
         actorUuid,
+        canRollMorale: Number.isFinite(adapter.getMorale(actor)),
+        canRollSave: adapter.canRollSave(actor),
         img: actor.img || 'icons/svg/mystery-man.svg',
         invalidType: !supportedTypes.has(actor.type),
         missing: false,

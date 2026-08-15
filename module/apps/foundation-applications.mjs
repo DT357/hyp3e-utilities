@@ -2,6 +2,7 @@ import {
   CSS_NAMESPACE,
   HOOK_NAMES,
   MODULE_ID,
+  SAVE_KEYS,
   SETTING_KEYS,
   TEMPLATE_PATHS,
 } from '../core/constants.mjs';
@@ -37,6 +38,7 @@ export function createFoundationApplications({
   notifications = globalThis.ui?.notifications,
   actorDirectoryProvider = () => globalThis.ui?.actors,
   canvasProvider = () => globalThis.canvas,
+  partyActionsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyActions,
   partyFollowersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyFollowers,
   partyMembersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMembers,
   partyMutationsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMutations,
@@ -216,8 +218,14 @@ export function createFoundationApplications({
         addSelectedActor: OpenPartySheetApplication.addSelectedActor,
         openFollower: OpenPartySheetApplication.openFollower,
         openMember: OpenPartySheetApplication.openMember,
+        pingActor: OpenPartySheetApplication.pingActor,
         removeFollower: OpenPartySheetApplication.removeFollower,
         removeMember: OpenPartySheetApplication.removeMember,
+        rollAllFollowerMorale:
+          OpenPartySheetApplication.rollAllFollowerMorale,
+        rollFollowerMorale: OpenPartySheetApplication.rollFollowerMorale,
+        rollFollowerSave: OpenPartySheetApplication.rollFollowerSave,
+        rollMemberSave: OpenPartySheetApplication.rollMemberSave,
         saveFollower: OpenPartySheetApplication.saveFollower,
         selectTab: OpenPartySheetApplication.selectTab,
       },
@@ -359,6 +367,60 @@ export function createFoundationApplications({
       );
     }
 
+    static async pingActor(_event, target) {
+      return this._executePartyAction(
+        () => partyActionsProvider().pingActor(target?.dataset?.actorUuid),
+        `${APP_NAMESPACE}.partySheet.tokenUnavailable`,
+      );
+    }
+
+    static async rollMemberSave(_event, target) {
+      const actor = partyMembersProvider()?.getActor(
+        target?.dataset?.actorUuid,
+      );
+      const saveKey = target?.closest?.('[data-party-actor-row]')
+        ?.querySelector?.('[data-field="party-save"]')?.value;
+      return this._executePartyAction(
+        () => partyActionsProvider().rollSave(actor, saveKey),
+        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+      );
+    }
+
+    static async rollFollowerSave(_event, target) {
+      const actor = partyFollowersProvider()?.getActor(
+        target?.dataset?.actorUuid,
+      );
+      const saveKey = target?.closest?.('[data-party-actor-row]')
+        ?.querySelector?.('[data-field="party-save"]')?.value;
+      return this._executePartyAction(
+        () => partyActionsProvider().rollSave(actor, saveKey),
+        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+      );
+    }
+
+    static async rollFollowerMorale(_event, target) {
+      const actor = partyFollowersProvider()?.getActor(
+        target?.dataset?.actorUuid,
+      );
+      return this._executePartyAction(
+        () => partyActionsProvider().rollMorale([actor]),
+        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+      );
+    }
+
+    static async rollAllFollowerMorale() {
+      const followerService = partyFollowersProvider();
+      const actors = followerService.getFollowerRows(
+        partyStoreProvider()?.getState(),
+      ).filter((row) => row.canRollMorale)
+        .map((row) => followerService.getActor(row.actorUuid))
+        .filter(Boolean);
+      return this._executePartyAction(
+        () => partyActionsProvider().rollMorale(actors),
+        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+      );
+    }
+
     static async saveFollower(_event, target) {
       const row = target?.closest?.('[data-follower-row]');
       await this._requestPartyOperation(
@@ -396,6 +458,25 @@ export function createFoundationApplications({
         );
       }
       return response ?? null;
+    }
+
+    async _executePartyAction(action, failureMessage) {
+      try {
+        const report = await action();
+        if (report?.failures?.length || report?.skipped?.length) {
+          notify(
+            notifications,
+            'warn',
+            `${APP_NAMESPACE}.partySheet.partyActionPartial`,
+          );
+        }
+        return report;
+      }
+      catch (error) {
+        logger.warn?.('Party Sheet action failed.', error);
+        notify(notifications, 'error', failureMessage);
+        return null;
+      }
     }
 
     async _handleActorDrop(event) {
@@ -454,6 +535,10 @@ export function createFoundationApplications({
       const followers = partyFollowersProvider()?.getFollowerRows?.(state)
         ?? [];
       const members = partyMembersProvider()?.getMemberRows?.(state) ?? [];
+      const saveOptions = SAVE_KEYS.map((id) => ({
+        id,
+        label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
+      }));
       const tabs = [
         ['overview', `${APP_NAMESPACE}.partySheet.tabs.overview`],
         ['followers', `${APP_NAMESPACE}.partySheet.tabs.followers`],
@@ -471,11 +556,14 @@ export function createFoundationApplications({
         ...context,
         activeTab: tabs.find((tab) => tab.active),
         canEdit: decision.allowed,
+        canRollPartyActions: game.user?.isGM === true,
         followers,
         hasFollowers: followers.length > 0,
+        hasFollowerMorale: followers.some((row) => row.canRollMorale),
         hasMembers: members.length > 0,
         members,
         permissionReason: decision.reason,
+        saveOptions,
         showOverview: this._activeTab === 'overview',
         showFollowers: this._activeTab === 'followers',
         state,

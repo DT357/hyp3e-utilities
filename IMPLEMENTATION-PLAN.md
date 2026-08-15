@@ -210,7 +210,7 @@ M1 is complete when all FND and HUD items are `DONE`, `npm run check` passes, th
 | PAR-005 | `DONE` | FND-005, PAR-004 | Singleton Party Sheet app and GM-facing open controls | Only one instance; reopen focuses/rerenders; close cleans listeners |
 | PAR-006 | `DONE` | PAR-005 | Overview tab for member add/remove, summary data, and Actor links | Character-only membership rules and deleted-Actor handling |
 | PAR-007 | `DONE` | PAR-005 | Followers tab for character/NPC followers, employment fields, shares, and wages | Validation of Actor type and GP-only wage inputs |
-| PAR-008 | `TODO` | PAR-006, PAR-007, HUD-002, HUD-003 | Party/follower summary actions, token ping, saves, and morale reuse | No duplicate roll logic; permission and missing-token checks |
+| PAR-008 | `DONE` | PAR-006, PAR-007, HUD-002, HUD-003 | Party/follower summary actions, token ping, saves, and morale reuse | No duplicate roll logic; permission and missing-token checks |
 | PAR-009 | `TODO` | PAR-005 | External-update handling and explicit unsaved-form policy | Two-client edit matrix and stale form warning |
 | PAR-010 | `TODO` | PAR-003 | Cleanup of deleted Actor references without destructive treasury behavior | Member/follower deletion and treasury deletion tests |
 
@@ -356,7 +356,7 @@ in PAR-006.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 and 1 are complete.
-- Immediate next batch: Reuse token ping, save, and morale actions in PAR-008.
+- Immediate next batch: Implement external-update and unsaved-form policy in PAR-009.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

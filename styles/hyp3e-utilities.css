@@ -153,6 +153,18 @@
   grid-column: 1 / -1;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-row-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  grid-column: 2 / -1;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-row-actions select {
+  min-width: 8rem;
+}
+
 @media (max-width: 44rem) {
   .hyp3e-utilities .hyp3e-utilities__party-member {
     grid-template-columns: 3rem 1fr auto;

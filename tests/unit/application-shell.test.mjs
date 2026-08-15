@@ -259,6 +259,7 @@ test('Party Sheet Overview renders member rows and routes member actions through
   assert.equal(context.showOverview, true);
   assert.equal(context.hasMembers, true);
   assert.equal(context.members, rows);
+  assert.equal(context.canRollPartyActions, false);
 
   await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.openMember
     .call(app, undefined, { dataset: { actorUuid: 'Actor.hero' } });
@@ -441,5 +442,85 @@ test('Party Sheet Followers renders rows and routes employment, removal, and dro
         requestId: 'follower-request-3',
       },
     },
+  ]);
+});
+
+test('Party Sheet row actions reuse the party action service for ping, saves, and morale', async () => {
+  const state = createPartyStateDefault();
+  state.memberActorUuids = ['Actor.hero'];
+  state.followerActorUuids = ['Actor.npc', 'Actor.character'];
+  const hero = { uuid: 'Actor.hero' };
+  const npc = { uuid: 'Actor.npc' };
+  const character = { uuid: 'Actor.character' };
+  const actionCalls = [];
+  const followerService = {
+    getActor: (actorUuid) => ({
+      'Actor.npc': npc,
+      'Actor.character': character,
+    })[actorUuid] ?? null,
+    getFollowerRows: () => [
+      { actorUuid: 'Actor.npc', canRollMorale: true },
+      { actorUuid: 'Actor.character', canRollMorale: false },
+    ],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: {
+      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+      user: { id: 'gm', isGM: true, role: 4 },
+      users: [],
+    },
+    partyActionsProvider: () => ({
+      pingActor: async (actorUuid) => actionCalls.push(['ping', actorUuid]),
+      rollMorale: async (actors) => actionCalls.push([
+        'morale',
+        actors.map((actor) => actor.uuid),
+      ]),
+      rollSave: async (actor, saveKey) => actionCalls.push([
+        'save',
+        actor.uuid,
+        saveKey,
+      ]),
+    }),
+    partyFollowersProvider: () => followerService,
+    partyMembersProvider: () => ({
+      getActor: (actorUuid) => actorUuid === 'Actor.hero' ? hero : null,
+      getMemberRows: () => [{ actorUuid: 'Actor.hero', canRollSave: true }],
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const context = await app._prepareContext({});
+  assert.equal(context.canRollPartyActions, true);
+  assert.equal(context.hasFollowerMorale, true);
+
+  const saveTarget = (actorUuid) => ({
+    closest: () => ({
+      querySelector: () => ({ value: 'sorcery' }),
+    }),
+    dataset: { actorUuid },
+  });
+  const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
+  await actions.pingActor.call(app, undefined, {
+    dataset: { actorUuid: 'Actor.hero' },
+  });
+  await actions.rollMemberSave.call(app, undefined, saveTarget('Actor.hero'));
+  await actions.rollFollowerSave.call(
+    app,
+    undefined,
+    saveTarget('Actor.character'),
+  );
+  await actions.rollFollowerMorale.call(app, undefined, {
+    dataset: { actorUuid: 'Actor.npc' },
+  });
+  await actions.rollAllFollowerMorale.call(app);
+
+  assert.deepEqual(actionCalls, [
+    ['ping', 'Actor.hero'],
+    ['save', 'Actor.hero', 'sorcery'],
+    ['save', 'Actor.character', 'sorcery'],
+    ['morale', ['Actor.npc']],
+    ['morale', ['Actor.npc']],
   ]);
 });

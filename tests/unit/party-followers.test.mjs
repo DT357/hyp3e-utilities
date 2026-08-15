@@ -78,6 +78,8 @@ test('follower rows preserve order, subtype, employment values, and missing refe
   ]);
   assert.deepEqual(rows[0], {
     actorUuid: 'Actor.npc',
+    canRollMorale: false,
+    canRollSave: true,
     img: 'icons/npc.webp',
     invalidType: false,
     missing: false,

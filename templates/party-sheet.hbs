@@ -54,7 +54,10 @@
         {{#if hasMembers}}
           <ol class="hyp3e-utilities__party-members">
             {{#each members}}
-              <li class="hyp3e-utilities__party-member {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}">
+              <li
+                class="hyp3e-utilities__party-member {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
+                data-party-actor-row
+              >
                 <img src="{{img}}" alt="" width="48" height="48">
                 <div class="hyp3e-utilities__party-member-identity">
                   {{#if missing}}
@@ -96,6 +99,32 @@
                     {{/if}}
                   </button>
                 {{/if}}
+                {{#unless missing}}
+                  <div class="hyp3e-utilities__party-row-actions">
+                    <button
+                      type="button"
+                      data-action="pingActor"
+                      data-actor-uuid="{{actorUuid}}"
+                    >{{localize "hyp3e-utilities.applications.partySheet.pingToken"}}</button>
+                    {{#if ../canRollPartyActions}}
+                      {{#if canRollSave}}
+                        <select
+                          data-field="party-save"
+                          aria-label="{{localize "hyp3e-utilities.applications.partySheet.saveCategory"}}"
+                        >
+                          {{#each @root.saveOptions}}
+                            <option value="{{id}}">{{localize label}}</option>
+                          {{/each}}
+                        </select>
+                        <button
+                          type="button"
+                          data-action="rollMemberSave"
+                          data-actor-uuid="{{actorUuid}}"
+                        >{{localize "hyp3e-utilities.applications.partySheet.rollSave"}}</button>
+                      {{/if}}
+                    {{/if}}
+                  </div>
+                {{/unless}}
               </li>
             {{/each}}
           </ol>
@@ -112,6 +141,13 @@
           {{#if canEdit}}
             <div class="hyp3e-utilities__party-toolbar">
               <span>{{localize "hyp3e-utilities.applications.partySheet.dropFollowers"}}</span>
+              {{#if canRollPartyActions}}
+                {{#if hasFollowerMorale}}
+                  <button type="button" data-action="rollAllFollowerMorale">
+                    {{localize "hyp3e-utilities.applications.partySheet.rollAllMorale"}}
+                  </button>
+                {{/if}}
+              {{/if}}
             </div>
           {{/if}}
 
@@ -121,6 +157,7 @@
                 <li
                   class="hyp3e-utilities__party-member hyp3e-utilities__party-follower {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}"
                   data-follower-row
+                  data-party-actor-row
                 >
                   <img src="{{img}}" alt="" width="48" height="48">
                   <div class="hyp3e-utilities__party-member-identity">
@@ -199,6 +236,39 @@
                       {{/if}}
                     </button>
                   {{/if}}
+                  {{#unless missing}}
+                    <div class="hyp3e-utilities__party-row-actions">
+                      <button
+                        type="button"
+                        data-action="pingActor"
+                        data-actor-uuid="{{actorUuid}}"
+                      >{{localize "hyp3e-utilities.applications.partySheet.pingToken"}}</button>
+                      {{#if ../canRollPartyActions}}
+                        {{#if canRollSave}}
+                          <select
+                            data-field="party-save"
+                            aria-label="{{localize "hyp3e-utilities.applications.partySheet.saveCategory"}}"
+                          >
+                            {{#each @root.saveOptions}}
+                              <option value="{{id}}">{{localize label}}</option>
+                            {{/each}}
+                          </select>
+                          <button
+                            type="button"
+                            data-action="rollFollowerSave"
+                            data-actor-uuid="{{actorUuid}}"
+                          >{{localize "hyp3e-utilities.applications.partySheet.rollSave"}}</button>
+                        {{/if}}
+                        {{#if canRollMorale}}
+                          <button
+                            type="button"
+                            data-action="rollFollowerMorale"
+                            data-actor-uuid="{{actorUuid}}"
+                          >{{localize "hyp3e-utilities.applications.partySheet.rollMorale"}}</button>
+                        {{/if}}
+                      {{/if}}
+                    </div>
+                  {{/unless}}
                 </li>
               {{/each}}
             </ol>

@@ -7,6 +7,7 @@ import { createChatCardService } from '../chat/chat-cards.mjs';
 import { npcRolls } from '../hud/npc-rolls.mjs';
 import { createNpcSelectionController } from '../hud/npc-selection.mjs';
 import { createNpcActionHud } from '../hud/npc-action-hud.mjs';
+import { createPartyActionService } from '../party/party-actions.mjs';
 import { createPartyFollowerService } from '../party/party-followers.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
@@ -93,6 +94,7 @@ export function registerModuleLifecycle({
 }) {
   let compatibility;
   let api;
+  let partyActions;
   let partyFollowers;
   let partyMembers;
   let partyMutations;
@@ -138,6 +140,7 @@ export function registerModuleLifecycle({
       hooks,
       logger,
       notifications,
+      partyActionsProvider: () => partyActions,
       partyFollowersProvider: () => partyFollowers,
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
@@ -150,6 +153,12 @@ export function registerModuleLifecycle({
     const chatCards = createChatCardService({
       game: currentGame,
       logger,
+    });
+    partyActions = createPartyActionService({
+      canvasProvider,
+      chatCards,
+      game: currentGame,
+      npcRolls,
     });
     const npcSelection = createNpcSelectionController({
       canvasProvider,
@@ -210,6 +219,7 @@ export function registerModuleLifecycle({
       npcActionHud,
       npcRolls,
       npcSelection,
+      partyActions,
       partyFollowers,
       partyMembers,
       partyMutations,

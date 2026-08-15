@@ -76,6 +76,7 @@ test('member rows preserve state order and retain missing references', () => {
   ]);
   assert.deepEqual(rows[0], {
     actorUuid: 'Actor.hero',
+    canRollSave: true,
     className: 'Fighter',
     img: 'icons/hero.webp',
     invalidType: false,

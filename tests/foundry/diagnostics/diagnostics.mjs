@@ -28,6 +28,7 @@ const results = {
   par005: {},
   par006: {},
   par007: {},
+  par008: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -415,6 +416,7 @@ async function testProductionFoundation(character, npc) {
     applicationsPublished: Boolean(api?.applications),
     chatCardsPublished: Boolean(api?.chatCards),
     partyMutationsPublished: Boolean(api?.partyMutations),
+    partyActionsPublished: Boolean(api?.partyActions),
     partyFollowersPublished: Boolean(api?.partyFollowers),
     partyMembersPublished: Boolean(api?.partyMembers),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
@@ -1937,6 +1939,204 @@ async function testProductionPartyFollowers(character, npc) {
   };
 }
 
+async function testProductionPartyActions(character, npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const originalScene = game.scenes.active;
+  const scene = await Scene.create({
+    name: `${RUN_PREFIX} Party Actions`,
+    active: false,
+    navigation: false,
+    width: 1200,
+    height: 900,
+    padding: 0,
+    grid: {
+      type: CONST.GRID_TYPES.SQUARE,
+      size: 100,
+      distance: 5,
+    },
+  });
+  let sheet;
+  let originalPing;
+  let originalNotificationError;
+
+  const request = (operation, actorUuid) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload: { actorUuid },
+      requestId: `par008-${foundry.utils.randomID()}`,
+    },
+  );
+
+  try {
+    const tokenDocuments = await scene.createEmbeddedDocuments('Token', [
+      {
+        name: `${RUN_PREFIX} Party Character`,
+        actorId: character.id,
+        actorLink: true,
+        x: 100,
+        y: 100,
+      },
+      {
+        name: `${RUN_PREFIX} Party NPC`,
+        actorId: npc.id,
+        actorLink: true,
+        x: 300,
+        y: 100,
+      },
+    ]);
+    await scene.activate();
+    const canvasActivated = await waitForCanvasScene(scene.id);
+    const characterToken = tokenDocuments.find(
+      (token) => token.actorId === character.id,
+    );
+    const npcToken = tokenDocuments.find((token) => token.actorId === npc.id);
+    const characterCenter = { ...canvas.tokens.get(characterToken.id).center };
+    const npcCenter = { ...canvas.tokens.get(npcToken.id).center };
+    await request('party.addMember', character.uuid);
+    await request('party.addFollower', npc.uuid);
+
+    const pings = [];
+    const notices = [];
+    originalPing = canvas.ping;
+    canvas.ping = async (origin, options) => {
+      pings.push({ x: origin.x, y: origin.y });
+      return originalPing.call(canvas, origin, options);
+    };
+    originalNotificationError = ui.notifications.error;
+    ui.notifications.error = (message, options) => {
+      notices.push(message);
+      return originalNotificationError.call(ui.notifications, message, options);
+    };
+
+    const beforeMessageIds = new Set(game.messages.map((message) => message.id));
+    const partyMessages = () => game.messages.filter((message) => (
+      !beforeMessageIds.has(message.id)
+      && message.getFlag(MODULE_ID, 'feature') === 'npcActionHud'
+    ));
+    sheet = new api.applications.OpenPartySheetApplication();
+    await sheet.render({ force: true });
+    const memberRow = [...sheet.element.querySelectorAll(
+      '[data-party-actor-row]',
+    )].find((row) => row.querySelector(
+      `[data-actor-uuid="${character.uuid}"]`,
+    ));
+    const memberSave = memberRow.querySelector('[data-field="party-save"]');
+    const memberFiveSaves = memberSave.options.length === 5;
+    memberSave.value = 'device';
+    memberRow.querySelector('[data-action="pingActor"]').click();
+    const memberPinged = await waitUntil(() => pings.length === 1);
+    memberRow.querySelector('[data-action="rollMemberSave"]').click();
+    const memberSaveCreated = await waitUntil(() => partyMessages().length >= 1);
+
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="followers"]',
+    ).click();
+    await waitUntil(() => (
+      sheet.element?.querySelector('[data-tab="followers"]')
+        ?.getAttribute('aria-selected') === 'true'
+    ));
+    const followerRow = [...sheet.element.querySelectorAll(
+      '[data-party-actor-row]',
+    )].find((row) => row.querySelector(
+      `[data-actor-uuid="${npc.uuid}"]`,
+    ));
+    const followerSave = followerRow.querySelector('[data-field="party-save"]');
+    const followerFiveSaves = followerSave.options.length === 5;
+    followerSave.value = 'sorcery';
+    followerRow.querySelector('[data-action="pingActor"]').click();
+    const followerPinged = await waitUntil(() => pings.length === 2);
+    followerRow.querySelector('[data-action="rollFollowerSave"]').click();
+    const followerSaveCreated = await waitUntil(() => partyMessages().length >= 2);
+    followerRow.querySelector('[data-action="rollFollowerMorale"]').click();
+    const followerMoraleCreated = await waitUntil(() => partyMessages().length >= 3);
+    sheet.element.querySelector('[data-action="rollAllFollowerMorale"]').click();
+    const bulkMoraleCreated = await waitUntil(() => partyMessages().length >= 4);
+
+    await scene.deleteEmbeddedDocuments('Token', [characterToken.id]);
+    const pingsBeforeMissing = pings.length;
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="overview"]',
+    ).click();
+    await waitUntil(() => (
+      sheet.element?.querySelector('[data-tab="overview"]')
+        ?.getAttribute('aria-selected') === 'true'
+    ));
+    sheet.element.querySelector(
+      `[data-action="pingActor"][data-actor-uuid="${character.uuid}"]`,
+    ).click();
+    const missingTokenNotice = await waitUntil(() => notices.includes(
+      `${MODULE_ID}.applications.partySheet.tokenUnavailable`,
+    ));
+    const missingTokenCreatedNoPing = pings.length === pingsBeforeMissing;
+
+    const messages = partyMessages();
+    const messageFlags = messages.map((message) => ({
+      action: message.getFlag(MODULE_ID, 'action'),
+      actorUuid: message.getFlag(MODULE_ID, 'actorUuid'),
+      category: message.getFlag(MODULE_ID, 'category'),
+      whisper: [...message.whisper],
+    }));
+    const gmIds = new Set(game.users.filter((user) => user.isGM).map(
+      (user) => user.id,
+    ));
+    const allWhisperedOnlyToGms = messageFlags.every((entry) => (
+      entry.whisper.length > 0
+      && entry.whisper.every((userId) => gmIds.has(userId))
+    ));
+
+    return {
+      canvasActivated,
+      memberFiveSaves,
+      followerFiveSaves,
+      memberPinged,
+      followerPinged,
+      pingCentersMatch:
+        pings[0]?.x === characterCenter.x
+        && pings[0]?.y === characterCenter.y
+        && pings[1]?.x === npcCenter.x
+        && pings[1]?.y === npcCenter.y,
+      memberSaveCreated,
+      followerSaveCreated,
+      followerMoraleCreated,
+      bulkMoraleCreated,
+      exactlyFourMessages: messages.length === 4,
+      actionsReuseExpectedFlags:
+        messageFlags[0]?.action === 'save'
+        && messageFlags[0]?.category === 'device'
+        && messageFlags[0]?.actorUuid === character.uuid
+        && messageFlags[1]?.action === 'save'
+        && messageFlags[1]?.category === 'sorcery'
+        && messageFlags[1]?.actorUuid === npc.uuid
+        && messageFlags.slice(2).every((entry) => (
+          entry.action === 'morale' && entry.actorUuid === npc.uuid
+        )),
+      allWhisperedOnlyToGms,
+      missingTokenNotice,
+      missingTokenCreatedNoPing,
+    };
+  }
+  finally {
+    if (originalPing) canvas.ping = originalPing;
+    if (originalNotificationError) {
+      ui.notifications.error = originalNotificationError;
+    }
+    if (sheet?.rendered) await sheet.close();
+    const state = api.partyStore.getState();
+    if (state.memberActorUuids.includes(character.uuid)) {
+      await request('party.removeMember', character.uuid);
+    }
+    if (api.partyStore.getState().followerActorUuids.includes(npc.uuid)) {
+      await request('party.removeFollower', npc.uuid);
+    }
+    if (originalScene && game.scenes.active?.id !== originalScene.id) {
+      await originalScene.activate();
+      await waitForCanvasScene(originalScene.id);
+    }
+    await scene.delete();
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1988,6 +2188,7 @@ async function runGmDiagnostics() {
     results.par005 = await testProductionPartySheetApplication();
     results.par006 = await testProductionPartyMembers(character, npc);
     results.par007 = await testProductionPartyFollowers(character, npc);
+    results.par008 = await testProductionPartyActions(character, npc);
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,

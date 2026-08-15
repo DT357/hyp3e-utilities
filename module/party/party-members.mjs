@@ -64,6 +64,7 @@ export function createPartyMemberService({
       if (!actor) {
         return {
           actorUuid,
+          canRollSave: false,
           className: '',
           img: 'icons/svg/mystery-man.svg',
           invalidType: false,
@@ -79,6 +80,7 @@ export function createPartyMemberService({
       const summary = adapter.getActorSummary(actor);
       return {
         actorUuid,
+        canRollSave: adapter.canRollSave(actor),
         className: summary.className,
         img: actor.img || 'icons/svg/mystery-man.svg',
         invalidType: actor.type !== adapter.actorTypes.character,
