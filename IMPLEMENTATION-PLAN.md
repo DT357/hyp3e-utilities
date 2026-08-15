@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Milestone 6 final acceptance in progress
+Status: 1.0.0 source release candidate complete; publication authorization required
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -285,7 +285,7 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 | HRD-005 | `DONE` | PB-003, PB-007, M1–M5 | Final Foundry 13/14 and current `hyp3e` compatibility matrix | Clean-world installation and full smoke suite on each supported combination |
 | DOC-001 | `DONE` | M1–M5 | GM/player usage, setup, permissions, recovery, and limitation documentation | A new tester can install and complete core workflows unaided |
 | PKG-001 | `DONE` | PB-001, PB-010, HRD-005 | Release manifest, zip contents, checksums, URLs, and GitHub release workflow | Exact 1.0.0 candidate installs in a clean Foundry data directory; public-URL install/update moved to REL-001 because publication is not authorized |
-| QA-001 | `TODO` | HRD-001–PKG-001 | Full acceptance and regression run with defect disposition | No unresolved critical/high defects; lower-severity deferrals documented |
+| QA-001 | `DONE` | HRD-001–PKG-001 | Full acceptance and regression run with defect disposition | No unresolved critical/high defects; lower-severity deferrals documented |
 
 Milestone 6 may prepare the unpublished 1.0.0 source release candidate when all
 M6 items are `DONE`, the repository is clean, and the validated artifact matches
@@ -301,9 +301,9 @@ REL-001 is deliberately outside Milestone 6 because its external publication
 effects require separate authorization. Until it passes, the repository may be
 release-candidate complete but no public release is claimed.
 
-## 11. Planned Automated Test Map
+## 11. Automated Test Map
 
-| Test area | Planned file |
+| Test area | Primary file or files |
 | --- | --- |
 | Adapter mappings | `tests/unit/hyp3e-adapter.test.mjs` |
 | NPC selection controller | `tests/unit/npc-selection.test.mjs` |
@@ -312,14 +312,14 @@ release-candidate complete but no public release is claimed.
 | Save and morale planning | `tests/unit/npc-rolls.test.mjs` |
 | Permissions | `tests/unit/party-permissions.test.mjs` |
 | Party state and migrations | `tests/unit/party-state.test.mjs` |
-| Marching order | `tests/unit/marching-order.test.mjs` |
+| Marching order | `tests/unit/party-marching-order.test.mjs` |
 | XP allocation | `tests/unit/xp-distribution.test.mjs` |
 | Coin allocation | `tests/unit/coin-distribution.test.mjs` |
-| Wages | `tests/unit/wage-settlement.test.mjs` |
+| Wages | `tests/unit/wage-calculation.test.mjs`, `tests/unit/party-wage-preview.test.mjs`, `tests/unit/party-wage-settlement.test.mjs` |
 | Item transfer planning | `tests/unit/item-transfer.test.mjs` |
 | Socket operation validation | `tests/integration/socket-operations.test.mjs` |
-| Treasury lifecycle | `tests/integration/treasury-store.test.mjs` |
-| Transaction rollback | `tests/integration/transactions.test.mjs` |
+| Treasury lifecycle | `tests/unit/party-treasury.test.mjs`, `tests/integration/party-store.test.mjs` |
+| Transaction rollback | `tests/unit/distribution-transaction.test.mjs`, `tests/integration/distribution-transactions.test.mjs` |
 
 Fixtures should be minimal and derived from the checked-in `hyp3e` schema, not copied wholesale from world data. No personal world content or user data belongs in test fixtures.
 
@@ -356,8 +356,9 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 5, HRD-001 through HRD-005, DOC-001, and PKG-001 are
-complete. Proceed next with the final acceptance and regression run in QA-001.
+Milestones 0 through 6 are complete. The 1.0.0 source release candidate is
+accepted. Do not create a tag or public release until publication is explicitly
+authorized; after authorization, proceed with REL-001.
 
 ## 15. Current Project Status
 
@@ -365,8 +366,8 @@ complete. Proceed next with the final acceptance and regression run in QA-001.
 - Module foundation: FND-001 through FND-006 are implemented and validated.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestones 0 through 5 are complete.
-- Immediate next batch: Complete final acceptance and regression in QA-001.
+- Implementation: Milestones 0 through 6 are complete.
+- Immediate next batch: Await explicit publication authorization, then complete REL-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

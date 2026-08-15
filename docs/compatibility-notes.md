@@ -514,7 +514,13 @@ hash, and console disposition are recorded in
 
 ## Current gate
 
-Milestones 1 through 5 and HRD-001 through HRD-005 are complete. No
-compatibility finding contradicts the approved architecture. The validated
-package version is 0.5.0; final 1.0.0 documentation, packaging, and acceptance
-remain in DOC-001, PKG-001, and QA-001.
+Milestones 1 through 6 are complete. No compatibility finding contradicts the
+approved architecture. The exact 1.0.0 candidate ZIP passed structural and
+checksum validation and clean Foundry 14.365 package discovery after the full
+Foundry 13/14 matrix passed with the same production code. Final acceptance and
+defect disposition are recorded in
+`docs/test-runs/2026-08-15-qa001-final-acceptance.md`.
+
+Public manifest installation and update remain untested by design because no
+release has been authorized. That external operation is isolated in REL-001
+and does not alter the supported compatibility claim until it passes.
