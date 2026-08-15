@@ -27,6 +27,8 @@ const results = {
   fnd004: {},
   fnd005: {},
   fnd006: {},
+  hud001: {},
+  hud002: {},
   errors: [],
 };
 
@@ -490,6 +492,103 @@ async function testProductionFoundation(character, npc) {
   };
 }
 
+function testProductionHudRules(character, npc) {
+  const { npcRolls } = game.modules.get(MODULE_ID).api;
+  const reactionTotals = [-1, 0, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 18];
+  const reactionOutcomeIds = reactionTotals.map(
+    (total) => npcRolls.getReactionOutcome(total).id,
+  );
+  const reactionBatch = npcRolls.planReactionBatch([
+    { tokenUuid: 'Scene.diagnostic.Token.first', actor: npc },
+    { tokenUuid: 'Scene.diagnostic.Token.second', actor: npc },
+    { tokenUuid: 'Scene.diagnostic.Token.character', actor: character },
+  ]);
+  results.hud001 = {
+    reactionTotals,
+    reactionOutcomeIds,
+    boundariesMatch: reactionOutcomeIds.join(',')
+      === [
+        'violent',
+        'violent',
+        'violent',
+        'hostile',
+        'unfriendly',
+        'unfriendly',
+        'neutral',
+        'neutral',
+        'friendly',
+        'friendly',
+        'agreeable',
+        'affable',
+        'affable',
+      ].join(','),
+    oneRollPerNpcToken: reactionBatch.rolls.length === 2,
+    distinctTokenTargets:
+      reactionBatch.rolls[0].target.tokenUuid
+      !== reactionBatch.rolls[1].target.tokenUuid,
+    nonNpcSkipped:
+      reactionBatch.skipped[0]?.reason === 'unsupportedActor',
+    neutralRequestsReroll: npcRolls.getReactionOutcome(6).reroll === true,
+  };
+
+  const savePlans = Object.fromEntries(SAVE_KEYS.map((saveKey) => {
+    const instruction = npcRolls.planSaveBatch([npc], saveKey).rolls[0];
+    return [saveKey, {
+      formula: instruction.formula,
+      targetValue: instruction.targetValue,
+      currentTarget: npc.system.saves[saveKey].curr,
+      targetMatches: instruction.targetValue
+        === npc.system.saves[saveKey].curr,
+    }];
+  }));
+  const deathInstruction = npcRolls.planSaveBatch([npc], 'death').rolls[0];
+  const moraleInstruction = npcRolls.planMoraleBatch([npc]).rolls[0];
+  const missingNpc = {
+    id: 'missing-rules-id',
+    uuid: 'Actor.missing-rules-id',
+    name: 'Missing Rules Data',
+    type: 'npc',
+    system: {
+      saves: { death: { curr: null } },
+      morale: null,
+    },
+  };
+  const missingSavePlan = npcRolls.planSaveBatch([missingNpc], 'death');
+  const missingMoralePlan = npcRolls.planMoraleBatch([missingNpc]);
+  results.hud002 = {
+    savePlans,
+    allFiveSaveTargetsMatch: Object.values(savePlans).every(
+      ({ formula, targetMatches }) => formula === '1d20' && targetMatches,
+    ),
+    preparedModifierIncluded:
+      npc.system.saves.death.curr === npc.system.saves.death.value + 2
+      && deathInstruction.targetValue === npc.system.saves.death.curr,
+    saveBoundaryPass:
+      npcRolls.evaluateCheckRoll(
+        deathInstruction,
+        deathInstruction.targetValue,
+      ).success
+      && !npcRolls.evaluateCheckRoll(
+        deathInstruction,
+        deathInstruction.targetValue - 1,
+      ).success,
+    moraleFormula: moraleInstruction.formula,
+    moraleBoundaryPass:
+      npcRolls.evaluateCheckRoll(
+        moraleInstruction,
+        moraleInstruction.targetValue,
+      ).success
+      && !npcRolls.evaluateCheckRoll(
+        moraleInstruction,
+        moraleInstruction.targetValue + 1,
+      ).success,
+    missingSaveSkipped:
+      missingSavePlan.skipped[0]?.reason === 'missingSaveTarget',
+    missingMoraleSkipped:
+      missingMoralePlan.skipped[0]?.reason === 'missingMoraleTarget',
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -503,6 +602,7 @@ async function createDiagnosticActors() {
     system: {
       hp: { value: 5, max: 10 },
       saves: saveData,
+      ...(type === 'npc' ? { morale: 8 } : {}),
     },
   });
 
@@ -528,6 +628,7 @@ async function runGmDiagnostics() {
     results.pb006 = await testTreasuryLifecycle();
     results.pb007 = await testApplicationV2();
     await testProductionFoundation(character, npc);
+    testProductionHudRules(character, npc);
     results.status = 'complete';
   }
   catch (error) {

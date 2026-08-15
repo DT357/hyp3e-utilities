@@ -110,5 +110,6 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
 
   assert.equal(registrationCount, 1);
   assert.equal(getApi().socket.available, true);
+  assert.equal(typeof getApi().npcRolls.planReactionBatch, 'function');
   assert.equal(moduleRecord.api, getApi());
 });

@@ -46,6 +46,20 @@ function normalizeSignedWhole(value) {
   return Number.isFinite(numericValue) ? Math.trunc(numericValue) : 0;
 }
 
+function normalizeOptionalNumber(value) {
+  if (
+    value == null
+    || (typeof value === 'string' && value.trim() === '')
+  ) return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function normalizeOptionalSignedWhole(value) {
+  const numericValue = normalizeOptionalNumber(value);
+  return numericValue == null ? null : Math.trunc(numericValue);
+}
+
 function getHp(actor) {
   return {
     value: normalizeSignedWhole(readPath(actor, HYP3E_FIELD_PATHS.hpValue)),
@@ -67,7 +81,9 @@ function getArmor(actor) {
 function getSaves(actor) {
   return Object.fromEntries(SAVE_KEYS.map((saveKey) => [
     saveKey,
-    normalizeSignedWhole(readPath(actor, `system.saves.${saveKey}.curr`)),
+    normalizeOptionalSignedWhole(
+      readPath(actor, `system.saves.${saveKey}.curr`),
+    ),
   ]));
 }
 
@@ -108,6 +124,14 @@ export const hyp3eAdapter = Object.freeze({
     return Object.values(ACTOR_TYPES).includes(actor?.type);
   },
 
+  isNpcActor(actor) {
+    return actor?.type === ACTOR_TYPES.npc;
+  },
+
+  canRollSave(actor) {
+    return [ACTOR_TYPES.character, ACTOR_TYPES.npc].includes(actor?.type);
+  },
+
   isSupportedPhysicalItem,
 
   getActorSummary(actor) {
@@ -139,14 +163,12 @@ export const hyp3eAdapter = Object.freeze({
 
   getMorale(actor) {
     if (actor?.type !== ACTOR_TYPES.npc) return null;
-    const morale = Number(actor.system?.morale);
-    return Number.isFinite(morale) ? morale : null;
+    return normalizeOptionalNumber(actor.system?.morale);
   },
 
   getLoyalty(actor) {
     if (actor?.type !== ACTOR_TYPES.npc) return null;
-    const loyalty = Number(actor.system?.loyalty);
-    return Number.isFinite(loyalty) ? loyalty : null;
+    return normalizeOptionalNumber(actor.system?.loyalty);
   },
 
   getCharacterExperience(actor) {

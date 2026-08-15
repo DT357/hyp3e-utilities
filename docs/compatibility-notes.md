@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed for PB-003 through PB-008 and FND-001 through FND-006 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed for PB-003 through PB-007 and FND-001 through FND-006 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through FND-006 and HUD-001/HUD-002 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through FND-006 and HUD-001/HUD-002 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -91,8 +91,26 @@ Automated tests cover no-GM and changed-GM behavior. Mutation authorization,
 revision control, and idempotency remain intentionally deferred to PAR-002 and
 PAR-004.
 
+### NPC roll rules (HUD-001 and HUD-002)
+
+Foundry 13.351 and 14.365 produced identical results from the production API:
+
+- reaction totals below zero through above 12 matched all seven Hyperborea
+  result bands;
+- two selected token instances for one NPC Actor produced two distinct,
+  unmodified `2d6` instructions;
+- neutral results retained the table's reroll instruction without scheduling a
+  second automatic roll;
+- all five save categories used `system.saves.<kind>.curr`, including a +2
+  prepared Active Effect adjustment;
+- save success used `1d20 >= target`, morale success used `2d6 <= target`, and
+  missing save or morale values were skipped.
+
+The live runs produced no module-originated browser warning or error. Chat
+creation and actual Foundry Roll evaluation remain HUD-003 responsibilities.
+
 ## Current gate
 
-PB-003 through PB-009 and FND-001 through FND-006 are complete. No
-compatibility finding contradicts the approved architecture. The M0 gate and
-Milestone 1 foundation are complete; NPC Action HUD work may begin.
+PB-003 through PB-009, FND-001 through FND-006, HUD-001, and HUD-002 are
+complete. No compatibility finding contradicts the approved architecture. The
+next compatibility gate is HUD-003 GM-whisper chat output.

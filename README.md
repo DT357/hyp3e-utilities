@@ -4,10 +4,11 @@ Foundry Virtual Tabletop utilities for the [`hyp3e`](https://github.com/thuriank
 
 ## Status
 
-The module foundation is implemented and validated. It includes the `hyp3e`
-document adapter, settings and menus, authenticated SocketLib transport,
-ApplicationV2 shells, localization, and runtime compatibility guards. NPC
-Action HUD implementation is the next milestone batch.
+The module foundation and NPC reaction, save, and morale roll planners are
+implemented and validated. The foundation includes the `hyp3e` document
+adapter, settings and menus, authenticated SocketLib transport, ApplicationV2
+shells, localization, and runtime compatibility guards. GM-only chat output is
+the next NPC Action HUD batch.
 
 ## Compatibility
 

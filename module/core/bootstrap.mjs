@@ -3,6 +3,7 @@ import {
   preloadFoundationTemplates,
 } from '../apps/foundation-applications.mjs';
 import { hyp3eAdapter } from '../adapters/hyp3e-adapter.mjs';
+import { npcRolls } from '../hud/npc-rolls.mjs';
 import {
   HOOK_NAMES,
   MODULE_ID,
@@ -141,6 +142,7 @@ export function registerModuleLifecycle({
       adapter: hyp3eAdapter,
       applications,
       compatibility,
+      npcRolls,
       socket: transport,
     });
     const module = currentGame.modules?.get?.(MODULE_ID);

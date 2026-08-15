@@ -140,3 +140,24 @@ test('adapter normalizes invalid numeric storage safely', () => {
   assert.equal(hyp3eAdapter.getMoney(malformedCharacter).gp, 3);
   assert.equal(hyp3eAdapter.getMoney(malformedCharacter).pp, 0);
 });
+
+test('adapter preserves missing save, morale, and loyalty values as null', () => {
+  const missingValuesNpc = {
+    ...npcActor,
+    system: {
+      ...npcActor.system,
+      saves: {
+        ...npcActor.system.saves,
+        death: { curr: null },
+        device: { curr: 'not-a-number' },
+      },
+      morale: null,
+      loyalty: '',
+    },
+  };
+
+  assert.equal(hyp3eAdapter.getSave(missingValuesNpc, 'death'), null);
+  assert.equal(hyp3eAdapter.getSave(missingValuesNpc, 'device'), null);
+  assert.equal(hyp3eAdapter.getMorale(missingValuesNpc), null);
+  assert.equal(hyp3eAdapter.getLoyalty(missingValuesNpc), null);
+});
