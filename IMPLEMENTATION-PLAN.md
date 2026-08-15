@@ -241,7 +241,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 | TRY-002 | `DONE` | TRY-001, FND-002 | Party Sheet treasury coins and item inventory views | All five coin types, missing images, unknown item types, and empty inventory |
 | ITM-001 | `DONE` | PB-009, FND-002 | Pure transfer-plan builder for source, target, quantity, merge, and validation | Quantity/bundle/max, same-Actor, stale quantity, and unsupported type tests |
 | ITM-002 | `DONE` | TRY-001, ITM-001, PAR-002 | Character-to-treasury transfer operation | Full/partial transfer, ownership, stale state, and rollback checks |
-| ITM-003 | `TODO` | ITM-002 | Treasury-to-character transfer operation | Same matrix as ITM-002 with reversed authority and destination |
+| ITM-003 | `DONE` | ITM-002 | Treasury-to-character transfer operation | Same matrix as ITM-002 with reversed authority and destination |
 | ITM-004 | `TODO` | ITM-002, ITM-003 | Correct quantity, bundle, maximum, and merge semantics | Verified fixtures for weapon, armor, shield, and item types |
 | ITM-005 | `TODO` | ITM-002, ITM-003, PB-007 | Supported drag/drop entry points on Party and Actor sheets | Valid drop, unauthorized drop, cancelled dialog, and invalid payload |
 | ITM-006 | `TODO` | ITM-001 | Explicit container and unsupported-item rejection | Non-empty container causes no document mutation and a clear notice |
@@ -347,7 +347,8 @@ The pre-build portion of this sequence is complete:
 Milestones 0 through 3 are complete. TRY-001 and TRY-002 established the
 managed treasury and its read-only views; ITM-001 now provides the pure,
 immutable transfer planner, and ITM-002 provides the authoritative
-character-to-treasury operation. Proceed next with its reverse in ITM-003.
+character-to-treasury operation, and ITM-003 provides its reverse. Proceed
+next with exact quantity and merge compatibility semantics in ITM-004.
 
 ## 15. Current Project Status
 
@@ -356,7 +357,7 @@ character-to-treasury operation. Proceed next with its reverse in ITM-003.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 3 are complete.
-- Immediate next batch: Implement treasury-to-character transfer in ITM-003.
+- Immediate next batch: Complete quantity and merge semantics in ITM-004.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

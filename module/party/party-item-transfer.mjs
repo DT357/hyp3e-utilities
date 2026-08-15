@@ -12,10 +12,13 @@ const WORLD_ACTOR_UUID_PATTERN = /^Actor\.([^\.\s]+)$/;
 const EMBEDDED_ITEM_UUID_PATTERN = /^Actor\.([^\.\s]+)\.Item\.([^\.\s]+)$/;
 
 export const PARTY_ITEM_TRANSFER_OPERATIONS = Object.freeze({
+  fromTreasury: 'party.transferItemFromTreasury',
   toTreasury: 'party.transferItemToTreasury',
 });
 
 export const PARTY_ITEM_TRANSFER_ERROR_CODES = Object.freeze({
+  destinationOwnershipRequired: 'itemTransferDestinationOwnershipRequired',
+  invalidDestination: 'itemTransferInvalidDestination',
   invalidSource: 'itemTransferInvalidSource',
   invalidTreasury: 'itemTransferInvalidTreasury',
   rollbackFailed: 'itemTransferRollbackFailed',
@@ -59,6 +62,43 @@ function validateTransferPayload(payload) {
     expectedSourceQuantity: payload.expectedSourceQuantity,
     quantity: payload.quantity,
     sourceActorUuid: payload.sourceActorUuid,
+    sourceItemUuid: payload.sourceItemUuid,
+  };
+}
+
+function validateReverseTransferPayload(payload) {
+  assertExactObject(payload, {
+    allowedKeys: [
+      'destinationActorUuid',
+      'expectedSourceQuantity',
+      'quantity',
+      'sourceItemUuid',
+    ],
+    label: 'Reverse item transfer payload',
+  });
+  const actorMatch = WORLD_ACTOR_UUID_PATTERN.exec(
+    payload.destinationActorUuid,
+  );
+  const itemMatch = EMBEDDED_ITEM_UUID_PATTERN.exec(payload.sourceItemUuid);
+  if (!actorMatch) {
+    throw new TypeError('Item transfer destinationActorUuid must be a world Actor UUID.');
+  }
+  if (!itemMatch) {
+    throw new TypeError('Item transfer sourceItemUuid must be an embedded world Item UUID.');
+  }
+  if (
+    !Number.isInteger(payload.expectedSourceQuantity)
+    || payload.expectedSourceQuantity < 0
+  ) {
+    throw new TypeError('Expected source quantity must be a non-negative integer.');
+  }
+  if (!Number.isInteger(payload.quantity) || payload.quantity <= 0) {
+    throw new TypeError('Item transfer quantity must be a positive integer.');
+  }
+  return {
+    destinationActorUuid: payload.destinationActorUuid,
+    expectedSourceQuantity: payload.expectedSourceQuantity,
+    quantity: payload.quantity,
     sourceItemUuid: payload.sourceItemUuid,
   };
 }
@@ -124,24 +164,30 @@ export function createPartyItemTransferService({
     return pending;
   }
 
-  function resolveSource(payload) {
-    const actor = resolveActor(game, payload.sourceActorUuid);
-    const itemId = EMBEDDED_ITEM_UUID_PATTERN.exec(
-      payload.sourceItemUuid,
-    )?.[2];
-    const item = itemId ? actor?.items?.get?.(itemId) : null;
+  function resolveCharacter(actorUuid, code, message) {
+    const actor = resolveActor(game, actorUuid);
     if (
       actor?.documentName !== 'Actor'
       || actor.isToken === true
       || actor.type !== adapter.actorTypes.character
-      || item?.uuid !== payload.sourceItemUuid
     ) {
+      throw new PartyMutationError(code, message);
+    }
+    return actor;
+  }
+
+  function resolveEmbeddedItem(actor, itemUuid) {
+    const itemMatch = EMBEDDED_ITEM_UUID_PATTERN.exec(itemUuid);
+    const item = itemMatch?.[1] === actor.id
+      ? actor.items?.get?.(itemMatch[2])
+      : null;
+    if (!item || item.uuid !== itemUuid) {
       throw new PartyMutationError(
         PARTY_ITEM_TRANSFER_ERROR_CODES.invalidSource,
-        'The transfer source is not a durable character Item.',
+        'The transfer source Item is unavailable or invalid.',
       );
     }
-    return { actor, item };
+    return item;
   }
 
   function resolveTreasury(state) {
@@ -207,7 +253,10 @@ export function createPartyItemTransferService({
     );
   }
 
-  async function executeTransfer({ expectedRevision, payload, requester }) {
+  async function executeTransfer(
+    { expectedRevision, payload, requester },
+    direction,
+  ) {
     const state = store.getState();
     if (expectedRevision !== state.revision) {
       throw new PartyMutationError(
@@ -216,14 +265,31 @@ export function createPartyItemTransferService({
         { state },
       );
     }
-    const source = resolveSource(payload);
-    if (!ownsActor(source.actor, requester, ownerLevel)) {
+    const treasury = resolveTreasury(state);
+    const toTreasury = direction === 'toTreasury';
+    const character = resolveCharacter(
+      toTreasury ? payload.sourceActorUuid : payload.destinationActorUuid,
+      toTreasury
+        ? PARTY_ITEM_TRANSFER_ERROR_CODES.invalidSource
+        : PARTY_ITEM_TRANSFER_ERROR_CODES.invalidDestination,
+      toTreasury
+        ? 'The transfer source is not a durable character Actor.'
+        : 'The transfer destination is not a durable character Actor.',
+    );
+    const ownershipCode = toTreasury
+      ? PARTY_ITEM_TRANSFER_ERROR_CODES.sourceOwnershipRequired
+      : PARTY_ITEM_TRANSFER_ERROR_CODES.destinationOwnershipRequired;
+    if (!ownsActor(character, requester, ownerLevel)) {
       throw new PartyMutationError(
-        PARTY_ITEM_TRANSFER_ERROR_CODES.sourceOwnershipRequired,
-        'The requesting user does not own the source character.',
+        ownershipCode,
+        toTreasury
+          ? 'The requesting user does not own the source character.'
+          : 'The requesting user does not own the destination character.',
       );
     }
-    const destinationActor = resolveTreasury(state);
+    const sourceActor = toTreasury ? character : treasury;
+    const destinationActor = toTreasury ? treasury : character;
+    const sourceItem = resolveEmbeddedItem(sourceActor, payload.sourceItemUuid);
 
     let plan;
     try {
@@ -234,8 +300,8 @@ export function createPartyItemTransferService({
         destinationItems: destinationActor.items,
         expectedSourceQuantity: payload.expectedSourceQuantity,
         quantity: payload.quantity,
-        sourceActor: source.actor,
-        sourceItem: source.item,
+        sourceActor,
+        sourceItem,
       });
     }
     catch (error) {
@@ -249,7 +315,7 @@ export function createPartyItemTransferService({
     try {
       destinationReceipt = await writeDestination(
         plan,
-        source.item,
+        sourceItem,
         destinationActor,
       );
     }
@@ -262,7 +328,7 @@ export function createPartyItemTransferService({
     }
 
     try {
-      await writeSource(plan, source.actor, source.item);
+      await writeSource(plan, sourceActor, sourceItem);
     }
     catch (error) {
       logger.warn?.('Item transfer source write failed.', error);
@@ -291,17 +357,23 @@ export function createPartyItemTransferService({
       destinationItemUuid: destinationReceipt.item.uuid,
       merged: destinationReceipt.action === 'update',
       quantity: plan.quantity,
-      sourceActorUuid: source.actor.uuid,
+      sourceActorUuid: sourceActor.uuid,
       sourceDeleted: plan.source.action === 'delete',
-      sourceItemUuid: source.item.uuid,
+      sourceItemUuid: sourceItem.uuid,
     };
   }
 
   mutations.registerOperation(PARTY_ITEM_TRANSFER_OPERATIONS.toTreasury, {
     execute(context) {
-      return enqueue(() => executeTransfer(context));
+      return enqueue(() => executeTransfer(context, 'toTreasury'));
     },
     validatePayload: validateTransferPayload,
+  });
+  mutations.registerOperation(PARTY_ITEM_TRANSFER_OPERATIONS.fromTreasury, {
+    execute(context) {
+      return enqueue(() => executeTransfer(context, 'fromTreasury'));
+    },
+    validatePayload: validateReverseTransferPayload,
   });
 
   function transferToTreasury(
@@ -318,5 +390,19 @@ export function createPartyItemTransferService({
     );
   }
 
-  return Object.freeze({ transferToTreasury });
+  function transferFromTreasury(
+    payload,
+    expectedRevision = store.getState().revision,
+  ) {
+    return mutations.request(
+      PARTY_ITEM_TRANSFER_OPERATIONS.fromTreasury,
+      {
+        expectedRevision,
+        payload,
+        requestId: requestIdProvider(),
+      },
+    );
+  }
+
+  return Object.freeze({ transferFromTreasury, transferToTreasury });
 }

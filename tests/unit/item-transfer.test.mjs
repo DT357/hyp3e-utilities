@@ -421,6 +421,92 @@ function transferRequest(harness, overrides = {}) {
   });
 }
 
+function prepareReverseHarness(options) {
+  const harness = createOperationHarness(options);
+  const destinationActor = harness.sourceActor;
+  const sourceActor = harness.destinationActor;
+  destinationActor.items.splice(0);
+  const sourceItem = createItem({
+    actor: sourceActor,
+    bundle: 3,
+    id: 'treasury-item',
+    max: 7,
+    quantity: 5,
+  });
+  sourceItem.toObject = () => ({
+    _id: sourceItem.id,
+    name: sourceItem.name,
+    system: structuredClone(sourceItem.system),
+    type: sourceItem.type,
+  });
+  sourceItem.update = async (update) => {
+    harness.calls.push(['treasuryUpdate', structuredClone(update)]);
+    if (harness.failures.reverseSourceWrite) {
+      throw new Error('treasury update failed');
+    }
+    sourceItem.system.quantity = {
+      bundle: update['system.quantity.bundle'],
+      max: update['system.quantity.max'],
+      value: update['system.quantity.value'],
+    };
+  };
+  sourceActor.items.push(sourceItem);
+  sourceActor.deleteEmbeddedDocuments = async (_type, ids) => {
+    harness.calls.push(['treasuryDelete', [...ids]]);
+    if (harness.failures.reverseSourceWrite) {
+      throw new Error('treasury delete failed');
+    }
+    sourceActor.items.splice(
+      sourceActor.items.findIndex((item) => item.id === ids[0]),
+      1,
+    );
+  };
+  destinationActor.createEmbeddedDocuments = async (_type, itemData) => {
+    harness.calls.push(['characterCreate', structuredClone(itemData)]);
+    if (harness.failures.reverseDestinationCreate) {
+      throw new Error('character create failed');
+    }
+    const created = createItem({
+      actor: destinationActor,
+      bundle: itemData[0].system.quantity.bundle,
+      id: 'character-created-item',
+      max: itemData[0].system.quantity.max,
+      name: itemData[0].name,
+      quantity: itemData[0].system.quantity.value,
+      type: itemData[0].type,
+    });
+    destinationActor.items.push(created);
+    return [created];
+  };
+  destinationActor.deleteEmbeddedDocuments = async (_type, ids) => {
+    harness.calls.push(['characterDelete', [...ids]]);
+    if (harness.failures.reverseRollback) {
+      throw new Error('character rollback failed');
+    }
+    destinationActor.items.splice(
+      destinationActor.items.findIndex((item) => item.id === ids[0]),
+      1,
+    );
+  };
+  harness.calls.splice(0);
+  return {
+    ...harness,
+    destinationActor,
+    sourceActor,
+    sourceItem,
+  };
+}
+
+function reverseTransferRequest(harness, overrides = {}) {
+  return harness.service.transferFromTreasury({
+    destinationActorUuid: harness.destinationActor.uuid,
+    expectedSourceQuantity: 5,
+    quantity: 5,
+    sourceItemUuid: harness.sourceItem.uuid,
+    ...overrides,
+  });
+}
+
 test('character-to-treasury full transfer creates destination before deletion', async () => {
   const harness = createOperationHarness();
   const response = await transferRequest(harness);
@@ -581,5 +667,88 @@ test('transfer request uses the registered operation and strict payload', async 
   assert.equal(
     PARTY_ITEM_TRANSFER_OPERATIONS.toTreasury,
     'party.transferItemToTreasury',
+  );
+});
+
+test('treasury-to-character full transfer creates destination before deletion', async () => {
+  const harness = prepareReverseHarness();
+  const response = await reverseTransferRequest(harness);
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(harness.calls.map(([name]) => name), [
+    'characterCreate',
+    'treasuryDelete',
+  ]);
+  assert.equal(harness.sourceActor.items.length, 0);
+  assert.equal(harness.destinationActor.items.length, 1);
+  assert.deepEqual(response.value, {
+    destinationActorUuid: harness.destinationActor.uuid,
+    destinationItemUuid:
+      `${harness.destinationActor.uuid}.Item.character-created-item`,
+    merged: false,
+    quantity: 5,
+    sourceActorUuid: harness.sourceActor.uuid,
+    sourceDeleted: true,
+    sourceItemUuid: harness.sourceItem.uuid,
+  });
+});
+
+test('treasury-to-character partial transfer updates the treasury stack', async () => {
+  const harness = prepareReverseHarness();
+  const response = await reverseTransferRequest(harness, { quantity: 2 });
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(harness.calls.map(([name]) => name), [
+    'characterCreate',
+    'treasuryUpdate',
+  ]);
+  assert.deepEqual(harness.sourceItem.system.quantity, {
+    bundle: 3,
+    max: 5,
+    value: 3,
+  });
+  assert.deepEqual(harness.destinationActor.items[0].system.quantity, {
+    bundle: 3,
+    max: 2,
+    value: 2,
+  });
+});
+
+test('reverse transfer enforces destination ownership and source freshness', async () => {
+  const unowned = prepareReverseHarness({ sourceOwned: false });
+  const denied = await reverseTransferRequest(unowned);
+  assert.equal(denied.ok, false);
+  assert.equal(
+    denied.error.code,
+    PARTY_ITEM_TRANSFER_ERROR_CODES.destinationOwnershipRequired,
+  );
+  assert.equal(unowned.calls.length, 0);
+
+  const stale = prepareReverseHarness();
+  const staleResponse = await reverseTransferRequest(stale, {
+    expectedSourceQuantity: 4,
+  });
+  assert.equal(staleResponse.ok, false);
+  assert.equal(staleResponse.error.code, ITEM_TRANSFER_ERROR_CODES.staleQuantity);
+  assert.equal(stale.calls.length, 0);
+});
+
+test('reverse source failure removes the created character Item', async () => {
+  const harness = prepareReverseHarness();
+  harness.failures.reverseSourceWrite = true;
+  const response = await reverseTransferRequest(harness);
+
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, PARTY_ITEM_TRANSFER_ERROR_CODES.writeFailed);
+  assert.deepEqual(harness.calls.map(([name]) => name), [
+    'characterCreate',
+    'treasuryDelete',
+    'characterDelete',
+  ]);
+  assert.equal(harness.sourceActor.items.length, 1);
+  assert.equal(harness.destinationActor.items.length, 0);
+  assert.equal(
+    PARTY_ITEM_TRANSFER_OPERATIONS.fromTreasury,
+    'party.transferItemFromTreasury',
   );
 });
