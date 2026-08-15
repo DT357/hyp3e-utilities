@@ -26,6 +26,7 @@ const results = {
   par002: {},
   par004: {},
   par005: {},
+  par006: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -413,6 +414,7 @@ async function testProductionFoundation(character, npc) {
     applicationsPublished: Boolean(api?.applications),
     chatCardsPublished: Boolean(api?.chatCards),
     partyMutationsPublished: Boolean(api?.partyMutations),
+    partyMembersPublished: Boolean(api?.partyMembers),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     partyStorePublished: Boolean(api?.partyStore),
     socketPublished: Boolean(api?.socket),
@@ -1705,6 +1707,112 @@ async function testProductionPartySheetApplication() {
   };
 }
 
+async function testProductionPartyMembers(character, npc) {
+  const api = game.modules.get(MODULE_ID).api;
+  const request = (operation, actorUuid) => api.partyMutations.request(
+    operation,
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload: { actorUuid },
+      requestId: `par006-${foundry.utils.randomID()}`,
+    },
+  );
+  const characterAdd = await request('party.addMember', character.uuid);
+  const revisionAfterCharacter = api.partyStore.getState().revision;
+  const npcAdd = await request('party.addMember', npc.uuid);
+  const revisionAfterNpc = api.partyStore.getState().revision;
+  const rowsAfterAdd = api.partyMembers.getMemberRows();
+  const characterRow = rowsAfterAdd.find(
+    (row) => row.actorUuid === character.uuid,
+  );
+  const PartySheet = api.applications.OpenPartySheetApplication;
+  const sheet = new PartySheet();
+  await sheet.render({ force: true });
+  const overviewRendered = await waitUntil(() => Boolean(
+    sheet.element?.querySelector(
+      `[data-action="openMember"][data-actor-uuid="${character.uuid}"]`,
+    ),
+  ));
+  const overviewText = sheet.element?.textContent ?? '';
+
+  sheet.element?.querySelector(
+    `[data-action="openMember"][data-actor-uuid="${character.uuid}"]`,
+  )?.click();
+  const actorSheetOpened = await waitUntil(() => character.sheet?.rendered);
+  if (character.sheet?.rendered) await character.sheet.close();
+
+  sheet.element?.querySelector(
+    `[data-action="removeMember"][data-actor-uuid="${character.uuid}"]`,
+  )?.click();
+  const removedThroughUi = await waitUntil(
+    () => !api.partyStore.getState().memberActorUuids.includes(character.uuid),
+  );
+
+  await sheet._handleActorDrop({
+    preventDefault: () => {},
+    dataTransfer: {
+      getData: () => JSON.stringify({ type: 'Actor', uuid: character.uuid }),
+    },
+  });
+  const actorDropAdded = api.partyStore.getState().memberActorUuids.includes(
+    character.uuid,
+  );
+  if (actorDropAdded) await request('party.removeMember', character.uuid);
+  await sheet.close();
+
+  const missingActor = await Actor.create({
+    name: `${RUN_PREFIX} Deleted Member`,
+    type: 'character',
+  });
+  const missingActorUuid = missingActor.uuid;
+  const missingAdd = await request('party.addMember', missingActorUuid);
+  await missingActor.delete();
+  const missingRowRetained = api.partyMembers.getMemberRows().some(
+    (row) => row.actorUuid === missingActorUuid && row.missing,
+  );
+  const missingSheet = new PartySheet();
+  await missingSheet.render({ force: true });
+  const missingReferenceRendered = await waitUntil(() => Boolean(
+    missingSheet.element?.querySelector(
+      `.hyp3e-utilities__party-member--missing [data-actor-uuid="${missingActorUuid}"]`,
+    ),
+  ));
+  missingSheet.element?.querySelector(
+    `[data-action="removeMember"][data-actor-uuid="${missingActorUuid}"]`,
+  )?.click();
+  const missingReferenceCleaned = await waitUntil(
+    () => !api.partyStore.getState().memberActorUuids.includes(missingActorUuid),
+  );
+  await missingSheet.close();
+
+  return {
+    characterAddSucceeded: characterAdd.ok,
+    npcRejected:
+      !npcAdd.ok && npcAdd.error.code === 'invalidActor',
+    stateRevisionAdvancedOnce:
+      characterAdd.ok
+      && revisionAfterCharacter === characterAdd.value.state.revision
+      && revisionAfterNpc === revisionAfterCharacter,
+    summaryMatchesAdapter:
+      characterRow?.summary?.uuid === character.uuid
+      && characterRow.summary.name === character.name
+      && characterRow.summary.type === 'character',
+    overviewRendered,
+    overviewShowsCharacter:
+      overviewText.includes(character.name)
+      && overviewText.includes(
+        `${characterRow?.summary?.hp?.value} / ${characterRow?.summary?.hp?.max}`,
+      ),
+    actorSheetOpened,
+    removedThroughUi,
+    actorDropAdded,
+    missingAddSucceeded: missingAdd.ok,
+    missingRowRetained,
+    missingReferenceRendered,
+    missingReferenceCleaned,
+  };
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -1754,6 +1862,7 @@ async function runGmDiagnostics() {
     results.hud008 = await testProductionHudAccessibility(npc);
     results.par001 = testProductionPartyPermissions();
     results.par005 = await testProductionPartySheetApplication();
+    results.par006 = await testProductionPartyMembers(character, npc);
     results.par002 = {
       grantedPlayerUserIds: await grantDiagnosticPartyAccess(),
       waitingForPlayer: true,

@@ -6,6 +6,8 @@ import {
   createFoundationApplications,
   preloadFoundationTemplates,
 } from '../../module/apps/foundation-applications.mjs';
+import { PARTY_MEMBER_OPERATIONS } from '../../module/party/party-members.mjs';
+import { createPartyStateDefault } from '../../module/party/party-state.mjs';
 
 class StubApplicationV2 {
   constructor() {
@@ -182,4 +184,155 @@ test('Party Sheet is a focused singleton with cleaned external-update hooks', as
   assert.equal(removed.length, 2);
   const replacement = new classes.OpenPartySheetApplication();
   assert.notEqual(replacement, first);
+});
+
+test('Party Sheet Overview renders member rows and routes member actions through mutations', async () => {
+  const state = createPartyStateDefault();
+  state.revision = 4;
+  state.memberActorUuids = ['Actor.hero'];
+  const rows = [{
+    actorUuid: 'Actor.hero',
+    missing: false,
+    name: 'Hero',
+    summary: { armor: { ac: 5, dr: 1 }, hp: { value: 7, max: 9 } },
+  }];
+  const opened = [];
+  const requests = [];
+  const controlledActors = [
+    {
+      documentName: 'Actor',
+      isToken: false,
+      type: 'character',
+      uuid: 'Actor.controlled',
+    },
+    {
+      documentName: 'Actor',
+      isToken: true,
+      type: 'character',
+      uuid: 'Scene.scene.Token.synthetic',
+    },
+  ];
+  const game = {
+    actors: new Map([['selected', { uuid: 'Actor.selected' }]]),
+    i18n: { localize: (key) => key },
+    settings: { get: (_namespace, key) => key.includes('Minimum') ? 1 : [] },
+    user: { id: 'player', isGM: false, role: 1 },
+    users: [],
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    actorDirectoryProvider: () => ({
+      element: {
+        querySelector: () => ({ dataset: { entryId: 'selected' } }),
+      },
+    }),
+    canvasProvider: () => ({
+      tokens: { controlled: controlledActors.map((actor) => ({ actor })) },
+    }),
+    game,
+    partyMembersProvider: () => ({
+      getActor: (actorUuid) => actorUuid === 'Actor.hero'
+        ? { sheet: { render: (...args) => opened.push(args) } }
+        : null,
+      getMemberRows: () => rows,
+    }),
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        return {
+          ok: true,
+          value: { state: { revision: envelope.expectedRevision + 1 } },
+        };
+      },
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    requestIdProvider: (() => {
+      let id = 0;
+      return () => `member-request-${++id}`;
+    })(),
+  });
+  const app = new classes.OpenPartySheetApplication();
+
+  const context = await app._prepareContext({});
+  assert.equal(context.showOverview, true);
+  assert.equal(context.hasMembers, true);
+  assert.equal(context.members, rows);
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.openMember
+    .call(app, undefined, { dataset: { actorUuid: 'Actor.hero' } });
+  assert.deepEqual(opened, [[true]]);
+
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions.removeMember
+    .call(app, undefined, { dataset: { actorUuid: 'Actor.hero' } });
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions
+    .addControlledMembers.call(app);
+  await classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions
+    .addSelectedActor.call(app);
+  assert.deepEqual(requests, [
+    {
+      operation: PARTY_MEMBER_OPERATIONS.remove,
+      envelope: {
+        expectedRevision: 4,
+        payload: { actorUuid: 'Actor.hero' },
+        requestId: 'member-request-1',
+      },
+    },
+    {
+      operation: PARTY_MEMBER_OPERATIONS.add,
+      envelope: {
+        expectedRevision: 4,
+        payload: { actorUuid: 'Actor.controlled' },
+        requestId: 'member-request-2',
+      },
+    },
+    {
+      operation: PARTY_MEMBER_OPERATIONS.add,
+      envelope: {
+        expectedRevision: 4,
+        payload: { actorUuid: 'Actor.selected' },
+        requestId: 'member-request-3',
+      },
+    },
+  ]);
+
+  let directoryButton;
+  let directoryButtonInserted = false;
+  const actorDirectoryElement = {
+    ownerDocument: {
+      createElement: () => {
+        directoryButton = {
+          addEventListener: (_name, callback) => {
+            directoryButton.click = callback;
+          },
+        };
+        return directoryButton;
+      },
+    },
+    querySelector: (selector) => {
+      if (selector.includes('__directory-button')) {
+        return directoryButtonInserted ? directoryButton : null;
+      }
+      return {
+        parentNode: {
+          insertBefore: () => { directoryButtonInserted = true; },
+        },
+      };
+    },
+  };
+  classes.OpenPartySheetApplication.activateActorDirectory({
+    element: actorDirectoryElement,
+  });
+  classes.OpenPartySheetApplication.activateActorDirectory({
+    element: actorDirectoryElement,
+  });
+  assert.equal(directoryButtonInserted, true);
+  assert.equal(
+    directoryButton.title,
+    'hyp3e-utilities.applications.partySheet.directoryButtonTitle',
+  );
+  const rendersBeforeDirectoryClick = app.renderCount;
+  directoryButton.click({ preventDefault: () => {} });
+  await new Promise((resolve) => setTimeout(resolve));
+  assert.equal(app.renderCount, rendersBeforeDirectoryClick + 1);
 });

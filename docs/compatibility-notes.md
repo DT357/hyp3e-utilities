@@ -258,9 +258,31 @@ supplies the activated element as the handler's second argument, not as
 `event.currentTarget`. The corrected handler uses that target, and the final
 v13/v14 runs both switched to Followers with the expected selected-tab state.
 
+### Overview party-member management (PAR-006)
+
+Foundry 13.351 with `hyp3e` 4.0.3 and Foundry 14.365 with the official `hyp3e`
+dev 4.1.0 system passed the complete Overview gate. In both generations the
+active GM added a durable character through the authoritative mutation,
+received an `invalidActor` rejection for an NPC without advancing state,
+rendered the adapter-derived summary, opened the exact world Actor sheet,
+removed the member through the UI, and added the character again through the
+Actor-drop path.
+
+Both generations retained a deliberately deleted Actor reference as a marked
+missing row and then removed it through the authorized cleanup action. The
+Actor Directory displayed one localized Open Party Sheet button, and that
+button opened the working localized Overview. Automated coverage separately
+proves non-GM Actor ownership checks, synthetic-Actor rejection, duplicate
+rejection, and member-only metadata cleanup.
+
+The first live pass detected that a directory-binding helper had accidentally
+become enumerable in the public applications class collection. The helper is
+now a static Party Sheet method, preserving the collection's established API;
+the corrected v13/v14 runs completed with no diagnostic errors.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-005 are complete. No compatibility finding contradicts the
+PAR-001 through PAR-006 are complete. No compatibility finding contradicts the
 approved architecture. Milestone 1 is complete; the next compatibility work is
-the Overview and Followers portion of Milestone 2.
+the Followers portion of Milestone 2.

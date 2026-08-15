@@ -32,6 +32,79 @@
 
   <section class="hyp3e-utilities__party-panel" role="tabpanel">
     <h2>{{localize activeTab.label}}</h2>
-    <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+    {{#if showOverview}}
+      <section
+        class="hyp3e-utilities__party-overview"
+        data-party-member-drop-zone
+      >
+        {{#if canEdit}}
+          <div class="hyp3e-utilities__party-toolbar">
+            <button type="button" data-action="addSelectedActor">
+              <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+              {{localize "hyp3e-utilities.applications.partySheet.addSelectedActor"}}
+            </button>
+            <button type="button" data-action="addControlledMembers">
+              <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+              {{localize "hyp3e-utilities.applications.partySheet.addControlledMembers"}}
+            </button>
+            <span>{{localize "hyp3e-utilities.applications.partySheet.dropActors"}}</span>
+          </div>
+        {{/if}}
+
+        {{#if hasMembers}}
+          <ol class="hyp3e-utilities__party-members">
+            {{#each members}}
+              <li class="hyp3e-utilities__party-member {{#if missing}}hyp3e-utilities__party-member--missing{{/if}}">
+                <img src="{{img}}" alt="" width="48" height="48">
+                <div class="hyp3e-utilities__party-member-identity">
+                  {{#if missing}}
+                    <strong>{{name}}</strong>
+                    <span>{{localize "hyp3e-utilities.applications.partySheet.missingReference"}}</span>
+                  {{else}}
+                    <button
+                      type="button"
+                      class="hyp3e-utilities__party-member-link"
+                      data-action="openMember"
+                      data-actor-uuid="{{actorUuid}}"
+                    >{{name}}</button>
+                    <span>{{race}} · {{className}} {{level}}</span>
+                    {{#if invalidType}}
+                      <span>{{localize "hyp3e-utilities.applications.partySheet.invalidMemberType"}}</span>
+                    {{/if}}
+                  {{/if}}
+                </div>
+                {{#unless missing}}
+                  <dl class="hyp3e-utilities__party-member-stats">
+                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}} / {{summary.hp.max}}</dd></div>
+                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
+                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
+                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
+                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.share"}}</dt><dd>{{share}}</dd></div>
+                  </dl>
+                {{/unless}}
+                {{#if ../canEdit}}
+                  <button
+                    type="button"
+                    class="hyp3e-utilities__party-member-remove"
+                    data-action="removeMember"
+                    data-actor-uuid="{{actorUuid}}"
+                  >
+                    {{#if missing}}
+                      {{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}
+                    {{else}}
+                      {{localize "hyp3e-utilities.applications.partySheet.removeMember"}}
+                    {{/if}}
+                  </button>
+                {{/if}}
+              </li>
+            {{/each}}
+          </ol>
+        {{else}}
+          <p>{{localize "hyp3e-utilities.applications.partySheet.noMembers"}}</p>
+        {{/if}}
+      </section>
+    {{else}}
+      <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+    {{/if}}
   </section>
 </section>
