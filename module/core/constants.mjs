@@ -20,6 +20,7 @@ export const COIN_KEYS = Object.freeze(['cp', 'sp', 'ep', 'gp', 'pp']);
 
 export const SETTING_KEYS = Object.freeze({
   enableNpcActionHud: 'enableNpcActionHud',
+  displayDetailedNpcInformation: 'displayDetailedNpcInformation',
   npcActionHudPosition: 'npcActionHudPosition',
   partyState: 'partyState',
   partySheetMinimumEditRole: 'partySheetMinimumEditRole',

@@ -53,6 +53,9 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
   assert.equal(byKey.enableNpcActionHud.scope, 'world');
   assert.equal(byKey.enableNpcActionHud.config, true);
   assert.equal(byKey.enableNpcActionHud.default, false);
+  assert.equal(byKey.displayDetailedNpcInformation.scope, 'client');
+  assert.equal(byKey.displayDetailedNpcInformation.config, true);
+  assert.equal(byKey.displayDetailedNpcInformation.default, true);
   assert.equal(byKey.npcActionHudPosition.scope, 'client');
   assert.deepEqual(byKey.npcActionHudPosition.default, {});
   assert.equal(byKey.partyState.scope, 'world');
@@ -69,6 +72,7 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
     [false, true, false],
   );
   byKey.enableNpcActionHud.onChange(true);
+  byKey.displayDetailedNpcInformation.onChange(false);
   byKey.npcActionHudPosition.onChange({ left: 10, top: 20, width: 360 });
   const partyState = createPartyStateDefault();
   byKey.partyState.onChange(partyState);
@@ -79,6 +83,11 @@ test('settings register required scopes, visibility, defaults, and menus', () =>
       HOOK_NAMES.settingsChanged,
       SETTING_KEYS.enableNpcActionHud,
       true,
+    ],
+    [
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.displayDetailedNpcInformation,
+      false,
     ],
     [
       HOOK_NAMES.settingsChanged,

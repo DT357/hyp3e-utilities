@@ -98,6 +98,8 @@ test('dynamic HUD and chat localization families are complete', async () => {
   const requiredKeys = [
     'hyp3e-utilities.settings.enableNpcActionHud.name',
     'hyp3e-utilities.settings.enableNpcActionHud.hint',
+    'hyp3e-utilities.settings.displayDetailedNpcInformation.name',
+    'hyp3e-utilities.settings.displayDetailedNpcInformation.hint',
     'hyp3e-utilities.settings.resetHudPosition.name',
     'hyp3e-utilities.settings.resetHudPosition.label',
     'hyp3e-utilities.settings.resetHudPosition.hint',
@@ -163,6 +165,7 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(template, /hyp3e-utilities-npc-action-hud__actor-health[\s\S]*style="width: \{\{row\.hp\.percent\}\}%"/);
   assert.doesNotMatch(template, /hyp3e-utilities-npc-action-hud__hp-track/);
   assert.doesNotMatch(template, /npcSubtype|npc-action-hud__subtype/);
+  assert.match(template, /\{\{#if @root\.displayDetailedNpcInformation\}\}[\s\S]*__stats--vitals[\s\S]*__stats--movement[\s\S]*\{\{\/if\}\}/);
   const vitalStats = template.match(
     /__stats--vitals">([\s\S]*?)<\/dl>/,
   )?.[1] ?? '';
@@ -189,6 +192,8 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(diagnostics, /__stats dt'\)\.length\s*=== 5/s);
   assert.match(diagnostics, /subtypeRemoved:/);
   assert.match(diagnostics, /statLinesRendered:/);
+  assert.match(diagnostics, /detailedSettingHidesStats/);
+  assert.match(diagnostics, /detailedSettingRestoresStats/);
 });
 
 test('NPC action chat-card emphasis inherits the active theme without shadows', async () => {

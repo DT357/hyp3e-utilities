@@ -21,6 +21,9 @@ All notable changes to Hyp3e Utilities are documented here.
 
 ### Changed
 
+- Added a per-client, default-on **Display Detailed NPC Information** option
+  that switches NPC Action HUD cards between two-line statistics and a compact
+  name-and-health-bar-only layout.
 - Compacted the NPC Action HUD controls and selected-NPC cards, including
   three- to four-column card flow, two-line stats, subtype removal, and
   Actor-button health bars.

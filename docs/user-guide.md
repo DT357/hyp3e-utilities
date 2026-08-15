@@ -38,13 +38,15 @@ the installed `hyp3e-utilities` directory; its name must match the module ID.
    GM client.
 2. Open **Game Settings → Configure Settings → Hyp3e Utilities**.
 3. Enable **NPC Action HUD** if the GM wants token-selection actions.
-4. Open **Party Sheet Permissions** and choose who may edit shared party data.
-5. Open the Party Sheet from the same settings category, or select the Actor
+4. Leave **Display Detailed NPC Information** enabled for two-line NPC
+   statistics, or disable it for compact name-and-health-bar-only cards.
+5. Open **Party Sheet Permissions** and choose who may edit shared party data.
+6. Open the Party Sheet from the same settings category, or select the Actor
    Directory and use its **Open Party Sheet** users icon.
-6. Confirm the Treasure tab reports a bound Party Treasury. The first active GM
+7. Confirm the Treasure tab reports a bound Party Treasury. The first active GM
    initializes this managed `treasure` Actor in the **Hyp3e Utilities** Actor
    folder.
-7. Add party members and followers, then set their shares and follower wages
+8. Add party members and followers, then set their shares and follower wages
    before attempting distributions.
 
 The managed treasury is an ordinary world Actor with a module flag and Party
@@ -80,6 +82,11 @@ manage party data, settle wages, distribute coins, and transfer eligible Items.
 
 The HUD is visible only to a GM when **Enable NPC Action HUD** is on, a scene
 canvas is ready, and at least one supported NPC token is controlled.
+
+**Display Detailed NPC Information** is a per-client option and is enabled by
+default. When enabled, each NPC card shows HP, AC, DR, movement, and morale on
+two compact lines. When disabled, each card keeps only the Actor-name button
+and its health gradient. Changing the option refreshes an open HUD immediately.
 
 1. Use the token-selection tool to control one or more `npc` tokens.
 2. Review each token row's HP, AC, DR, movement, morale, and save availability.

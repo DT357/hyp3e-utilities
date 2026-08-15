@@ -103,7 +103,10 @@ function normalizeSaveKey(saveKey) {
 
 export function buildNpcActionHudContext(
   selectionModel,
-  { selectedSaveKey = SAVE_KEYS[0] } = {},
+  {
+    displayDetailedNpcInformation = true,
+    selectedSaveKey = SAVE_KEYS[0],
+  } = {},
 ) {
   const activeSaveKey = normalizeSaveKey(selectedSaveKey);
   const rows = Object.freeze((selectionModel?.rows ?? []).map((row) => (
@@ -123,6 +126,7 @@ export function buildNpcActionHudContext(
   const activeSave = saveOptions.find((save) => save.selected);
 
   return Object.freeze({
+    displayDetailedNpcInformation: displayDetailedNpcInformation !== false,
     selectedCount: rows.length,
     rows,
     moraleAvailable: rows.some((row) => row.hasMorale),
@@ -417,6 +421,12 @@ export function createNpcActionHud({
     if (key === SETTING_KEYS.npcActionHudPosition) {
       applyStoredPosition(getOverlay(), value);
     }
+    if (key === SETTING_KEYS.displayDetailedNpcInformation) {
+      return render(selection?.getViewModel?.()).catch(
+        (error) => reportActionError(error),
+      );
+    }
+    return null;
   }
 
   function ensureOverlay() {
@@ -450,7 +460,14 @@ export function createNpcActionHud({
       throw new Error('Foundry template rendering is unavailable.');
     }
 
-    const context = buildNpcActionHudContext(model, { selectedSaveKey });
+    const displayDetailedNpcInformation = game?.settings?.get?.(
+      MODULE_ID,
+      SETTING_KEYS.displayDetailedNpcInformation,
+    ) !== false;
+    const context = buildNpcActionHudContext(model, {
+      displayDetailedNpcInformation,
+      selectedSaveKey,
+    });
     const markup = await renderTemplate(TEMPLATE_PATHS.npcActionHud, context);
     if (version !== renderVersion) return getOverlay();
 

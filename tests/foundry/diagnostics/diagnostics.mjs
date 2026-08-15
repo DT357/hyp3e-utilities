@@ -454,6 +454,7 @@ async function testProductionFoundation(character, npc) {
 
   const settingKeys = [
     'enableNpcActionHud',
+    'displayDetailedNpcInformation',
     'npcActionHudPosition',
     'partyState',
     'partySheetMinimumEditRole',
@@ -473,6 +474,8 @@ async function testProductionFoundation(character, npc) {
     ),
     hudDisabledByDefault:
       game.settings.get(MODULE_ID, 'enableNpcActionHud') === false,
+    detailedNpcInformationEnabledByDefault:
+      game.settings.get(MODULE_ID, 'displayDetailedNpcInformation') === true,
     partySchemaVersion:
       game.settings.get(MODULE_ID, 'partyState')?.schemaVersion ?? null,
     minimumEditRole:
@@ -888,6 +891,10 @@ async function testProductionHudOverlay(npc) {
   const api = game.modules.get(MODULE_ID).api;
   const originalScene = game.scenes.active;
   const originalEnabled = game.settings.get(MODULE_ID, 'enableNpcActionHud');
+  const originalDetailed = game.settings.get(
+    MODULE_ID,
+    'displayDetailedNpcInformation',
+  );
   const missingMoraleActor = await Actor.create({
     name: `${RUN_PREFIX} No Morale`,
     type: 'npc',
@@ -937,6 +944,7 @@ async function testProductionHudOverlay(npc) {
     ]);
     const [betaDocument] = tokenDocuments;
 
+    await game.settings.set(MODULE_ID, 'displayDetailedNpcInformation', true);
     await game.settings.set(MODULE_ID, 'enableNpcActionHud', true);
     await scene.activate();
     const canvasActivated = await waitForCanvasScene(scene.id);
@@ -1016,6 +1024,30 @@ async function testProductionHudOverlay(npc) {
       (message) => message.flags[MODULE_ID].action === 'save',
     );
 
+    await game.settings.set(
+      MODULE_ID,
+      'displayDetailedNpcInformation',
+      false,
+    );
+    const detailedSettingHidesStats = await waitUntil(() => (
+      document.querySelectorAll(
+        '#hyp3e-utilities-npc-action-hud .hyp3e-utilities-npc-action-hud__stats',
+      ).length === 0
+      && document.querySelectorAll(
+        '#hyp3e-utilities-npc-action-hud [data-action="openActorSheet"]',
+      ).length === 2
+    ));
+    await game.settings.set(
+      MODULE_ID,
+      'displayDetailedNpcInformation',
+      true,
+    );
+    const detailedSettingRestoresStats = await waitUntil(() => (
+      document.querySelectorAll(
+        '#hyp3e-utilities-npc-action-hud .hyp3e-utilities-npc-action-hud__stats',
+      ).length === 4
+    ));
+
     await game.settings.set(MODULE_ID, 'enableNpcActionHud', false);
     const settingRemovesOverlay = await waitUntil(
       () => document.getElementById('hyp3e-utilities-npc-action-hud') == null,
@@ -1052,6 +1084,8 @@ async function testProductionHudOverlay(npc) {
           && statLines[0].querySelectorAll('dt').length === 3
           && statLines[1].querySelectorAll('dt').length === 2;
       }),
+      detailedSettingHidesStats,
+      detailedSettingRestoresStats,
       missingMoraleDisplayed: rowElements.some((row) => (
         row.querySelector('.hyp3e-utilities-npc-action-hud__missing')
           ?.textContent.trim() === 'Missing'
@@ -1077,6 +1111,11 @@ async function testProductionHudOverlay(npc) {
   finally {
     if (openedSheet?.rendered) await openedSheet.close();
     canvas.tokens?.releaseAll();
+    await game.settings.set(
+      MODULE_ID,
+      'displayDetailedNpcInformation',
+      originalDetailed,
+    );
     await game.settings.set(
       MODULE_ID,
       'enableNpcActionHud',

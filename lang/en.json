@@ -5,6 +5,10 @@
         "name": "Enable NPC Action HUD",
         "hint": "Show the NPC Action HUD for GMs when supported NPC tokens are selected."
       },
+      "displayDetailedNpcInformation": {
+        "name": "Display Detailed NPC Information",
+        "hint": "Show HP, AC, DR, movement, and morale on NPC Action HUD cards. Disable this setting for the most compact name-only layout."
+      },
       "npcActionHudPosition": {
         "name": "NPC Action HUD Position"
       },

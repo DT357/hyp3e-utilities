@@ -57,6 +57,19 @@ export function registerSettings({ game, hooks = globalThis.Hooks, menuTypes }) 
       value,
     ),
   });
+  register(SETTING_KEYS.displayDetailedNpcInformation, {
+    name: `${SETTING_NAMESPACE}.displayDetailedNpcInformation.name`,
+    hint: `${SETTING_NAMESPACE}.displayDetailedNpcInformation.hint`,
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: (value) => hooks?.callAll?.(
+      HOOK_NAMES.settingsChanged,
+      SETTING_KEYS.displayDetailedNpcInformation,
+      value,
+    ),
+  });
   register(SETTING_KEYS.npcActionHudPosition, {
     name: `${SETTING_NAMESPACE}.npcActionHudPosition.name`,
     scope: 'client',

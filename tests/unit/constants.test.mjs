@@ -26,6 +26,7 @@ test('foundation constants expose stable namespaced contracts', () => {
   assert.deepEqual(COIN_KEYS, ['cp', 'sp', 'ep', 'gp', 'pp']);
   assert.deepEqual(SETTING_KEYS, {
     enableNpcActionHud: 'enableNpcActionHud',
+    displayDetailedNpcInformation: 'displayDetailedNpcInformation',
     npcActionHudPosition: 'npcActionHudPosition',
     partyState: 'partyState',
     partySheetMinimumEditRole: 'partySheetMinimumEditRole',

@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { SAVE_KEYS } from '../../module/core/constants.mjs';
+import {
+  HOOK_NAMES,
+  MODULE_ID,
+  SAVE_KEYS,
+  SETTING_KEYS,
+} from '../../module/core/constants.mjs';
 import {
   NPC_ACTION_HUD_ID,
   buildNpcActionHudContext,
@@ -78,6 +83,7 @@ function createFakeDocument() {
 }
 
 function createHudHarness({
+  displayDetailedNpcInformation = true,
   injectNotifications = true,
   report = { skipped: [], failures: [] },
 } = {}) {
@@ -133,6 +139,17 @@ function createHudHarness({
   const document = createFakeDocument();
   const notifications = { errors: [], warnings: [] };
   const renderedContexts = [];
+  let settingsChanged;
+  const hooks = {
+    off() {
+      settingsChanged = null;
+    },
+    on(name, callback) {
+      assert.equal(name, HOOK_NAMES.settingsChanged);
+      settingsChanged = callback;
+      return 1;
+    },
+  };
   const hudOptions = {
     chatCards,
     document,
@@ -145,7 +162,18 @@ function createHudHarness({
         format: (key, values) => `${key}:${JSON.stringify(values)}`,
         localize: (key) => key,
       },
+      settings: {
+        get(namespace, key) {
+          assert.equal(namespace, MODULE_ID);
+          if (key === SETTING_KEYS.displayDetailedNpcInformation) {
+            return displayDetailedNpcInformation;
+          }
+          if (key === SETTING_KEYS.npcActionHudPosition) return {};
+          throw new Error(`Unexpected setting read: ${key}`);
+        },
+      },
     },
+    hooks,
     logger: { warn: () => {} },
     npcRolls,
     renderTemplate: async (_path, context) => {
@@ -175,6 +203,13 @@ function createHudHarness({
     plans,
     publish: (nextModel) => subscriber?.(nextModel),
     renderedContexts,
+    setDetailedNpcInformation(value) {
+      displayDetailedNpcInformation = value;
+      return settingsChanged?.(
+        SETTING_KEYS.displayDetailedNpcInformation,
+        value,
+      );
+    },
   };
 }
 
@@ -199,8 +234,30 @@ test('HUD context clamps HP and provides the approved five-save selector', () =>
   assert.equal(context.rows[0].movement, 40);
   assert.equal(context.rows[2].hasMorale, false);
   assert.equal(context.moraleAvailable, true);
+  assert.equal(context.displayDetailedNpcInformation, true);
   assert.equal(Object.isFrozen(context), true);
   assert.equal(Object.isFrozen(context.rows[0].hp), true);
+});
+
+test('HUD detail setting updates context and refreshes a visible HUD', async () => {
+  const model = createModel([createRow({ name: 'Guard' })]);
+  const compactContext = buildNpcActionHudContext(model, {
+    displayDetailedNpcInformation: false,
+  });
+  assert.equal(compactContext.displayDetailedNpcInformation, false);
+
+  const harness = createHudHarness();
+  await harness.hud.start();
+  assert.equal(
+    harness.renderedContexts.at(-1).displayDetailedNpcInformation,
+    true,
+  );
+
+  await harness.setDetailedNpcInformation(false);
+  assert.equal(
+    harness.renderedContexts.at(-1).displayDetailedNpcInformation,
+    false,
+  );
 });
 
 test('HUD context disables unavailable saves and morale without hiding choices', () => {

@@ -185,6 +185,7 @@ test('HUD dragging persists per-client position and cleanup removes listeners', 
     settings: {
       get(namespace, key) {
         assert.equal(namespace, MODULE_ID);
+        if (key === SETTING_KEYS.displayDetailedNpcInformation) return true;
         assert.equal(key, SETTING_KEYS.npcActionHudPosition);
         return storedPosition;
       },
