@@ -21,6 +21,14 @@ import {
 } from '../settings/settings.mjs';
 
 const APP_NAMESPACE = `${MODULE_ID}.applications`;
+const PARTY_TAB_IDS = Object.freeze([
+  'overview',
+  'followers',
+  'marchingOrder',
+  'supplies',
+  'treasure',
+  'notes',
+]);
 
 function notify(notifications, method, message) {
   (notifications ?? globalThis.ui?.notifications)?.[method]?.(
@@ -233,6 +241,7 @@ export function createFoundationApplications({
       this._wageDraft = null;
       this._xpDraft = null;
       this._externalRefreshScheduled = false;
+      this._focusTabAfterRender = false;
       this._partyHookSubscriptions = [];
     }
 
@@ -286,10 +295,11 @@ export function createFoundationApplications({
 
     static async selectTab(_event, target) {
       const tab = target?.dataset?.tab;
-      if (!['overview', 'followers', 'marchingOrder', 'supplies', 'treasure', 'notes'].includes(tab)) return;
+      if (!PARTY_TAB_IDS.includes(tab)) return;
       this._capturePartySheetViewState();
       await this._flushPartyNoteEditors();
       this._activeTab = tab;
+      this._focusTabAfterRender = true;
       await this.render({ force: true });
     }
 
@@ -304,9 +314,11 @@ export function createFoundationApplications({
       if (!button) return;
       button.className = `${CSS_NAMESPACE}__directory-button`;
       button.type = 'button';
-      button.title = game.i18n.localize(
+      const label = game.i18n.localize(
         `${APP_NAMESPACE}.partySheet.directoryButtonTitle`,
       );
+      button.title = label;
+      button.setAttribute?.('aria-label', label);
       button.innerHTML = '<i class="fa-solid fa-users" aria-hidden="true"></i>';
       button.addEventListener('click', (event) => {
         event.preventDefault();
@@ -1062,6 +1074,36 @@ export function createFoundationApplications({
       panel.scrollTop = position.top;
     }
 
+    _handlePartyTabKeydown(event, tablist = event?.currentTarget) {
+      const current = event?.target?.closest?.('[role="tab"]');
+      const tabs = Array.from(tablist?.querySelectorAll?.('[role="tab"]') ?? []);
+      const currentIndex = tabs.indexOf(current);
+      if (currentIndex < 0 || tabs.length < 1) return false;
+      let targetIndex;
+      if (['ArrowRight', 'ArrowDown'].includes(event.key)) {
+        targetIndex = (currentIndex + 1) % tabs.length;
+      }
+      else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) {
+        targetIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      }
+      else if (event.key === 'Home') targetIndex = 0;
+      else if (event.key === 'End') targetIndex = tabs.length - 1;
+      else return false;
+      event.preventDefault?.();
+      tabs[targetIndex].click?.();
+      return true;
+    }
+
+    _restorePartyTabFocus() {
+      if (!this._focusTabAfterRender) return false;
+      this._focusTabAfterRender = false;
+      const activeTab = this.element?.querySelector?.(
+        '[role="tab"][aria-selected="true"]',
+      );
+      activeTab?.focus?.({ preventScroll: true });
+      return Boolean(activeTab);
+    }
+
     _isRelevantPartyActor(actor) {
       const actorUuid = actor?.uuid;
       if (!actorUuid) return false;
@@ -1132,6 +1174,8 @@ export function createFoundationApplications({
           toggled: true,
           value,
         });
+        const accessibleName = host.getAttribute?.('aria-label');
+        if (accessibleName) editor.setAttribute?.('aria-label', accessibleName);
         if (context.canEdit) {
           const capture = () => {
             this._capturePartyNoteDraft(
@@ -1503,17 +1547,10 @@ export function createFoundationApplications({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
       }));
-      const tabs = [
-        ['overview', `${APP_NAMESPACE}.partySheet.tabs.overview`],
-        ['followers', `${APP_NAMESPACE}.partySheet.tabs.followers`],
-        ['marchingOrder', `${APP_NAMESPACE}.partySheet.tabs.marchingOrder`],
-        ['supplies', `${APP_NAMESPACE}.partySheet.tabs.supplies`],
-        ['treasure', `${APP_NAMESPACE}.partySheet.tabs.treasure`],
-        ['notes', `${APP_NAMESPACE}.partySheet.tabs.notes`],
-      ].map(([id, label]) => ({
+      const tabs = PARTY_TAB_IDS.map((id) => ({
         active: id === this._activeTab,
         id,
-        label,
+        label: `${APP_NAMESPACE}.partySheet.tabs.${id}`,
       }));
 
       return {
@@ -1616,6 +1653,9 @@ export function createFoundationApplications({
       const dropZone = this.element?.querySelector?.(
         '[data-party-member-drop-zone]',
       );
+      const partyTabs = this.element?.querySelector?.(
+        `.${CSS_NAMESPACE}__party-tabs`,
+      );
       const coinSection = this.element?.querySelector?.('[data-party-coins]');
       const wageSection = this.element?.querySelector?.('[data-party-wages]');
       const followerDropZone = this.element?.querySelector?.(
@@ -1631,6 +1671,11 @@ export function createFoundationApplications({
       const xpSection = this.element?.querySelector?.('[data-party-xp]');
       this._mountPartyNoteEditors(context);
       this._restorePartySheetViewState();
+      partyTabs?.addEventListener(
+        'keydown',
+        (event) => this._handlePartyTabKeydown(event, partyTabs),
+      );
+      this._restorePartyTabFocus();
       if (context.canDistributeXp === true) {
         xpSection?.addEventListener('input', this._captureXpDraft.bind(this));
       }

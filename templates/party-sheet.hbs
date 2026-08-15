@@ -36,13 +36,22 @@
         class="{{#if active}}active{{/if}}"
         data-action="selectTab"
         data-tab="{{id}}"
+        id="hyp3e-utilities-party-tab-{{id}}"
         role="tab"
+        aria-controls="hyp3e-utilities-party-tab-panel"
         aria-selected="{{#if active}}true{{else}}false{{/if}}"
+        tabindex="{{#if active}}0{{else}}-1{{/if}}"
       >{{localize label}}</button>
     {{/each}}
   </nav>
 
-  <section class="hyp3e-utilities__party-panel" role="tabpanel">
+  <section
+    class="hyp3e-utilities__party-panel"
+    id="hyp3e-utilities-party-tab-panel"
+    role="tabpanel"
+    aria-labelledby="hyp3e-utilities-party-tab-{{activeTab.id}}"
+    tabindex="0"
+  >
     <h2>{{localize activeTab.label}}</h2>
     {{#if showOverview}}
       <section
@@ -869,6 +878,7 @@
                       class="hyp3e-utilities__party-note-editor"
                       data-party-note-editor
                       data-party-note-field="gems"
+                      aria-label="{{localize 'hyp3e-utilities.applications.partySheet.gemNotes'}}"
                     ></div>
                   </section>
                   <section class="hyp3e-utilities__party-note-field">
@@ -877,6 +887,7 @@
                       class="hyp3e-utilities__party-note-editor"
                       data-party-note-editor
                       data-party-note-field="misc"
+                      aria-label="{{localize 'hyp3e-utilities.applications.partySheet.miscTreasureNotes'}}"
                     ></div>
                   </section>
                 </div>
@@ -894,6 +905,7 @@
                     class="hyp3e-utilities__party-note-editor"
                     data-party-note-editor
                     data-party-note-field="notes"
+                    aria-label="{{localize 'hyp3e-utilities.applications.partySheet.partyNotesLabel'}}"
                   ></div>
                   {{#if canEdit}}
                     <button type="button" data-action="savePartyNotes">

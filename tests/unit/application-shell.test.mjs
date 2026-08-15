@@ -202,6 +202,49 @@ test('Party Sheet is a focused singleton with cleaned external-update hooks', as
   assert.notEqual(replacement, first);
 });
 
+test('Party Sheet tabs support arrow, Home, and End keys with restored focus', async () => {
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game: { settings: {}, users: [] },
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const clicked = [];
+  const buttons = ['overview', 'followers', 'marchingOrder'].map((tab) => ({
+    click: () => clicked.push(tab),
+    dataset: { tab },
+  }));
+  const tablist = { querySelectorAll: () => buttons };
+  for (const button of buttons) button.closest = () => button;
+
+  for (const [key, target, expected] of [
+    ['ArrowRight', buttons[0], 'followers'],
+    ['ArrowLeft', buttons[0], 'marchingOrder'],
+    ['Home', buttons[2], 'overview'],
+    ['End', buttons[0], 'marchingOrder'],
+  ]) {
+    let prevented = false;
+    app._handlePartyTabKeydown({
+      key,
+      preventDefault: () => { prevented = true; },
+      target,
+    }, tablist);
+    assert.equal(prevented, true, key);
+    assert.equal(clicked.pop(), expected, key);
+  }
+
+  let focused = false;
+  app._focusTabAfterRender = true;
+  app.element = {
+    querySelector: (selector) => selector.includes('[aria-selected="true"]')
+      ? { focus: () => { focused = true; } }
+      : null,
+  };
+  app._restorePartyTabFocus();
+  assert.equal(focused, true);
+  assert.equal(app._focusTabAfterRender, false);
+});
+
 test('Party Sheet external refreshes target tracked documents and retain local view state', async () => {
   const subscriptions = new Map();
   const scheduledRefreshes = [];

@@ -207,6 +207,7 @@
         "miscTreasureNotes": "Other Treasure",
         "saveTreasureNotes": "Save Treasure Notes",
         "partyNotesHelp": "Record shared plans, reminders, and other party information. These notes are visible to everyone who can view the Party Sheet.",
+        "partyNotesLabel": "Party notes",
         "savePartyNotes": "Save Party Notes",
         "noteOperationFailed": "The party and treasure notes could not be saved.",
         "supplyFields": {

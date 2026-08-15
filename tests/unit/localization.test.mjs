@@ -33,6 +33,13 @@ async function readFiles(directory) {
   return files;
 }
 
+async function readRuntimeTextFiles() {
+  const directories = ['lang', 'module', 'templates'];
+  return (await Promise.all(directories.map((directory) => (
+    readFiles(path.join(REPOSITORY_ROOT, directory))
+  )))).flat();
+}
+
 test('every static template localization key exists in English', async () => {
   const translations = JSON.parse(await readFile(
     path.join(REPOSITORY_ROOT, 'lang', 'en.json'),
@@ -51,6 +58,35 @@ test('every static template localization key exists in English', async () => {
   const missingKeys = [...referencedKeys]
     .filter((key) => !availableKeys.has(key));
   assert.deepEqual(missingKeys, []);
+});
+
+test('every literal runtime localization key exists in English', async () => {
+  const translations = JSON.parse(await readFile(
+    path.join(REPOSITORY_ROOT, 'lang', 'en.json'),
+    'utf8',
+  ));
+  const availableKeys = new Set(flattenKeys(translations));
+  const referencedKeys = new Set();
+  for (const filename of await readRuntimeTextFiles()) {
+    const source = await readFile(filename, 'utf8');
+    for (const match of source.matchAll(/hyp3e-utilities(?:\.[\w-]+)+/g)) {
+      if (match[0].includes('${')) continue;
+      referencedKeys.add(match[0]);
+    }
+  }
+
+  const missingKeys = [...referencedKeys]
+    .filter((key) => !availableKeys.has(key));
+  assert.deepEqual(missingKeys, []);
+});
+
+test('runtime user-facing text contains no replacement or mojibake markers', async () => {
+  const invalidText = [];
+  for (const filename of await readRuntimeTextFiles()) {
+    const source = await readFile(filename, 'utf8');
+    if (/[ÂÃ�]/u.test(source)) invalidText.push(path.relative(REPOSITORY_ROOT, filename));
+  }
+  assert.deepEqual(invalidText, []);
 });
 
 test('dynamic HUD and chat localization families are complete', async () => {
@@ -104,4 +140,49 @@ test('HUD template exposes keyboard and assistive-technology semantics', async (
   assert.match(template, /hyp3e-utilities\.hud\.saveUnavailable/);
   assert.match(template, /hyp3e-utilities\.hud\.moraleUnavailable/);
   assert.match(template, /<option[^>]*disabled/s);
+});
+
+test('Party Sheet tabs, movement controls, editors, and focus styles are accessible', async () => {
+  const [template, styles] = await Promise.all([
+    readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),
+    readFile(path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'), 'utf8'),
+  ]);
+
+  assert.match(template, /role="tablist"/);
+  assert.match(template, /role="tab"/);
+  assert.match(template, /aria-controls="hyp3e-utilities-party-tab-panel"/);
+  assert.match(template, /tabindex="\{\{#if active\}\}0\{\{else\}\}-1\{\{\/if\}\}"/);
+  assert.match(template, /role="tabpanel"/);
+  assert.match(template, /aria-labelledby="hyp3e-utilities-party-tab-\{\{activeTab\.id\}\}"/);
+  assert.match(template, /data-action="moveMarchingActor"/);
+  assert.match(template, /data-party-note-editor[\s\S]*aria-label=/);
+  assert.match(styles, /\.hyp3e-utilities :is\([^)]*\):focus-visible/);
+});
+
+test('fixed HUD foreground colors meet WCAG AA contrast', () => {
+  function rgb(hex) {
+    return [1, 3, 5].map((offset) => Number.parseInt(
+      hex.slice(offset, offset + 2),
+      16,
+    ));
+  }
+  function luminance(hex) {
+    const channels = rgb(hex).map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * channels[0]
+      + 0.7152 * channels[1]
+      + 0.0722 * channels[2];
+  }
+  function contrast(left, right) {
+    const [lighter, darker] = [luminance(left), luminance(right)]
+      .sort((a, b) => b - a);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  assert.ok(contrast('#f4ecd7', '#181411') >= 4.5);
+  assert.ok(contrast('#f1b562', '#181411') >= 4.5);
 });

@@ -282,7 +282,7 @@ function validateCoinDistributionReport(report) {
 function renderCoinBreakdown(coins) {
   return COIN_KEYS.map((coinKey) => (
     `${coinKey.toUpperCase()} ${coins[coinKey]}`
-  )).join(' Â· ');
+  )).join(' · ');
 }
 
 function renderCoinDistributionCard(report, localize) {
