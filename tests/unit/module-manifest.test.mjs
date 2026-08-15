@@ -94,3 +94,27 @@ test('Foundry compatibility diagnostics declare their test dependencies', async 
     ['hyp3e-utilities', 'socketlib'],
   );
 });
+
+test('README links a complete operator guide for every core workflow', async () => {
+  const [manifest, readme, userGuide] = await Promise.all([
+    readProjectJson('module.json'),
+    readFile(projectFileUrl('README.md'), 'utf8'),
+    readFile(projectFileUrl('docs/user-guide.md'), 'utf8'),
+  ]);
+
+  assert.match(readme, /\[User Guide\]\(docs\/user-guide\.md\)/);
+  assert.ok(userGuide.includes(manifest.manifest));
+  for (const heading of [
+    'Installation',
+    'First-Time GM Setup',
+    'Party Sheet Permissions',
+    'NPC Action HUD',
+    'Party Sheet Workflows',
+    'Experience, Coins, and Wages',
+    'Item Transfers',
+    'Recovery and Troubleshooting',
+    'Current Limitations',
+  ]) {
+    assert.match(userGuide, new RegExp(`^## ${heading}$`, 'm'));
+  }
+});

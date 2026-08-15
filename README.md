@@ -4,22 +4,20 @@ Foundry Virtual Tabletop utilities for the [`hyp3e`](https://github.com/thuriank
 
 ## Status
 
-The module foundation, NPC Action HUD, and Party Core are implemented. The HUD
-tracks controlled NPC tokens and provides GM-only reaction, five-category save,
-and morale actions. The shared Party Sheet supports authorized players, party
-members, character/NPC followers, wages and shares, Actor links, token pings,
-reused save/morale actions, conflict-safe local drafts, and automatic cleanup
-of deleted member/follower references. Marching order, validated manual
-supplies, and sanitized rich-text party/treasure notes are also implemented.
-Targeted refreshes now preserve local drafts, active tabs, and scroll positions
-while ignoring unrelated Actor and Item changes. The active GM also receives a
-managed, flagged Party Treasury with explicit missing-Actor recovery and
-duplicate selection. Its five native coin denominations appear on Treasure and
-its physical embedded Items appear on Supplies through an authorized
-active-GM snapshot. These features are validated on the supported Foundry and
-`hyp3e` versions below. Authorized owners can now move supported loose Items in
-both directions with quantity-safe merges, explicit recovery, and public audit
-cards. Milestone 4 is complete.
+The planned 1.0 feature set is implemented and has passed clean-world GM/Player
+testing on both supported Foundry generations. The repository is in final
+documentation, packaging, and acceptance hardening; no public 1.0 release has
+been authorized or published yet.
+
+Core features include:
+
+- a GM-only NPC Action HUD for reaction, five-category save, and morale rolls;
+- a shared, permission-controlled Party Sheet with members, character/NPC
+  followers, marching order, supplies, and sanitized shared notes;
+- a managed Party Treasury with all five coin denominations, bidirectional
+  loose-Item transfers, explicit recovery, and audit chat cards; and
+- previewed XP, coin, and GP-wage distributions with character writeback,
+  NPC-share consumption, rollback, idempotency, and public reporting.
 
 ## Compatibility
 
@@ -27,9 +25,16 @@ cards. Milestone 4 is complete.
 - Hyperborea 3rd Edition (`hyp3e`)
 - SocketLib 1.1.4 or newer
 
+## Getting Started
+
+The [User Guide](docs/user-guide.md) covers installation, permissions, the NPC
+Action HUD, every Party Sheet workflow, distributions, Item transfers,
+recovery, and current limitations.
+
 ## Development
 
-The local development workspace keeps two read-only references beside this repository:
+The local development workspace keeps two read-only references beside this
+repository:
 
 - `../References/hyp3e` — the official system's `dev` branch
 - `../References/sw-utilities` — the earlier Swords & Wizardry utility module
@@ -48,13 +53,15 @@ git -C ..\References\hyp3e pull --ff-only origin dev
 
 ## Releases
 
-The GitHub Actions workflow validates every push and pull request. A tag matching `v<module.json version>` creates a GitHub release containing:
+The GitHub Actions workflow validates every push and pull request. A tag
+matching `v<module.json version>` creates a GitHub release containing:
 
 - `module.json`, used by Foundry's manifest installer and updater
 - `hyp3e-utilities.zip`, containing the installable module
 
-For example, after changing both `module.json` and `package.json` to the target
-version:
+Release tags publish externally. Create one only after the acceptance gate has
+passed and publication has been explicitly authorized. After changing both
+`module.json` and `package.json` to the authorized target version:
 
 ```powershell
 git tag v1.0.0
