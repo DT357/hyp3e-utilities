@@ -1033,13 +1033,13 @@ async function testProductionHudOverlay(npc) {
         new Set(rowElements.map((row) => row.dataset.tokenUuid)).size === 2,
       hpWidthsValid: rowElements.every((row) => {
         const width = Number.parseFloat(row.querySelector(
-          '.hyp3e-utilities-npc-action-hud__hp-fill',
+          '.hyp3e-utilities-npc-action-hud__actor-health',
         ).style.width);
         return Number.isFinite(width) && width >= 0 && width <= 100;
       }),
       statsRendered: rowElements.every((row) => (
         row.querySelectorAll('.hyp3e-utilities-npc-action-hud__stats dt').length
-          === 4
+          === 5
       )),
       missingMoraleDisplayed: rowElements.some((row) => (
         row.querySelector('.hyp3e-utilities-npc-action-hud__missing')

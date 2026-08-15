@@ -4,7 +4,7 @@
     data-drag-handle
     title="{{localize 'hyp3e-utilities.hud.dragHandle'}}"
   >
-    <div>
+    <div class="hyp3e-utilities-npc-action-hud__summary">
       <h2 id="hyp3e-utilities-npc-action-hud-title">{{localize "hyp3e-utilities.hud.title"}}</h2>
       <span class="hyp3e-utilities-npc-action-hud__count" aria-live="polite">
         {{localize "hyp3e-utilities.hud.selectedCount" count=selectedCount}}
@@ -14,8 +14,18 @@
       <button type="button" data-action="reaction">
         {{localize "hyp3e-utilities.hud.reaction"}}
       </button>
+      <button
+        type="button"
+        data-action="morale"
+        {{#unless moraleAvailable}}disabled title="{{localize 'hyp3e-utilities.hud.moraleUnavailable'}}"{{/unless}}
+      >
+        {{localize "hyp3e-utilities.hud.morale"}}
+      </button>
       <div class="hyp3e-utilities-npc-action-hud__save-action">
-        <label for="hyp3e-utilities-npc-action-hud-save">
+        <label
+          class="hyp3e-utilities-npc-action-hud__save-label"
+          for="hyp3e-utilities-npc-action-hud-save"
+        >
           {{localize "hyp3e-utilities.hud.saveCategory"}}
         </label>
         <select
@@ -41,13 +51,6 @@
           {{localize "hyp3e-utilities.hud.save"}}
         </button>
       </div>
-      <button
-        type="button"
-        data-action="morale"
-        {{#unless moraleAvailable}}disabled title="{{localize 'hyp3e-utilities.hud.moraleUnavailable'}}"{{/unless}}
-      >
-        {{localize "hyp3e-utilities.hud.morale"}}
-      </button>
     </div>
   </header>
 
@@ -63,27 +66,23 @@
             title="{{localize 'hyp3e-utilities.hud.openActorSheet'}}"
             aria-label="{{localize 'hyp3e-utilities.hud.openActorSheetFor' name=row.name}}"
           >
-            {{row.name}}
+            <span class="hyp3e-utilities-npc-action-hud__actor-label">{{row.name}}</span>
+            <span
+              class="hyp3e-utilities-npc-action-hud__actor-health"
+              style="width: {{row.hp.percent}}%"
+              aria-hidden="true"
+            ></span>
           </button>
           {{#if row.npcSubtype}}
             <span class="hyp3e-utilities-npc-action-hud__subtype">{{row.npcSubtype}}</span>
           {{/if}}
         </div>
 
-        <div class="hyp3e-utilities-npc-action-hud__hp">
-          <span>{{localize "hyp3e-utilities.hud.hp"}} {{row.hp.value}} / {{row.hp.max}}</span>
-          <span class="hyp3e-utilities-npc-action-hud__hp-track" aria-hidden="true">
-            <span
-              class="hyp3e-utilities-npc-action-hud__hp-fill"
-              style="width: {{row.hp.percent}}%"
-            ></span>
-          </span>
-        </div>
-
         <dl class="hyp3e-utilities-npc-action-hud__stats">
+          <div><dt>{{localize "hyp3e-utilities.hud.hp"}}</dt><dd>{{row.hp.value}} / {{row.hp.max}}</dd></div>
           <div><dt>{{localize "hyp3e-utilities.hud.ac"}}</dt><dd>{{row.armor.ac}}</dd></div>
-          <div><dt>{{localize "hyp3e-utilities.hud.dr"}}</dt><dd>{{row.armor.dr}}</dd></div>
           <div><dt>{{localize "hyp3e-utilities.hud.movement"}}</dt><dd>{{row.movement}}</dd></div>
+          <div><dt>{{localize "hyp3e-utilities.hud.dr"}}</dt><dd>{{row.armor.dr}}</dd></div>
           <div>
             <dt>{{localize "hyp3e-utilities.hud.moraleValue"}}</dt>
             <dd>

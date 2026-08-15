@@ -142,6 +142,50 @@ test('HUD template exposes keyboard and assistive-technology semantics', async (
   assert.match(template, /<option[^>]*disabled/s);
 });
 
+test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
+  const [template, styles, diagnostics] = await Promise.all([
+    readFile(path.join(REPOSITORY_ROOT, 'templates', 'npc-action-hud.hbs'), 'utf8'),
+    readFile(path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'), 'utf8'),
+    readFile(
+      path.join(REPOSITORY_ROOT, 'tests', 'foundry', 'diagnostics', 'diagnostics.mjs'),
+      'utf8',
+    ),
+  ]);
+
+  const reactionIndex = template.indexOf('data-action="reaction"');
+  const moraleIndex = template.indexOf('data-action="morale"');
+  const saveCategoryIndex = template.indexOf('data-role="save-category"');
+  const saveIndex = template.indexOf('data-action="save"');
+  assert.ok(reactionIndex < moraleIndex);
+  assert.ok(moraleIndex < saveCategoryIndex);
+  assert.ok(saveCategoryIndex < saveIndex);
+  assert.match(template, /hyp3e-utilities-npc-action-hud__save-label/);
+  assert.match(template, /hyp3e-utilities-npc-action-hud__actor-health[\s\S]*style="width: \{\{row\.hp\.percent\}\}%"/);
+  assert.doesNotMatch(template, /hyp3e-utilities-npc-action-hud__hp-track/);
+  assert.match(template, /hyp3e-utilities\.hud\.hp[\s\S]*\{\{row\.hp\.value\}\} \/ \{\{row\.hp\.max\}\}/);
+  assert.match(styles, /\.hyp3e-utilities-npc-action-hud__actions\s*\{[^}]*flex-wrap:\s*nowrap;/s);
+  assert.match(styles, /\.hyp3e-utilities-npc-action-hud__save-action select\s*\{[^}]*width:\s*108px;/s);
+  assert.match(styles, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(300px,\s*100%\),\s*1fr\)\);/);
+  const actorHealthStyles = styles.match(
+    /\.hyp3e-utilities-npc-action-hud__actor-health\s*\{[^}]*\}/s,
+  )?.[0] ?? '';
+  assert.match(actorHealthStyles, /position:\s*absolute;/);
+  assert.match(actorHealthStyles, /background:\s*linear-gradient/);
+  assert.match(diagnostics, /querySelector\(\s*'\.hyp3e-utilities-npc-action-hud__actor-health'/s);
+  assert.doesNotMatch(diagnostics, /hyp3e-utilities-npc-action-hud__hp-fill/);
+  assert.match(diagnostics, /__stats dt'\)\.length\s*=== 5/s);
+});
+
+test('NPC action chat-card emphasis inherits the active theme without shadows', async () => {
+  const styles = await readFile(
+    path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'),
+    'utf8',
+  );
+
+  assert.match(styles, /\.hyp3e-utilities-chat-card\s*\{[^}]*color:\s*inherit;[^}]*text-shadow:\s*none;/s);
+  assert.match(styles, /\.hyp3e-utilities-chat-card :is\(h3, h4, dt, strong\)\s*\{[^}]*color:\s*inherit !important;[^}]*font-weight:\s*700 !important;[^}]*text-shadow:\s*none !important;/s);
+});
+
 test('Party Sheet tabs, movement controls, editors, and focus styles are accessible', async () => {
   const [template, styles] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),

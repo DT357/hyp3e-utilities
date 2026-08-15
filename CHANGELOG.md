@@ -19,6 +19,13 @@ All notable changes to Hyp3e Utilities are documented here.
 - Recovery, migration, localization, accessibility, lifecycle, and Foundry
   13/14 compatibility coverage.
 
+### Changed
+
+- Compacted the NPC Action HUD controls and selected-NPC cards, including
+  multi-column card flow and Actor-button health bars.
+- Made NPC action chat-card emphasis inherit the active chat theme while
+  suppressing decorative text shadows.
+
 ### Compatibility
 
 - Foundry Virtual Tabletop 13 through 14.
