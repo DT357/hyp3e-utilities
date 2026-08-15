@@ -1,11 +1,11 @@
 {
   "name": "hyp3e-utilities",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "license": "MIT",
   "scripts": {
     "test": "node --test",
-    "check": "node --test && node --check module/hyp3e-utilities.mjs && node --check tests/foundry/diagnostics/diagnostics.mjs && node scripts/validate-module.mjs"
+    "check": "node --test && node --check module/hyp3e-utilities.mjs && node --check tests/foundry/diagnostics/diagnostics.mjs && node --check tests/foundry/diagnostics/m5-distributions.mjs && node scripts/validate-module.mjs"
   }
 }

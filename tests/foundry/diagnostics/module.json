@@ -14,7 +14,8 @@
     }
   ],
   "esmodules": [
-    "diagnostics.mjs"
+    "diagnostics.mjs",
+    "m5-distributions.mjs"
   ],
   "socket": true,
   "relationships": {
