@@ -22,7 +22,8 @@ All notable changes to Hyp3e Utilities are documented here.
 ### Changed
 
 - Compacted the NPC Action HUD controls and selected-NPC cards, including
-  multi-column card flow and Actor-button health bars.
+  three- to four-column card flow, two-line stats, subtype removal, and
+  Actor-button health bars.
 - Made NPC action chat-card emphasis inherit the active chat theme while
   suppressing decorative text shadows.
 

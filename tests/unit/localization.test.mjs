@@ -162,10 +162,23 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(template, /hyp3e-utilities-npc-action-hud__save-label/);
   assert.match(template, /hyp3e-utilities-npc-action-hud__actor-health[\s\S]*style="width: \{\{row\.hp\.percent\}\}%"/);
   assert.doesNotMatch(template, /hyp3e-utilities-npc-action-hud__hp-track/);
-  assert.match(template, /hyp3e-utilities\.hud\.hp[\s\S]*\{\{row\.hp\.value\}\} \/ \{\{row\.hp\.max\}\}/);
+  assert.doesNotMatch(template, /npcSubtype|npc-action-hud__subtype/);
+  const vitalStats = template.match(
+    /__stats--vitals">([\s\S]*?)<\/dl>/,
+  )?.[1] ?? '';
+  assert.match(vitalStats, /hyp3e-utilities\.hud\.hp[\s\S]*\{\{row\.hp\.value\}\} \/ \{\{row\.hp\.max\}\}/);
+  assert.ok(vitalStats.indexOf('hud.hp') < vitalStats.indexOf('hud.ac'));
+  assert.ok(vitalStats.indexOf('hud.ac') < vitalStats.indexOf('hud.dr'));
+  assert.doesNotMatch(vitalStats, /hud\.movement|hud\.moraleValue/);
+  const movementStats = template.match(
+    /__stats--movement">([\s\S]*?)<\/dl>/,
+  )?.[1] ?? '';
+  assert.ok(movementStats.indexOf('hud.movement') < movementStats.indexOf('hud.moraleValue'));
   assert.match(styles, /\.hyp3e-utilities-npc-action-hud__actions\s*\{[^}]*flex-wrap:\s*nowrap;/s);
   assert.match(styles, /\.hyp3e-utilities-npc-action-hud__save-action select\s*\{[^}]*width:\s*108px;/s);
-  assert.match(styles, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(300px,\s*100%\),\s*1fr\)\);/);
+  assert.match(styles, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(160px,\s*100%\),\s*1fr\)\);/);
+  assert.match(styles, /__stats--vitals\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s);
+  assert.match(styles, /__stats--movement\s*\{[^}]*grid-template-columns:\s*repeat\(2,/s);
   const actorHealthStyles = styles.match(
     /\.hyp3e-utilities-npc-action-hud__actor-health\s*\{[^}]*\}/s,
   )?.[0] ?? '';
@@ -174,6 +187,8 @@ test('NPC Action HUD keeps controls and selected NPCs compact', async () => {
   assert.match(diagnostics, /querySelector\(\s*'\.hyp3e-utilities-npc-action-hud__actor-health'/s);
   assert.doesNotMatch(diagnostics, /hyp3e-utilities-npc-action-hud__hp-fill/);
   assert.match(diagnostics, /__stats dt'\)\.length\s*=== 5/s);
+  assert.match(diagnostics, /subtypeRemoved:/);
+  assert.match(diagnostics, /statLinesRendered:/);
 });
 
 test('NPC action chat-card emphasis inherits the active theme without shadows', async () => {

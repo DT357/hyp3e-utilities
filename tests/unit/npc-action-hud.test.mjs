@@ -21,7 +21,6 @@ function createRow({
     tokenUuid,
     actorUuid: `Actor.${name}`,
     name,
-    npcSubtype: 'monster',
     hp,
     armor: { ac: 7, dr: 1 },
     movement: 40,

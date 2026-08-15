@@ -97,7 +97,6 @@ export function buildNpcSelectionViewModel(
       actorUuid: actorSummary.uuid,
       isSynthetic: actorSummary.isSynthetic,
       name: document?.name ?? token?.name ?? actorSummary.name,
-      npcSubtype: adapter.getNpcSubtype(actor),
       hp: Object.freeze({ ...actorSummary.hp }),
       armor: Object.freeze({ ...actorSummary.armor }),
       movement: actorSummary.movement,

@@ -156,7 +156,7 @@ test('view model preserves token identity, filters mixed selection, and sorts ro
   assert.equal(model.rows[0].actorUuid, npcActor.uuid);
   assert.equal(model.rows[2].actorUuid, npcActor.uuid);
   assert.equal(model.rows[1].actorUuid, syntheticNpcActor.uuid);
-  assert.equal(model.rows[0].npcSubtype, 'monster');
+  assert.equal('npcSubtype' in model.rows[0], false);
   assert.deepEqual(model.rows[1].hp, { value: 2, max: 9 });
   assert.equal(model.rows[1].hasMorale, false);
   assert.deepEqual(model.skipped.map(({ reason }) => reason), [

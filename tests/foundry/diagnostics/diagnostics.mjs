@@ -1041,6 +1041,17 @@ async function testProductionHudOverlay(npc) {
         row.querySelectorAll('.hyp3e-utilities-npc-action-hud__stats dt').length
           === 5
       )),
+      subtypeRemoved: rowElements.every((row) => (
+        row.querySelector('.hyp3e-utilities-npc-action-hud__subtype') == null
+      )),
+      statLinesRendered: rowElements.every((row) => {
+        const statLines = row.querySelectorAll(
+          '.hyp3e-utilities-npc-action-hud__stats',
+        );
+        return statLines.length === 2
+          && statLines[0].querySelectorAll('dt').length === 3
+          && statLines[1].querySelectorAll('dt').length === 2;
+      }),
       missingMoraleDisplayed: rowElements.some((row) => (
         row.querySelector('.hyp3e-utilities-npc-action-hud__missing')
           ?.textContent.trim() === 'Missing'

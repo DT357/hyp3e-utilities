@@ -73,16 +73,15 @@
               aria-hidden="true"
             ></span>
           </button>
-          {{#if row.npcSubtype}}
-            <span class="hyp3e-utilities-npc-action-hud__subtype">{{row.npcSubtype}}</span>
-          {{/if}}
         </div>
 
-        <dl class="hyp3e-utilities-npc-action-hud__stats">
+        <dl class="hyp3e-utilities-npc-action-hud__stats hyp3e-utilities-npc-action-hud__stats--vitals">
           <div><dt>{{localize "hyp3e-utilities.hud.hp"}}</dt><dd>{{row.hp.value}} / {{row.hp.max}}</dd></div>
           <div><dt>{{localize "hyp3e-utilities.hud.ac"}}</dt><dd>{{row.armor.ac}}</dd></div>
-          <div><dt>{{localize "hyp3e-utilities.hud.movement"}}</dt><dd>{{row.movement}}</dd></div>
           <div><dt>{{localize "hyp3e-utilities.hud.dr"}}</dt><dd>{{row.armor.dr}}</dd></div>
+        </dl>
+        <dl class="hyp3e-utilities-npc-action-hud__stats hyp3e-utilities-npc-action-hud__stats--movement">
+          <div><dt>{{localize "hyp3e-utilities.hud.movement"}}</dt><dd>{{row.movement}}</dd></div>
           <div>
             <dt>{{localize "hyp3e-utilities.hud.moraleValue"}}</dt>
             <dd>

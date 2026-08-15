@@ -18,7 +18,6 @@ function createModel(visible = true) {
     tokenUuid: 'Scene.scene.Token.guard',
     actorUuid: 'Actor.guard',
     name: 'Guard',
-    npcSubtype: 'monster',
     hp: { value: 5, max: 10 },
     armor: { ac: 7, dr: 1 },
     movement: 40,
