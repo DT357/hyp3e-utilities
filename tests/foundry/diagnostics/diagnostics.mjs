@@ -34,6 +34,7 @@ const results = {
   mar002: {},
   mar003: {},
   sup001: {},
+  not001: {},
   fnd001: {},
   fnd002: {},
   fnd003: {},
@@ -426,6 +427,7 @@ async function testProductionFoundation(character, npc) {
     partyFollowersPublished: Boolean(api?.partyFollowers),
     partyMarchingOrderPublished: Boolean(api?.partyMarchingOrder),
     partyMembersPublished: Boolean(api?.partyMembers),
+    partyNotesPublished: Boolean(api?.partyNotes),
     partyPermissionsPublished: Boolean(api?.partyPermissions),
     partyStorePublished: Boolean(api?.partyStore),
     socketPublished: Boolean(api?.socket),
@@ -2608,6 +2610,89 @@ async function testProductionSupplies() {
   }
 }
 
+async function testProductionNotes() {
+  const api = game.modules.get(MODULE_ID).api;
+  const initialState = api.partyStore.getState();
+  const original = {
+    notes: initialState.notes,
+    treasureNotes: { ...initialState.treasureNotes },
+  };
+  const unsafe = {
+    notes: '<p onclick="alert(1)">NOT-001 party</p><script>alert(1)</script>',
+    treasureNotes: {
+      gems: '<p>NOT-001 gems</p><img src="x" onerror="alert(1)">',
+      misc: '<p>NOT-001 miscellaneous</p><script>alert(1)</script>',
+    },
+  };
+  const request = (payload, suffix) => api.partyMutations.request(
+    'party.setNotes',
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: `not001-gm-${game.user.id}-${suffix}-${foundry.utils.randomID()}`,
+    },
+  );
+  const sheet = new api.applications.OpenPartySheetApplication();
+
+  try {
+    const beforeRevision = initialState.revision;
+    const mutation = await request(unsafe, 'save');
+    const saved = api.partyStore.getState();
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="treasure"]',
+    ).click();
+    const treasureRendered = await waitUntil(() => (
+      sheet.element?.querySelectorAll(
+        '[data-party-note-editor] prose-mirror',
+      ).length === 2
+    ));
+    const treasureEditors = [...sheet.element.querySelectorAll(
+      '[data-party-note-editor] prose-mirror',
+    )];
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="notes"]',
+    ).click();
+    const partyRendered = await waitUntil(() => (
+      sheet.element?.querySelectorAll(
+        '[data-party-note-editor] prose-mirror',
+      ).length === 1
+    ));
+    const partyEditor = sheet.element.querySelector(
+      '[data-party-note-editor] prose-mirror[name="notes"]',
+    );
+    const serialized = JSON.stringify({
+      notes: saved.notes,
+      treasureNotes: saved.treasureNotes,
+    });
+
+    return {
+      servicePublished: typeof api.partyNotes?.getNotes === 'function',
+      mutationSucceeded: mutation.ok,
+      atomicRevision: saved.revision === beforeRevision + 1,
+      allFieldsPersisted:
+        saved.notes.includes('NOT-001 party')
+        && saved.treasureNotes.gems.includes('NOT-001 gems')
+        && saved.treasureNotes.misc.includes('NOT-001 miscellaneous'),
+      unsafeMarkupRemoved:
+        !serialized.includes('<script')
+        && !serialized.includes('onclick=')
+        && !serialized.includes('onerror='),
+      treasureRendered,
+      partyRendered,
+      twoTreasureEditors: treasureEditors.length === 2,
+      onePartyEditor: Boolean(partyEditor),
+      gmEditorsEnabled:
+        treasureEditors.every((editor) => !editor.disabled)
+        && partyEditor?.disabled === false,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    await request(original, 'restore');
+  }
+}
+
 async function createDiagnosticActors() {
   const saveData = Object.fromEntries(
     SAVE_KEYS.map((saveKey, index) => [
@@ -2672,6 +2757,10 @@ async function runGmDiagnostics() {
     };
     results.sup001 = {
       gm: await testProductionSupplies(),
+      waitingForPlayer: true,
+    };
+    results.not001 = {
+      gm: await testProductionNotes(),
       waitingForPlayer: true,
     };
     results.par002 = {
@@ -3057,6 +3146,117 @@ async function testPlayerSupplies(partyMutations) {
   }
 }
 
+async function testPlayerNotes(partyMutations) {
+  const api = game.modules.get(MODULE_ID).api;
+  const initialState = api.partyStore.getState();
+  const original = {
+    notes: initialState.notes,
+    treasureNotes: { ...initialState.treasureNotes },
+  };
+  const uniqueRequestId = (suffix) => (
+    `not001-${game.user.id}-${suffix}-${foundry.utils.randomID()}`
+  );
+  const requestNotes = (payload, suffix) => partyMutations.request(
+    'party.setNotes',
+    {
+      expectedRevision: api.partyStore.getState().revision,
+      payload,
+      requestId: uniqueRequestId(suffix),
+    },
+  );
+  const sheet = new api.applications.OpenPartySheetApplication();
+
+  try {
+    await sheet.render({ force: true });
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="treasure"]',
+    ).click();
+    const treasureEditorsRendered = await waitUntil(() => (
+      sheet.element?.querySelectorAll(
+        '[data-party-note-editor] prose-mirror',
+      ).length === 2
+    ));
+    const treasureEditorsEnabled = [...sheet.element.querySelectorAll(
+      '[data-party-note-editor] prose-mirror',
+    )].every((editor) => !editor.disabled);
+    sheet.element.querySelector(
+      '[data-action="selectTab"][data-tab="notes"]',
+    ).click();
+    const partyEditorRendered = await waitUntil(() => Boolean(
+      sheet.element?.querySelector(
+        '[data-party-note-editor] prose-mirror[name="notes"]',
+      ),
+    ));
+
+    const draftRevision = api.partyStore.getState().revision;
+    const draftNotes = `NOT-001 Player draft ${game.user.id}`;
+    sheet._capturePartyNoteDraft('notes', draftNotes, draftRevision);
+    const externalNotes = `NOT-001 external ${game.user.id}`;
+    const externalResult = await partyMutations.request(
+      'party.compatibilityNotesMutation',
+      {
+        expectedRevision: draftRevision,
+        payload: { notes: externalNotes },
+        requestId: uniqueRequestId('external'),
+      },
+    );
+    const draftPreserved = await waitUntil(() => (
+      sheet.element?.textContent?.includes(draftNotes)
+    ));
+    const staleWarningRendered = Boolean(sheet.element?.querySelector(
+      '.hyp3e-utilities__party-draft-status strong',
+    ));
+    sheet.element.querySelector('[data-action="savePartyNotes"]').click();
+    await wait(300);
+    const staleSaveRejected =
+      api.partyStore.getState().revision === draftRevision + 1
+      && api.partyStore.getState().notes === externalNotes
+      && Boolean(sheet.element?.querySelector(
+        '.hyp3e-utilities__party-draft-status strong',
+      ));
+    sheet.element.querySelector('[data-action="discardPartyDrafts"]').click();
+    const discardRestoredAuthoritative = await waitUntil(() => (
+      sheet.element?.textContent?.includes(externalNotes)
+      && !sheet.element?.querySelector('.hyp3e-utilities__party-draft-status')
+    ));
+
+    const final = {
+      notes: `NOT-001 saved ${game.user.id}`,
+      treasureNotes: {
+        gems: `NOT-001 gems ${game.user.id}`,
+        misc: `NOT-001 miscellaneous ${game.user.id}`,
+      },
+    };
+    sheet._capturePartyNoteDraft('notes', final.notes);
+    sheet._capturePartyNoteDraft('gems', final.treasureNotes.gems);
+    sheet._capturePartyNoteDraft('misc', final.treasureNotes.misc);
+    sheet.element.querySelector('[data-action="savePartyNotes"]').click();
+    const validSavePersisted = await waitUntil(() => {
+      const state = api.partyStore.getState();
+      return state.notes === final.notes
+        && state.treasureNotes.gems === final.treasureNotes.gems
+        && state.treasureNotes.misc === final.treasureNotes.misc;
+    });
+
+    return {
+      authorizedPlayerCanEdit:
+        treasureEditorsEnabled
+        && partyEditorRendered,
+      treasureEditorsRendered,
+      externalMutationSucceeded: externalResult.ok,
+      draftPreserved,
+      staleWarningRendered,
+      staleSaveRejected,
+      discardRestoredAuthoritative,
+      validSavePersisted,
+    };
+  }
+  finally {
+    if (sheet.rendered) await sheet.close();
+    await requestNotes(original, 'restore');
+  }
+}
+
 async function runPlayerSocketDiagnostic() {
   if (!diagnosticSocket) {
     results.pb008 = { error: 'SocketLib registration was unavailable.' };
@@ -3201,6 +3401,7 @@ async function runPlayerSocketDiagnostic() {
       )),
     };
     const supplyResult = await testPlayerSupplies(partyMutations);
+    const noteResult = await testPlayerNotes(partyMutations);
     results.pb008 = playerResult;
     results.par002 = partyMutationResult;
     results.par004 = partyStoreResult;
@@ -3208,6 +3409,7 @@ async function runPlayerSocketDiagnostic() {
     results.mar002 = marchingResult;
     results.mar003 = marchingReportResult;
     results.sup001 = supplyResult;
+    results.not001 = noteResult;
     results.status = 'complete';
     publishResults();
     game.socket.emit(DIAGNOSTIC_SOCKET, {
@@ -3218,6 +3420,7 @@ async function runPlayerSocketDiagnostic() {
       mar002: marchingResult,
       mar003: marchingReportResult,
       sup001: supplyResult,
+      not001: noteResult,
       result: playerResult,
     });
     console.info(`${DIAGNOSTIC_ID} | Player SocketLib result`, playerResult);
@@ -3308,6 +3511,14 @@ Hooks.once('ready', async () => {
       foundrySenderMatchesPlayer:
         senderId === message.result.actualPlayerUserId,
       player: message.sup001,
+      waitingForPlayer: false,
+    };
+    results.not001 = {
+      ...results.not001,
+      foundrySocketSenderId: senderId,
+      foundrySenderMatchesPlayer:
+        senderId === message.result.actualPlayerUserId,
+      player: message.not001,
       waitingForPlayer: false,
     };
     publishResults();

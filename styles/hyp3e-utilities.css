@@ -283,6 +283,33 @@
   padding: 0.35rem 0.5rem;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-notes,
+.hyp3e-utilities .hyp3e-utilities__party-note-field {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-note-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-note-field {
+  align-content: start;
+  border: 1px solid var(--color-border-light-tertiary, #777);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-note-field h3 {
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-note-editor prose-mirror {
+  min-height: 9rem;
+}
+
 .hyp3e-utilities .hyp3e-utilities__marching-note textarea {
   min-height: 4rem;
   resize: vertical;

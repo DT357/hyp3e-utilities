@@ -12,6 +12,7 @@ import {
   PARTY_MARCHING_OPERATIONS,
   createMarchingOrderModel,
 } from '../../module/party/party-marching-order.mjs';
+import { PARTY_NOTE_OPERATIONS } from '../../module/party/party-notes.mjs';
 import { createPartyStateDefault } from '../../module/party/party-state.mjs';
 import { PARTY_SUPPLY_OPERATIONS } from '../../module/party/party-supplies.mjs';
 
@@ -939,4 +940,176 @@ test('Party Sheet Supplies preserves drafts and submits all counts at their base
   assert.deepEqual((await app._prepareContext({})).supplies, values);
   await actions.discardPartyDrafts.call(app);
   assert.deepEqual((await app._prepareContext({})).supplies, state.supplies);
+});
+
+test('Party Sheet rich-text notes preserve drafts and save all fields atomically', async () => {
+  let state = createPartyStateDefault();
+  state.revision = 11;
+  state.notes = '<p>Saved party note</p>';
+  state.treasureNotes = {
+    gems: '<p>Saved gems</p>',
+    misc: '<p>Saved curios</p>',
+  };
+  const requests = [];
+  const enrichmentCalls = [];
+  const createdEditors = [];
+  const game = {
+    settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
+    user: { id: 'gm', isGM: true, role: 4 },
+    users: [],
+  };
+  const editorClass = {
+    create(config) {
+      const listeners = new Map();
+      const editor = {
+        ...config,
+        dataset: {},
+        dirty: false,
+        addEventListener(name, listener) {
+          listeners.set(name, listener);
+        },
+        dispatch(name) {
+          listeners.get(name)?.({ currentTarget: editor, target: editor });
+        },
+        isDirty() { return this.dirty; },
+      };
+      createdEditors.push(editor);
+      return editor;
+    },
+  };
+  const classes = createFoundationApplications({
+    ApplicationV2: StubApplicationV2,
+    HandlebarsApplicationMixin: (Base) => class extends Base {},
+    game,
+    partyMutationsProvider: () => ({
+      request: async (operation, envelope) => {
+        requests.push({ envelope, operation });
+        return { error: { code: 'staleRevision' }, ok: false };
+      },
+    }),
+    partyNotesProvider: () => ({
+      getNotes: (currentState) => ({
+        notes: currentState.notes,
+        treasureNotes: { ...currentState.treasureNotes },
+      }),
+    }),
+    partyStoreProvider: () => ({ getState: () => state }),
+    proseMirrorElementClass: editorClass,
+    requestIdProvider: () => 'notes-1',
+    textEditorProvider: () => ({
+      enrichHTML: async (html, options) => {
+        enrichmentCalls.push({ html, options });
+        return `enriched:${html}`;
+      },
+    }),
+  });
+  const app = new classes.OpenPartySheetApplication();
+  const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
+  await actions.selectTab.call(app, undefined, { dataset: { tab: 'treasure' } });
+  const context = await app._prepareContext({});
+  assert.equal(context.showTreasure, true);
+  assert.deepEqual(context.partyNotes, {
+    notes: '<p>Saved party note</p>',
+    treasureNotes: {
+      gems: '<p>Saved gems</p>',
+      misc: '<p>Saved curios</p>',
+    },
+  });
+  assert.deepEqual(enrichmentCalls, [
+    { html: '<p>Saved party note</p>', options: { async: true } },
+    { html: '<p>Saved gems</p>', options: { async: true } },
+    { html: '<p>Saved curios</p>', options: { async: true } },
+  ]);
+
+  const hosts = ['gems', 'misc'].map((field) => ({
+    dataset: { partyNoteField: field },
+    replaceChildren(editor) { this.editor = editor; },
+  }));
+  app.element = {
+    querySelector: () => null,
+    querySelectorAll: (selector) => selector === '[data-party-note-editor]'
+      ? hosts
+      : [],
+  };
+  await app._onRender(context, {});
+  assert.equal(createdEditors.length, 2);
+  app._captureMountedPartyNoteEditors();
+  assert.equal((await app._prepareContext({})).hasUnsavedChanges, false);
+  assert.deepEqual(createdEditors.map((editor) => ({
+    collaborate: editor.collaborate,
+    editable: editor.editable,
+    name: editor.name,
+    toggled: editor.toggled,
+    value: editor.value,
+  })), [
+    {
+      collaborate: false,
+      editable: true,
+      name: 'treasureNotes.gems',
+      toggled: true,
+      value: '<p>Saved gems</p>',
+    },
+    {
+      collaborate: false,
+      editable: true,
+      name: 'treasureNotes.misc',
+      toggled: true,
+      value: '<p>Saved curios</p>',
+    },
+  ]);
+
+  hosts[0].editor.value = '<p>Draft gems</p>';
+  hosts[0].editor.dirty = true;
+  state = {
+    ...state,
+    revision: 12,
+    notes: '<p>External party note</p>',
+    treasureNotes: {
+      gems: '<p>External gems</p>',
+      misc: '<p>External curios</p>',
+    },
+  };
+  app._captureMountedPartyNoteEditors({ dirtyOnly: true });
+  app._capturePartyNoteDraft('notes', '<p>Draft party note</p>');
+  const stale = await app._prepareContext({});
+  assert.deepEqual(stale.partyNotes, {
+    notes: '<p>Draft party note</p>',
+    treasureNotes: {
+      gems: '<p>Draft gems</p>',
+      misc: '<p>External curios</p>',
+    },
+  });
+  assert.equal(stale.hasStaleDraft, true);
+
+  await actions.savePartyNotes.call(app);
+
+  assert.deepEqual(requests, [{
+    operation: PARTY_NOTE_OPERATIONS.set,
+    envelope: {
+      expectedRevision: 11,
+      payload: {
+        notes: '<p>Draft party note</p>',
+        treasureNotes: {
+          gems: '<p>Draft gems</p>',
+          misc: '<p>External curios</p>',
+        },
+      },
+      requestId: 'notes-1',
+    },
+  }]);
+  assert.equal((await app._prepareContext({})).hasStaleDraft, true);
+  await actions.discardPartyDrafts.call(app);
+  assert.deepEqual((await app._prepareContext({})).partyNotes, {
+    notes: state.notes,
+    treasureNotes: state.treasureNotes,
+  });
+
+  game.user = { id: 'denied', isGM: false, role: 1 };
+  const readOnlyContext = await app._prepareContext({});
+  await app._onRender(readOnlyContext, {});
+  assert.equal(readOnlyContext.canEdit, false);
+  assert.equal(
+    createdEditors.slice(-2).every((editor) => editor.editable === false),
+    true,
+  );
 });

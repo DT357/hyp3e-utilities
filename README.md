@@ -9,9 +9,11 @@ tracks controlled NPC tokens and provides GM-only reaction, five-category save,
 and morale actions. The shared Party Sheet supports authorized players, party
 members, character/NPC followers, wages and shares, Actor links, token pings,
 reused save/morale actions, conflict-safe local drafts, and automatic cleanup
-of deleted member/follower references. These features are validated on the
-supported Foundry and `hyp3e` versions below. Marching order, supplies, and
-notes are the next active milestone.
+of deleted member/follower references. Marching order, validated manual
+supplies, and sanitized rich-text party/treasure notes are also implemented.
+These features are validated on the supported Foundry and `hyp3e` versions
+below; targeted Party Sheet rerender refinement is the remaining Milestone 3
+work.
 
 ## Compatibility
 

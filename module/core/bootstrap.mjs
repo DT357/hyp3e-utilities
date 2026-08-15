@@ -14,6 +14,7 @@ import {
   createPartyMarchingOrderService,
 } from '../party/party-marching-order.mjs';
 import { createPartyMemberService } from '../party/party-members.mjs';
+import { createPartyNoteService } from '../party/party-notes.mjs';
 import * as partyPermissions from '../party/party-permissions.mjs';
 import { createPartyMutationProtocol } from '../party/party-mutation-protocol.mjs';
 import { createPartyStore } from '../party/party-store.mjs';
@@ -91,6 +92,7 @@ export function registerModuleLifecycle({
   hooks,
   logger,
   foundryApi = globalThis.foundry?.applications?.api,
+  cleanHtml = globalThis.foundry?.utils?.cleanHTML,
   loadTemplates,
   renderTemplate,
   socketlibProvider = () => globalThis.socketlib,
@@ -105,6 +107,7 @@ export function registerModuleLifecycle({
   let partyMarchingOrder;
   let partyMembers;
   let partyMutations;
+  let partyNotes;
   let partyStore;
   let partySupplies;
   let transport;
@@ -158,6 +161,7 @@ export function registerModuleLifecycle({
       partyMarchingOrderProvider: () => partyMarchingOrder,
       partyMembersProvider: () => partyMembers,
       partyMutationsProvider: () => partyMutations,
+      partyNotesProvider: () => partyNotes,
       partyStoreProvider: () => partyStore,
       partySuppliesProvider: () => partySupplies,
     });
@@ -228,6 +232,10 @@ export function registerModuleLifecycle({
     partyMarchingOrder = createPartyMarchingOrderService({
       store: partyStore,
     });
+    partyNotes = createPartyNoteService({
+      sanitizeHtml: cleanHtml,
+      store: partyStore,
+    });
     partySupplies = createPartySupplyService({ store: partyStore });
     foundationInitialized = true;
     if (socketlibReady && transport.initialize()) {
@@ -247,6 +255,7 @@ export function registerModuleLifecycle({
       partyMarchingOrder,
       partyMembers,
       partyMutations,
+      partyNotes,
       partyPermissions,
       partyStore,
       partySupplies,

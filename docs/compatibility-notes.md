@@ -7,8 +7,8 @@ Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through SUP-001 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through SUP-001 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 14.365 | 4.1.0 (`dev`) | Passed through NOT-001 | Full isolated run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Passed through NOT-001 | Isolated portable-build run recorded under `docs/test-runs/` |
 
 The Foundry 14 run used `hyp3e` commit
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
@@ -391,9 +391,25 @@ values, displayed the stale warning, and caused the original-revision save to
 fail without data loss. Discard restored authoritative counts, a fresh retry
 persisted, and the diagnostic restored its initial values during cleanup.
 
+### Rich-text party and treasure notes (NOT-001)
+
+Foundry 13.351 and 14.365 rendered the Party Notes field and both descriptive
+treasure fields with the supported `HTMLProseMirrorElement`. GM and explicitly
+authorized Player clients edited the fields, and all three values persisted as
+one revision. The authoritative mutation removed script elements and inline
+event-handler attributes with `foundry.utils.cleanHTML`; enrichment was used
+only for display.
+
+Both generations preserved a dirty Player editor when an external Party State
+update triggered a rerender. The stale warning appeared, the original-revision
+save failed without overwriting the GM value, and discard restored current
+content. A fresh three-field save synchronized to the GM client, and a full
+Player reload retained both treasure values. Raw Foundry sender identity and
+the complete earlier regression matrix remained green.
+
 ## Current gate
 
 PB-003 through PB-009, FND-001 through FND-006, HUD-001 through HUD-008, and
-PAR-001 through PAR-010, MAR-001 through MAR-003, and SUP-001 are complete. No
+PAR-001 through PAR-010, MAR-001 through MAR-003, SUP-001, and NOT-001 are complete. No
 compatibility finding contradicts the approved architecture. Milestones 1 and
-2 are complete; Milestone 3 is active, with shared rich-text notes next.
+2 are complete; Milestone 3 is active, with targeted rerenders next.

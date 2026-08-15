@@ -10,6 +10,7 @@ import { PARTY_FOLLOWER_OPERATIONS } from '../party/party-followers.mjs';
 import { evaluatePartyEditPermission } from '../party/party-permissions.mjs';
 import { PARTY_MARCHING_OPERATIONS } from '../party/party-marching-order.mjs';
 import { PARTY_MEMBER_OPERATIONS } from '../party/party-members.mjs';
+import { PARTY_NOTE_OPERATIONS } from '../party/party-notes.mjs';
 import { PARTY_SUPPLY_OPERATIONS } from '../party/party-supplies.mjs';
 import { createPartyStateDefault } from '../party/party-state.mjs';
 import {
@@ -46,9 +47,14 @@ export function createFoundationApplications({
   partyMarchingOrderProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMarchingOrder,
   partyMembersProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMembers,
   partyMutationsProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyMutations,
+  partyNotesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyNotes,
   partyStoreProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partyStore,
   partySuppliesProvider = () => game.modules?.get?.(MODULE_ID)?.api?.partySupplies,
+  proseMirrorElementClass = globalThis.foundry?.applications?.elements
+    ?.HTMLProseMirrorElement,
   requestIdProvider = createRequestId,
+  textEditorProvider = () => globalThis.foundry?.applications?.ux?.TextEditor
+    ?.implementation,
 }) {
   const HandlebarsApplication = HandlebarsApplicationMixin(ApplicationV2);
   let partySheetInstance = null;
@@ -208,6 +214,7 @@ export function createFoundationApplications({
       this._activeTab = 'overview';
       this._followerDrafts = new Map();
       this._marchingNoteDrafts = new Map();
+      this._partyNoteDraft = null;
       this._supplyDraft = null;
       this._partyHookSubscriptions = [];
     }
@@ -240,6 +247,7 @@ export function createFoundationApplications({
         rollMemberSave: OpenPartySheetApplication.rollMemberSave,
         saveFollower: OpenPartySheetApplication.saveFollower,
         saveMarchingNote: OpenPartySheetApplication.saveMarchingNote,
+        savePartyNotes: OpenPartySheetApplication.savePartyNotes,
         saveSupplies: OpenPartySheetApplication.saveSupplies,
         selectTab: OpenPartySheetApplication.selectTab,
       },
@@ -252,6 +260,7 @@ export function createFoundationApplications({
     static async selectTab(_event, target) {
       const tab = target?.dataset?.tab;
       if (!['overview', 'followers', 'marchingOrder', 'supplies', 'treasure', 'notes'].includes(tab)) return;
+      await this._flushPartyNoteEditors();
       this._activeTab = tab;
       await this.render({ force: true });
     }
@@ -386,6 +395,7 @@ export function createFoundationApplications({
     static async discardPartyDrafts() {
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
+      this._partyNoteDraft = null;
       this._supplyDraft = null;
       await this.render({ force: true });
     }
@@ -560,6 +570,22 @@ export function createFoundationApplications({
       return response;
     }
 
+    static async savePartyNotes() {
+      await this._flushPartyNoteEditors();
+      const draft = this._partyNoteDraft;
+      if (!draft) return null;
+      const response = await this._requestPartyOperation(
+        PARTY_NOTE_OPERATIONS.set,
+        draft.values,
+        draft.baseRevision,
+        `${APP_NAMESPACE}.partySheet.noteOperationFailed`,
+      );
+      if (!response?.ok) return response;
+      this._partyNoteDraft = null;
+      await this.render({ force: true });
+      return response;
+    }
+
     async _requestPartyOperation(
       operation,
       payload,
@@ -648,6 +674,111 @@ export function createFoundationApplications({
           section.querySelector(`[data-field="${key}"]`)?.value ?? '',
         ])),
       };
+    }
+
+    _capturePartyNoteDraft(field, value, baseRevision) {
+      if (!['notes', 'gems', 'misc'].includes(field)) return;
+      const state = partyStoreProvider()?.getState?.()
+        ?? createPartyStateDefault();
+      const saved = partyNotesProvider()?.getNotes?.(state) ?? {
+        notes: state.notes ?? '',
+        treasureNotes: { ...state.treasureNotes },
+      };
+      const current = this._partyNoteDraft?.values ?? saved;
+      const nextValue = value ?? '';
+      const currentValue = field === 'notes'
+        ? current.notes
+        : current.treasureNotes[field];
+      if (currentValue === nextValue) return;
+      const values = {
+        notes: current.notes,
+        treasureNotes: { ...current.treasureNotes },
+      };
+      if (field === 'notes') values.notes = nextValue;
+      else values.treasureNotes[field] = nextValue;
+      if (
+        values.notes === saved.notes
+        && values.treasureNotes.gems === saved.treasureNotes.gems
+        && values.treasureNotes.misc === saved.treasureNotes.misc
+      ) {
+        this._partyNoteDraft = null;
+        return;
+      }
+      this._partyNoteDraft = {
+        baseRevision: this._partyNoteDraft?.baseRevision
+          ?? baseRevision
+          ?? state.revision,
+        values,
+      };
+    }
+
+    _getMountedPartyNoteEditors() {
+      return Array.from(this.element?.querySelectorAll?.(
+        '[data-party-note-editor]',
+      ) ?? []).map((host) => ({
+        editor: host.querySelector?.('prose-mirror') ?? host.editor,
+        field: host.dataset?.partyNoteField,
+        revision: Number(host.dataset?.partyNoteRevision),
+      })).filter(({ editor, field }) => editor && field);
+    }
+
+    _captureMountedPartyNoteEditors({ dirtyOnly = false } = {}) {
+      for (const { editor, field, revision } of this._getMountedPartyNoteEditors()) {
+        if (dirtyOnly && editor.isDirty?.() !== true) continue;
+        this._capturePartyNoteDraft(field, editor.value ?? '', revision);
+      }
+    }
+
+    async _flushPartyNoteEditors() {
+      const editors = this._getMountedPartyNoteEditors();
+      this._captureMountedPartyNoteEditors({ dirtyOnly: true });
+      for (const { editor } of editors) {
+        if (editor.open) editor.open = false;
+      }
+      await Promise.resolve();
+    }
+
+    _mountPartyNoteEditors(context) {
+      const hosts = Array.from(this.element?.querySelectorAll?.(
+        '[data-party-note-editor]',
+      ) ?? []);
+      if (!hosts.length) return;
+      if (typeof proseMirrorElementClass?.create !== 'function') {
+        logger.warn?.('Foundry ProseMirror element API is unavailable.');
+        return;
+      }
+      for (const host of hosts) {
+        const field = host.dataset?.partyNoteField;
+        if (!['notes', 'gems', 'misc'].includes(field)) continue;
+        host.dataset.partyNoteRevision = String(context.state.revision);
+        const isPartyNotes = field === 'notes';
+        const value = isPartyNotes
+          ? context.partyNotes.notes
+          : context.partyNotes.treasureNotes[field];
+        const enriched = isPartyNotes
+          ? context.enrichedPartyNotes.notes
+          : context.enrichedPartyNotes.treasureNotes[field];
+        const editor = proseMirrorElementClass.create({
+          collaborate: false,
+          editable: context.canEdit,
+          enriched,
+          name: isPartyNotes ? 'notes' : `treasureNotes.${field}`,
+          toggled: true,
+          value,
+        });
+        if (context.canEdit) {
+          const capture = () => {
+            this._capturePartyNoteDraft(
+              field,
+              editor.value ?? '',
+              context.state.revision,
+            );
+          };
+          editor.addEventListener('change', capture);
+          editor.addEventListener('input', capture);
+        }
+        host.replaceChildren(editor);
+      }
     }
 
     _handleMarchingDragStart(event) {
@@ -808,6 +939,32 @@ export function createFoundationApplications({
         ? { ...this._supplyDraft.values }
         : partySuppliesProvider()?.getSupplies?.(state)
           ?? { ...state.supplies };
+      const savedPartyNotes = partyNotesProvider()?.getNotes?.(state) ?? {
+        notes: state.notes ?? '',
+        treasureNotes: { ...state.treasureNotes },
+      };
+      const partyNotes = decision.allowed && this._partyNoteDraft
+        ? {
+          notes: this._partyNoteDraft.values.notes,
+          treasureNotes: {
+            ...this._partyNoteDraft.values.treasureNotes,
+          },
+        }
+        : savedPartyNotes;
+      const textEditor = textEditorProvider();
+      const enrichHtml = textEditor?.enrichHTML;
+      const enrich = typeof enrichHtml === 'function'
+        ? (html) => enrichHtml.call(textEditor, html, { async: true })
+        : async () => '';
+      const [enrichedNotes, enrichedGems, enrichedMisc] = await Promise.all([
+        enrich(partyNotes.notes),
+        enrich(partyNotes.treasureNotes.gems),
+        enrich(partyNotes.treasureNotes.misc),
+      ]);
+      const enrichedPartyNotes = {
+        notes: enrichedNotes,
+        treasureNotes: { gems: enrichedGems, misc: enrichedMisc },
+      };
       const saveOptions = SAVE_KEYS.map((id) => ({
         id,
         label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
@@ -836,23 +993,29 @@ export function createFoundationApplications({
         hasStaleDraft: decision.allowed && [
           ...this._followerDrafts.values(),
           ...this._marchingNoteDrafts.values(),
+          ...(this._partyNoteDraft ? [this._partyNoteDraft] : []),
           ...(this._supplyDraft ? [this._supplyDraft] : []),
         ].some((draft) => draft.baseRevision !== state.revision),
         hasUnsavedChanges:
           decision.allowed && (
             this._followerDrafts.size > 0
             || this._marchingNoteDrafts.size > 0
+            || this._partyNoteDraft !== null
             || this._supplyDraft !== null
           ),
         hasMembers: members.length > 0,
         members,
         marchingGroups,
+        enrichedPartyNotes,
+        partyNotes,
         permissionReason: decision.reason,
         saveOptions,
         showOverview: this._activeTab === 'overview',
         showFollowers: this._activeTab === 'followers',
         showMarchingOrder: this._activeTab === 'marchingOrder',
+        showNotes: this._activeTab === 'notes',
         showSupplies: this._activeTab === 'supplies',
+        showTreasure: this._activeTab === 'treasure',
         state,
         supplies,
         tabs,
@@ -871,6 +1034,7 @@ export function createFoundationApplications({
         '[data-party-marching-order]',
       );
       const supplies = this.element?.querySelector?.('[data-party-supplies]');
+      this._mountPartyNoteEditors(context);
       if (context.canEdit !== true) return;
       followerDropZone?.addEventListener(
         'input',
@@ -916,6 +1080,7 @@ export function createFoundationApplications({
       if (this._partyHookSubscriptions.length) return;
       const rerender = () => {
         if (!this.rendered) return;
+        this._captureMountedPartyNoteEditors({ dirtyOnly: true });
         void this.render({ force: true }).catch((error) => {
           logger.warn?.('Party Sheet refresh failed.', error);
         });
@@ -944,6 +1109,7 @@ export function createFoundationApplications({
       this._partyHookSubscriptions = [];
       this._followerDrafts.clear();
       this._marchingNoteDrafts.clear();
+      this._partyNoteDraft = null;
       this._supplyDraft = null;
       try {
         return await super.close(options);

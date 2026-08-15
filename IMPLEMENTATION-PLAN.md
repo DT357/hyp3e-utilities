@@ -228,7 +228,7 @@ M2 is complete when all PAR items are `DONE` and the 0.2.0 package passes the fu
 | MAR-002 | `DONE` | MAR-001, PAR-005 | Marching-order UI with accessible controls and drag/drop enhancement | Mouse, keyboard, stale update, and mobile-width checks |
 | MAR-003 | `DONE` | MAR-002, HUD-003 | Party marching-order chat report | Ordering, escaping, and empty-slot tests |
 | SUP-001 | `DONE` | PAR-004, PAR-005 | Supplies fields and validation | Authorized editing, invalid numbers, refresh, and persistence tests |
-| NOT-001 | `TODO` | PAR-004, PAR-005 | Party and treasure notes using the supported rich-text editor | Sanitization, save/cancel, permissions, and reload checks |
+| NOT-001 | `DONE` | PAR-004, PAR-005 | Party and treasure notes using the supported rich-text editor | Sanitization, save/cancel, permissions, and reload checks |
 | REF-001 | `TODO` | MAR-002, SUP-001, NOT-001 | Targeted rerender policy for Actor/item/state updates | No lost edits and no unnecessary full-app render loop |
 
 M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 package passes prior milestone regression tests.
@@ -344,10 +344,8 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-The foundation, NPC Action HUD, Party Sheet permission policy, authenticated
-party-mutation protocol, versioned state model, authoritative store, and
-singleton Party Sheet shell are complete. Proceed next with the Overview tab
-in PAR-006.
+Milestones 0 through 2 are complete. Milestone 3 is complete through NOT-001;
+proceed next with targeted Party Sheet rerenders in REF-001.
 
 ## 15. Current Project Status
 
@@ -356,7 +354,7 @@ in PAR-006.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 2 are complete.
-- Immediate next batch: Implement shared rich-text party and treasure notes in NOT-001.
+- Immediate next batch: Consolidate targeted Party Sheet rerenders in REF-001.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

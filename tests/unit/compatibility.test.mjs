@@ -100,6 +100,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
   };
   class ApplicationV2 {}
   const getApi = registerModuleLifecycle({
+    cleanHtml: (html) => html,
     gameProvider: () => activeGame,
     hooks,
     logger: { info: () => {}, warn: () => {} },
@@ -140,6 +141,7 @@ test('bootstrap waits for init data and survives dependency-first hook ordering'
   assert.equal(typeof getApi().partyMembers.getMemberRows, 'function');
   assert.equal(typeof getApi().partyMarchingOrder.getModel, 'function');
   assert.equal(typeof getApi().partyMutations.request, 'function');
+  assert.equal(typeof getApi().partyNotes.getNotes, 'function');
   assert.equal(typeof getApi().partyStore.getState, 'function');
   assert.equal(typeof getApi().partySupplies.getSupplies, 'function');
   assert.equal(subscriptions.size > 0, true);

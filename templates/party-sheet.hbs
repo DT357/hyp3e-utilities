@@ -440,7 +440,52 @@
               {{/if}}
             </section>
           {{else}}
-            <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+            {{#if showTreasure}}
+              <section class="hyp3e-utilities__party-notes" data-party-notes>
+                <p>{{localize "hyp3e-utilities.applications.partySheet.treasureNotesHelp"}}</p>
+                <div class="hyp3e-utilities__party-note-grid">
+                  <section class="hyp3e-utilities__party-note-field">
+                    <h3>{{localize "hyp3e-utilities.applications.partySheet.gemNotes"}}</h3>
+                    <div
+                      class="hyp3e-utilities__party-note-editor"
+                      data-party-note-editor
+                      data-party-note-field="gems"
+                    ></div>
+                  </section>
+                  <section class="hyp3e-utilities__party-note-field">
+                    <h3>{{localize "hyp3e-utilities.applications.partySheet.miscTreasureNotes"}}</h3>
+                    <div
+                      class="hyp3e-utilities__party-note-editor"
+                      data-party-note-editor
+                      data-party-note-field="misc"
+                    ></div>
+                  </section>
+                </div>
+                {{#if canEdit}}
+                  <button type="button" data-action="savePartyNotes">
+                    {{localize "hyp3e-utilities.applications.partySheet.saveTreasureNotes"}}
+                  </button>
+                {{/if}}
+              </section>
+            {{else}}
+              {{#if showNotes}}
+                <section class="hyp3e-utilities__party-notes" data-party-notes>
+                  <p>{{localize "hyp3e-utilities.applications.partySheet.partyNotesHelp"}}</p>
+                  <div
+                    class="hyp3e-utilities__party-note-editor"
+                    data-party-note-editor
+                    data-party-note-field="notes"
+                  ></div>
+                  {{#if canEdit}}
+                    <button type="button" data-action="savePartyNotes">
+                      {{localize "hyp3e-utilities.applications.partySheet.savePartyNotes"}}
+                    </button>
+                  {{/if}}
+                </section>
+              {{else}}
+                <p>{{localize "hyp3e-utilities.applications.partySheet.shellMessage"}}</p>
+              {{/if}}
+            {{/if}}
           {{/if}}
         {{/if}}
       {{/if}}
