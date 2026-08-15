@@ -79,6 +79,7 @@ function createHarness() {
         throw new Error(`Unexpected setting ${key}`);
       },
     },
+    user: gm,
     users,
   };
   let requesterUserId = trusted.id;

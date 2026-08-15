@@ -4,7 +4,7 @@ Version: 1.0
 
 Created: 2026-08-14
 
-Status: Milestone 3 Marching Order, Supplies, and Notes in progress
+Status: Milestone 6 hardening in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -279,7 +279,7 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
 | HRD-001 | `DONE` | M1–M5 | Party-state and treasury migration coverage for every released schema | Upgrade fixtures from each released version |
-| HRD-002 | `TODO` | M1–M5 | Authorization and payload-validation audit | All player-triggerable handlers reviewed and adversarial tests pass |
+| HRD-002 | `DONE` | M1–M5 | Authorization and payload-validation audit | All player-triggerable handlers reviewed and adversarial tests pass |
 | HRD-003 | `TODO` | M1–M5 | Accessibility and localization pass | Keyboard-only flow, labels, focus, contrast, and missing-key scan |
 | HRD-004 | `TODO` | M1–M5 | Performance and hook-lifecycle pass | Large party, large treasury, rapid selection, scene change, and repeated app open/close |
 | HRD-005 | `TODO` | PB-003, PB-007, M1–M5 | Final Foundry 13/14 and current `hyp3e` compatibility matrix | Clean-world installation and full smoke suite on each supported combination |
@@ -344,8 +344,8 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 5 are complete. Proceed next with the 1.0.0 hardening
-work in HRD-001.
+Milestones 0 through 5 and HRD-001 through HRD-002 are complete. Proceed next
+with the accessibility and localization hardening in HRD-003.
 
 ## 15. Current Project Status
 
@@ -354,7 +354,7 @@ work in HRD-001.
 - Official `hyp3e` reference: Connected to the upstream `dev` branch.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 5 are complete.
-- Immediate next batch: Implement migration hardening in HRD-001.
+- Immediate next batch: Complete accessibility and localization in HRD-003.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).

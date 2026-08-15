@@ -200,6 +200,56 @@ test('in-flight and completed duplicate request IDs execute exactly once', async
   assert.deepEqual(completedDuplicate, firstResult);
 });
 
+test('request ID idempotency is scoped to one requester and operation', async () => {
+  const harness = createHarness();
+  let executions = 0;
+  harness.protocol.registerOperation('party.secondMutation', {
+    execute: async () => {
+      executions += 1;
+      return { operation: 'second' };
+    },
+    validatePayload(payload) {
+      assertExactObject(payload, { allowedKeys: [] });
+      return {};
+    },
+  });
+
+  const requestId = 'shared-across-operations';
+  const first = await harness.protocol.request(
+    'party.addMember',
+    request(requestId),
+  );
+  const second = await harness.protocol.request(
+    'party.secondMutation',
+    request(requestId, {}),
+  );
+
+  assert.equal(first.ok, true);
+  assert.equal(first.operation, 'party.addMember');
+  assert.equal(second.ok, true);
+  assert.equal(second.operation, 'party.secondMutation');
+  assert.deepEqual(second.value, { operation: 'second' });
+  assert.equal(harness.executionCount, 1);
+  assert.equal(executions, 1);
+});
+
+test('a non-active GM client cannot execute authoritative operations', async () => {
+  const harness = createHarness();
+  harness.game.user = { id: 'secondary-gm', isGM: true, role: 4 };
+
+  const response = await harness.protocol.request(
+    'party.addMember',
+    request('wrong-gm-client'),
+  );
+
+  assert.equal(response.ok, false);
+  assert.equal(
+    response.error.code,
+    PARTY_MUTATION_ERROR_CODES.notActiveGm,
+  );
+  assert.equal(harness.executionCount, 0);
+});
+
 test('no active GM and unknown operations return structured client errors', async () => {
   const harness = createHarness();
   harness.game.users.activeGM = null;

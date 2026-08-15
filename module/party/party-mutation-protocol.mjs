@@ -168,6 +168,14 @@ export function createPartyMutationProtocol({
     }).allowed;
   }
 
+  function isActiveGmClient() {
+    return Boolean(
+      game?.user?.isGM
+      && game.users?.activeGM?.id
+      && game.users.activeGM.id === game.user.id,
+    );
+  }
+
   function rememberCompleted(key, result) {
     completedRequests.set(key, result);
     while (completedRequests.size > maxCompletedRequests) {
@@ -235,6 +243,15 @@ export function createPartyMutationProtocol({
       );
     }
 
+    if (!isActiveGmClient()) {
+      return createErrorResult(
+        operation,
+        request.requestId,
+        PARTY_MUTATION_ERROR_CODES.notActiveGm,
+        'Party operations can only be executed by the active GM.',
+      );
+    }
+
     const requester = getRequester(requesterUserId);
     if (!requester || !authorize(requester)) {
       return createErrorResult(
@@ -245,7 +262,7 @@ export function createPartyMutationProtocol({
       );
     }
 
-    const key = `${requester.id}:${request.requestId}`;
+    const key = `${requester.id}:${operation}:${request.requestId}`;
     if (completedRequests.has(key)) return completedRequests.get(key);
     if (inFlightRequests.has(key)) return inFlightRequests.get(key);
 
