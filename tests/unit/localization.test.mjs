@@ -289,6 +289,30 @@ test('Party Sheet member roster keeps portrait ping and save actions compact', a
   );
 });
 
+test('Party Sheet treasury rows place Take after clearly spaced quantity metrics', async () => {
+  const [template, styles] = await Promise.all([
+    readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),
+    readFile(path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'), 'utf8'),
+  ]);
+
+  assert.match(
+    template,
+    /treasury-item-quantity[\s\S]*treasury-item-take[\s\S]*data-action="takeTreasuryItem"/,
+  );
+  assert.match(
+    styles,
+    /treasury-items\s*>\s*li\s*\{[^}]*grid-template-areas:\s*"image identity quantity take";[^}]*grid-template-columns:\s*3rem minmax\(8rem,\s*1fr\) auto auto;/s,
+  );
+  assert.match(
+    styles,
+    /treasury-item-quantity\s*\{[^}]*column-gap:\s*0\.85rem;[^}]*grid-area:\s*quantity;[^}]*grid-auto-flow:\s*column;/s,
+  );
+  assert.match(
+    styles,
+    /treasury-item-take\s*\{[^}]*grid-area:\s*take;/s,
+  );
+});
+
 test('Party Sheet follower roster mirrors compact member controls', async () => {
   const [template, styles] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),

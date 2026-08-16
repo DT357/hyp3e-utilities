@@ -3507,6 +3507,7 @@ async function testPlayerItemTransfers() {
   });
   const sheet = new api.applications.OpenPartySheetApplication();
   let partySheetTakeControlRendered = false;
+  let partySheetTakeControlAligned = false;
   try {
     await sheet.render({ force: true });
     sheet.element.querySelector(
@@ -3517,6 +3518,30 @@ async function testPlayerItemTransfers() {
         `[data-action="takeTreasuryItem"][data-item-uuid="${toTreasury.value?.destinationItemUuid}"]:not([disabled])`,
       ),
     ));
+    const takeControl = sheet.element?.querySelector(
+      `[data-action="takeTreasuryItem"][data-item-uuid="${toTreasury.value?.destinationItemUuid}"]`,
+    );
+    const treasuryRow = takeControl?.closest('[data-treasury-item]');
+    const quantityMetrics = treasuryRow?.querySelector(
+      '.hyp3e-utilities__treasury-item-quantity',
+    );
+    const takeRect = takeControl?.getBoundingClientRect?.();
+    const metricsRect = quantityMetrics?.getBoundingClientRect?.();
+    const metricRects = [...(quantityMetrics?.children ?? [])].map(
+      (metric) => metric.getBoundingClientRect(),
+    );
+    partySheetTakeControlAligned = Boolean(
+      takeRect
+      && metricsRect
+      && Math.abs(
+        (takeRect.top + (takeRect.height / 2))
+          - (metricsRect.top + (metricsRect.height / 2)),
+      ) <= 2
+      && takeRect.left >= metricsRect.right
+      && metricRects.slice(1).every((rect, index) => (
+        rect.left - metricRects[index].right >= 8
+      )),
+    );
   }
   finally {
     if (sheet.rendered) await sheet.close();
@@ -3549,6 +3574,7 @@ async function testPlayerItemTransfers() {
       && playerAuditMessages.every((message) => message.whisper.length === 0),
     bidirectionalSucceeded: toTreasury.ok && fromTreasury.ok,
     ownershipEnforced: actor.testUserPermission(game.user, 'OWNER'),
+    partySheetTakeControlAligned,
     partySheetTakeControlRendered,
     quantityConserved: api.adapter.getItemQuantity(returnedItem).value === 3,
   };

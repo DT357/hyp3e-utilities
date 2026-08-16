@@ -164,7 +164,8 @@ Torches, lanterns, oil, and rations are shared manual counts. Blank or
 non-negative whole-number values are accepted and saved together.
 
 This tab also lists the managed treasury's shared equipment for authorized
-editors. Supported Items show quantity, bundle, maximum, and transfer controls.
+editors. Supported Items show Quantity, Bundle, and Maximum in separated
+columns, with **Take** immediately to their right.
 
 ### Treasure
 

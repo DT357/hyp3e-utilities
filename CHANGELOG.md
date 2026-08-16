@@ -31,6 +31,8 @@ All notable changes to Hyp3e Utilities are documented here.
   small ApplicationV2 window with save-category, situational-modifier, and
   roll-type controls. Roll actions and remove controls align to the row's right
   edge.
+- Kept Shared Equipment quantity metrics and Take controls on one row, with
+  clearer spacing between Quantity, Bundle, and Maximum.
 - Replaced the full-width character-sheet **To Party** controls with accessible
   dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft
