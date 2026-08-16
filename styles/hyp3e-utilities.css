@@ -319,7 +319,13 @@
   margin: 0;
 }
 
-.hyp3e-utilities .hyp3e-utilities__party-coin-amounts,
+.hyp3e-utilities .hyp3e-utilities__party-coin-amounts {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-coin-recipients {
   display: grid;
   gap: 0.5rem;
@@ -330,6 +336,11 @@
 .hyp3e-utilities .hyp3e-utilities__party-coin-amounts label {
   display: grid;
   gap: 0.2rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-coin-amounts input {
+  min-width: 0;
+  width: 100%;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-coin-recipients label {
@@ -801,6 +812,11 @@
 }
 
 @media (max-width: 44rem) {
+  .hyp3e-utilities .hyp3e-utilities__party-coin-amounts {
+    grid-template-columns:
+      repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
+  }
+
   .hyp3e-utilities .hyp3e-utilities__treasury-items > li {
     grid-template-areas:
       "image identity identity"

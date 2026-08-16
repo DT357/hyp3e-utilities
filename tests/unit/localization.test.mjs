@@ -313,6 +313,26 @@ test('Party Sheet treasury rows place Take after clearly spaced quantity metrics
   );
 });
 
+test('Party Sheet coin split keeps five denominations on one desktop row', async () => {
+  const styles = await readFile(
+    path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'),
+    'utf8',
+  );
+
+  assert.match(
+    styles,
+    /party-coin-amounts\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\);/s,
+  );
+  assert.match(
+    styles,
+    /party-coin-amounts input\s*\{[^}]*min-width:\s*0;[^}]*width:\s*100%;/s,
+  );
+  assert.match(
+    styles,
+    /@media\s*\(max-width:\s*44rem\)[\s\S]*party-coin-amounts\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fit,/s,
+  );
+});
+
 test('Party Sheet follower roster mirrors compact member controls', async () => {
   const [template, styles] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),

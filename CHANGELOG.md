@@ -33,6 +33,7 @@ All notable changes to Hyp3e Utilities are documented here.
   edge.
 - Kept Shared Equipment quantity metrics and Take controls on one row, with
   clearer spacing between Quantity, Bundle, and Maximum.
+- Kept all five Treasure coin-split entry fields on one desktop row.
 - Replaced the full-width character-sheet **To Party** controls with accessible
   dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft

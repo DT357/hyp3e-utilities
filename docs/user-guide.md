@@ -171,7 +171,8 @@ columns, with **Take** immediately to their right.
 
 The Treasure tab shows treasury status and all five native coin denominations:
 CP, SP, EP, GP, and PP. Authorized editors can preview and confirm a selected
-coin split. GMs also see treasury recovery/binding controls.
+coin split. At the normal Party Sheet width, all five coin-entry fields share
+one row. GMs also see treasury recovery/binding controls.
 
 Gems/jewelry and other descriptive treasure have rich-text fields here. These
 notes are descriptive Party State; they are not embedded Items or coin values.
