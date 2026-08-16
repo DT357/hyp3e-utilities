@@ -291,6 +291,53 @@ test('Party Sheet member roster keeps portrait ping and save actions compact', a
   );
 });
 
+test('Party Sheet follower roster mirrors compact member controls', async () => {
+  const [template, styles] = await Promise.all([
+    readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),
+    readFile(path.join(REPOSITORY_ROOT, 'styles', 'hyp3e-utilities.css'), 'utf8'),
+  ]);
+  const rosterStart = template.indexOf('{{#if hasFollowers}}');
+  const rosterEnd = template.indexOf('{{#if showMarchingOrder}}');
+  const followerRoster = template.slice(rosterStart, rosterEnd);
+
+  assert.match(
+    followerRoster,
+    /party-follower-portrait[\s\S]*data-action="pingActor"[\s\S]*<img/,
+  );
+  assert.doesNotMatch(
+    followerRoster,
+    /data-action="pingActor"[\s\S]*pingToken"\}\}<\/button>/,
+  );
+  assert.match(
+    followerRoster,
+    /party-member-stats--follower[\s\S]*party-member-stat--hp[\s\S]*party-member-stat--ac[\s\S]*party-member-stat--dr[\s\S]*party-member-stat--movement[\s\S]*party-member-stat--share/,
+  );
+  assert.match(
+    followerRoster,
+    /party-member-stat--share[\s\S]*data-field="follower-share"/,
+  );
+  assert.match(
+    followerRoster,
+    /party-employment--compact[\s\S]*wageGpShort[\s\S]*data-field="follower-wage"[\s\S]*saveFollowerShort/,
+  );
+  assert.match(
+    followerRoster,
+    /party-row-actions--follower[\s\S]*data-field="party-save"[\s\S]*rollFollowerSave[\s\S]*rollFollowerMorale/,
+  );
+  assert.ok(
+    followerRoster.indexOf('party-row-actions--follower')
+      < followerRoster.indexOf('party-follower-remove--icon'),
+  );
+  assert.match(
+    styles,
+    /party-employment--compact\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*nowrap;/s,
+  );
+  assert.match(
+    styles,
+    /party-row-actions--follower\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-column:\s*3\s*\/\s*-1;/s,
+  );
+});
+
 test('fixed HUD foreground colors meet WCAG AA contrast', () => {
   function rgb(hex) {
     return [1, 3, 5].map((offset) => Number.parseInt(

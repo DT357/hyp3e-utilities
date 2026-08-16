@@ -133,9 +133,10 @@ does not delete the Actor.
 
 - Drag a durable world `character` or `npc` Actor onto the Followers drop area.
 - Set a non-negative whole-number daily wage in GP.
-- Set a share in quarter-share increments, then choose **Save Wage and Share**.
-- Open or ping the Actor, remove/clean up the row, or have the GM roll saves and
-  individual/bulk NPC morale.
+- Set a share in quarter-share increments, then choose the compact **Save**
+  action; its tooltip identifies the full **Save Wage and Share** operation.
+- Open the Actor, click its portrait to ping, use the final red X to remove it,
+  or have the GM roll saves and individual/bulk NPC morale.
 - Authorized editors can preview and settle selected follower wages.
 
 A tracked Actor cannot simultaneously be both a member and a follower.

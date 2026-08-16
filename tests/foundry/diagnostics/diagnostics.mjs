@@ -2093,6 +2093,52 @@ async function testProductionPartyFollowers(character, npc) {
   );
   const wageInput = npcElement?.querySelector('[data-field="follower-wage"]');
   const shareInput = npcElement?.querySelector('[data-field="follower-share"]');
+  const followerPortrait = npcElement?.querySelector(
+    '.hyp3e-utilities__party-follower-portrait[data-action="pingActor"]',
+  );
+  const followerStats = npcElement?.querySelector(
+    '.hyp3e-utilities__party-member-stats--follower',
+  );
+  const followerEmployment = npcElement?.querySelector(
+    '.hyp3e-utilities__party-employment--compact',
+  );
+  const followerActions = npcElement?.querySelector(
+    '.hyp3e-utilities__party-row-actions--follower',
+  );
+  const followerRemove = npcElement?.querySelector(
+    '.hyp3e-utilities__party-follower-remove--icon',
+  );
+  const followerStatRects = Object.fromEntries([
+    'hp', 'ac', 'dr', 'movement', 'share',
+  ].map((stat) => [
+    stat,
+    npcElement?.querySelector(
+      `.hyp3e-utilities__party-member-stat--${stat}`,
+    )?.getBoundingClientRect?.(),
+  ]));
+  const followerStatsRect = followerStats?.getBoundingClientRect?.();
+  const followerEmploymentRect = followerEmployment?.getBoundingClientRect?.();
+  const followerActionsRect = followerActions?.getBoundingClientRect?.();
+  const compactFollowerRosterRendered = Boolean(
+    followerPortrait?.querySelector('img')
+    && followerPortrait.getAttribute('aria-label')
+    && followerPortrait.textContent.trim() === ''
+    && shareInput?.closest('.hyp3e-utilities__party-member-stat--share')
+    && wageInput?.closest('.hyp3e-utilities__party-employment--compact')
+    && followerActions?.querySelector('[data-field="party-save"]')
+    && followerActions?.querySelector('[data-action="rollFollowerSave"]')
+    && followerActions?.querySelector('[data-action="rollFollowerMorale"]')
+    && followerRemove?.querySelector('.fa-xmark')
+    && followerRemove === npcElement.lastElementChild
+    && Math.abs(followerStatRects.hp.top - followerStatRects.ac.top) <= 2
+    && Math.abs(followerStatRects.ac.top - followerStatRects.dr.top) <= 2
+    && followerStatRects.movement.top > followerStatRects.hp.top
+    && Math.abs(
+      followerStatRects.movement.top - followerStatRects.share.top,
+    ) <= 2
+    && followerStatsRect.right <= followerEmploymentRect.left
+    && followerActionsRect.top >= followerStatsRect.bottom,
+  );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';
   npcElement?.querySelector('[data-action="saveFollower"]')?.click();
@@ -2155,6 +2201,7 @@ async function testProductionPartyFollowers(character, npc) {
       ))
       && npcRow?.summary?.type === 'npc',
     npcSubtypeRendered,
+    compactFollowerRosterRendered,
     employmentSaved,
     actorSheetOpened,
     characterRemoved,

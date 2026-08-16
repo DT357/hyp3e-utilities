@@ -343,7 +343,32 @@
                   data-follower-row
                   data-party-actor-row
                 >
-                  <img src="{{img}}" alt="" width="48" height="48">
+                  {{#if missing}}
+                    <img
+                      class="hyp3e-utilities__party-member-portrait-image"
+                      src="{{img}}"
+                      alt=""
+                      width="40"
+                      height="40"
+                    >
+                  {{else}}
+                    <button
+                      type="button"
+                      class="hyp3e-utilities__party-member-portrait hyp3e-utilities__party-follower-portrait"
+                      data-action="pingActor"
+                      data-actor-uuid="{{actorUuid}}"
+                      data-tooltip="{{localize "hyp3e-utilities.applications.partySheet.pingTokenFor" name=name}}"
+                      aria-label="{{localize "hyp3e-utilities.applications.partySheet.pingTokenFor" name=name}}"
+                    >
+                      <img
+                        class="hyp3e-utilities__party-member-portrait-image"
+                        src="{{img}}"
+                        alt=""
+                        width="40"
+                        height="40"
+                      >
+                    </button>
+                  {{/if}}
                   <div class="hyp3e-utilities__party-member-identity">
                     {{#if missing}}
                       <strong>{{name}}</strong>
@@ -365,68 +390,56 @@
                     {{/if}}
                   </div>
                   {{#unless missing}}
-                    <dl class="hyp3e-utilities__party-member-stats">
-                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}} / {{summary.hp.max}}</dd></div>
-                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
-                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
-                      <div><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
+                    <dl class="hyp3e-utilities__party-member-stats hyp3e-utilities__party-member-stats--overview hyp3e-utilities__party-member-stats--follower">
+                      <div class="hyp3e-utilities__party-member-stat--hp"><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}}/{{summary.hp.max}}</dd></div>
+                      <div class="hyp3e-utilities__party-member-stat--ac"><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
+                      <div class="hyp3e-utilities__party-member-stat--dr"><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
+                      <div class="hyp3e-utilities__party-member-stat--movement"><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
+                      <div class="hyp3e-utilities__party-member-stat--share">
+                        <dt><label for="hyp3e-utilities-follower-share-{{@index}}">{{localize "hyp3e-utilities.applications.partySheet.share"}}</label></dt>
+                        <dd>
+                          {{#if ../canEdit}}
+                            <input
+                              id="hyp3e-utilities-follower-share-{{@index}}"
+                              data-field="follower-share"
+                              type="number"
+                              min="0"
+                              step="0.25"
+                              value="{{share}}"
+                            >
+                          {{else}}
+                            {{share}}
+                          {{/if}}
+                        </dd>
+                      </div>
                     </dl>
                   {{/unless}}
-                  <div class="hyp3e-utilities__party-employment">
-                    {{#if ../canEdit}}
-                      <label for="hyp3e-utilities-follower-wage-{{@index}}">
-                        {{localize "hyp3e-utilities.applications.partySheet.wageGp"}}
-                      </label>
-                      <input
-                        id="hyp3e-utilities-follower-wage-{{@index}}"
-                        data-field="follower-wage"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value="{{wageGp}}"
-                      >
-                      <label for="hyp3e-utilities-follower-share-{{@index}}">
-                        {{localize "hyp3e-utilities.applications.partySheet.share"}}
-                      </label>
-                      <input
-                        id="hyp3e-utilities-follower-share-{{@index}}"
-                        data-field="follower-share"
-                        type="number"
-                        min="0"
-                        step="0.25"
-                        value="{{share}}"
-                      >
-                      <button
-                        type="button"
-                        data-action="saveFollower"
-                        data-actor-uuid="{{actorUuid}}"
-                      >{{localize "hyp3e-utilities.applications.partySheet.saveFollower"}}</button>
-                    {{else}}
-                      <span>{{localize "hyp3e-utilities.applications.partySheet.wageGp"}}: {{wageGp}}</span>
-                      <span>{{localize "hyp3e-utilities.applications.partySheet.share"}}: {{share}}</span>
-                    {{/if}}
-                  </div>
-                  {{#if ../canEdit}}
-                    <button
-                      type="button"
-                      class="hyp3e-utilities__party-member-remove"
-                      data-action="removeFollower"
-                      data-actor-uuid="{{actorUuid}}"
-                    >
-                      {{#if missing}}
-                        {{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}
-                      {{else}}
-                        {{localize "hyp3e-utilities.applications.partySheet.removeFollower"}}
-                      {{/if}}
-                    </button>
-                  {{/if}}
                   {{#unless missing}}
-                    <div class="hyp3e-utilities__party-row-actions">
-                      <button
-                        type="button"
-                        data-action="pingActor"
-                        data-actor-uuid="{{actorUuid}}"
-                      >{{localize "hyp3e-utilities.applications.partySheet.pingToken"}}</button>
+                    <div class="hyp3e-utilities__party-employment hyp3e-utilities__party-employment--compact">
+                      {{#if ../canEdit}}
+                        <label for="hyp3e-utilities-follower-wage-{{@index}}">
+                          {{localize "hyp3e-utilities.applications.partySheet.wageGpShort"}}
+                        </label>
+                        <input
+                          id="hyp3e-utilities-follower-wage-{{@index}}"
+                          data-field="follower-wage"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value="{{wageGp}}"
+                        >
+                        <button
+                          type="button"
+                          data-action="saveFollower"
+                          data-actor-uuid="{{actorUuid}}"
+                          data-tooltip="{{localize "hyp3e-utilities.applications.partySheet.saveFollower"}}"
+                          aria-label="{{localize "hyp3e-utilities.applications.partySheet.saveFollower"}}"
+                        >{{localize "hyp3e-utilities.applications.partySheet.saveFollowerShort"}}</button>
+                      {{else}}
+                        <span>{{localize "hyp3e-utilities.applications.partySheet.wageGpShort"}}: {{wageGp}}</span>
+                      {{/if}}
+                    </div>
+                    <div class="hyp3e-utilities__party-row-actions hyp3e-utilities__party-row-actions--follower">
                       {{#if ../canRollPartyActions}}
                         {{#if canRollSave}}
                           <select
@@ -453,6 +466,25 @@
                       {{/if}}
                     </div>
                   {{/unless}}
+                  {{#if ../canEdit}}
+                    {{#if missing}}
+                      <button
+                        type="button"
+                        class="hyp3e-utilities__party-member-remove"
+                        data-action="removeFollower"
+                        data-actor-uuid="{{actorUuid}}"
+                      >{{localize "hyp3e-utilities.applications.partySheet.cleanupReference"}}</button>
+                    {{else}}
+                      <button
+                        type="button"
+                        class="hyp3e-utilities__party-member-remove hyp3e-utilities__party-member-remove--icon hyp3e-utilities__party-follower-remove--icon"
+                        data-action="removeFollower"
+                        data-actor-uuid="{{actorUuid}}"
+                        data-tooltip="{{localize "hyp3e-utilities.applications.partySheet.removeFollower"}}"
+                        aria-label="{{localize "hyp3e-utilities.applications.partySheet.removeFollower"}}"
+                      ><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                    {{/if}}
+                  {{/if}}
                 </li>
               {{/each}}
             </ol>
