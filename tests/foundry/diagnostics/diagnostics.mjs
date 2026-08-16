@@ -2136,33 +2136,33 @@ async function testProductionPartyFollowers(character, npc) {
       centerY(followerStatRects.hp) - centerY(followerStatRects.movement),
     ) <= 2
     && Math.abs(
-      centerY(followerStatRects.movement) - centerY(followerStatRects.share),
+      centerY(followerStatRects.movement) - centerY(followerSaveActionRect),
     ) <= 2
     && Math.abs(
-      centerY(followerStatRects.share) - centerY(followerEmploymentRect),
+      centerY(followerSaveActionRect) - centerY(followerMoraleActionRect),
     ) <= 2
     && followerStatRects.movement.left >= followerStatRects.hp.right
-    && followerStatRects.share.left >= followerStatRects.movement.right
-    && followerEmploymentRect.left >= followerStatRects.share.right
+    && followerSaveActionRect.left >= followerStatRects.movement.right
+    && followerMoraleActionRect.left >= followerSaveActionRect.right
+    && followerRemoveRect.left >= followerActionsRect.right
+    && Math.abs(followerMoraleActionRect.right - followerActionsRect.right) <= 2
+    && Math.abs(
+      centerY(followerMoraleActionRect) - centerY(followerRemoveRect),
+    ) <= 2
+    && Math.abs(followerRemoveRect.right - followerRowRect.right) <= 2
     && followerStatRects.ac.top > followerStatRects.hp.top
     && Math.abs(
       centerY(followerStatRects.ac) - centerY(followerStatRects.dr),
     ) <= 2
     && Math.abs(
-      centerY(followerStatRects.dr) - centerY(followerSaveActionRect),
+      centerY(followerStatRects.dr) - centerY(followerStatRects.share),
     ) <= 2
     && Math.abs(
-      centerY(followerSaveActionRect) - centerY(followerMoraleActionRect),
-    ) <= 2
-    && Math.abs(
-      centerY(followerMoraleActionRect) - centerY(followerRemoveRect),
+      centerY(followerStatRects.share) - centerY(followerEmploymentRect),
     ) <= 2
     && followerStatRects.dr.left >= followerStatRects.ac.right
-    && followerSaveActionRect.left >= followerStatRects.dr.right
-    && followerMoraleActionRect.left >= followerSaveActionRect.right
-    && followerRemoveRect.left >= followerActionsRect.right
-    && Math.abs(followerMoraleActionRect.right - followerActionsRect.right) <= 2
-    && Math.abs(followerRemoveRect.right - followerRowRect.right) <= 2,
+    && followerStatRects.share.left >= followerStatRects.dr.right
+    && followerEmploymentRect.left >= followerStatRects.share.right,
   );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';

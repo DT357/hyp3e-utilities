@@ -26,8 +26,8 @@ All notable changes to Hyp3e Utilities are documented here.
   icon after the save controls, moved member saves into the shared ApplicationV2
   save window, and made **Add Selected Actor** use the active scene's controlled
   token.
-- Compacted Follower rows into HP/Move/Share/Wage/Save and
-  AC/DR/Save/Morale/remove lines, and moved follower saving throws into a
+- Compacted Follower rows into HP/Move/Save/Morale/remove and
+  AC/DR/Share/Wage/Save lines, and moved follower saving throws into a
   small ApplicationV2 window with save-category, situational-modifier, and
   roll-type controls. Roll actions and remove controls align to the row's right
   edge.

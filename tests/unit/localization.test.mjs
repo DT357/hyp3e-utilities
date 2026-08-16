@@ -336,7 +336,7 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp movement share employment employment employment"\s*"portrait identity ac dr rolls rolls rolls remove";/s,
+    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp movement rolls rolls rolls remove"\s*"portrait identity ac dr share employment employment employment";/s,
   );
   assert.match(
     styles,
