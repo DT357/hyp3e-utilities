@@ -5,6 +5,18 @@ import { getReactionOutcome } from '../hud/reaction-table.mjs';
 const FEATURE_ID = 'npcActionHud';
 const LEGACY_GM_ROLL_MODE = 'gmroll';
 const GM_MESSAGE_MODE = 'gm';
+const LEGACY_ROLL_MODES = Object.freeze({
+  blindroll: 'blind',
+  gmroll: 'gm',
+  publicroll: 'public',
+  selfroll: 'self',
+});
+const MESSAGE_MODES = Object.freeze({
+  blind: 'blind',
+  gm: 'gm',
+  public: 'public',
+  self: 'self',
+});
 const MARCHING_REPORT_RANKS = Object.freeze(['front', 'middle', 'rear']);
 
 const ACTION_LABEL_KEYS = Object.freeze({
@@ -398,6 +410,12 @@ function renderNpcRollCard(instruction, evaluation, localize) {
         localize(`${MODULE_ID}.chat.category`),
         localize(`${MODULE_ID}.chat.saves.${instruction.saveKey}`),
       ));
+      if (instruction.modifier) {
+        rows.push(renderRow(
+          localize(`${MODULE_ID}.chat.modifier`),
+          `${instruction.modifier > 0 ? '+' : ''}${instruction.modifier}`,
+        ));
+      }
     }
     const comparison = instruction.comparison === 'lessThanOrEqual'
       ? '≤'
@@ -442,10 +460,34 @@ function getFoundryGeneration(game) {
   return Number.parseInt(String(game?.version ?? ''), 10);
 }
 
-export function getRollMessageModeOptions(generation) {
+export function getRollModeChoices(config = globalThis.CONFIG) {
+  const messageModes = config?.ChatMessage?.modes;
+  if (messageModes) {
+    return Object.fromEntries(Object.entries(messageModes).map(
+      ([mode, definition]) => [
+        mode,
+        typeof definition === 'string' ? definition : definition.label,
+      ],
+    ));
+  }
+  return { ...(config?.Dice?.rollModes ?? {}) };
+}
+
+function normalizeRollMode(generation, rollMode) {
+  const modes = Number(generation) >= 14 ? MESSAGE_MODES : LEGACY_ROLL_MODES;
+  const selected = rollMode
+    ?? (Number(generation) >= 14 ? GM_MESSAGE_MODE : LEGACY_GM_ROLL_MODE);
+  if (!Object.hasOwn(modes, selected)) {
+    throw new TypeError(`Unknown Foundry roll mode "${selected}".`);
+  }
+  return { kind: modes[selected], selected };
+}
+
+export function getRollMessageModeOptions(generation, rollMode) {
+  const { selected } = normalizeRollMode(generation, rollMode);
   return Number(generation) >= 14
-    ? { messageMode: GM_MESSAGE_MODE }
-    : { rollMode: LEGACY_GM_ROLL_MODE };
+    ? { messageMode: selected }
+    : { rollMode: selected };
 }
 
 function getRecipientIds(ChatMessageClass) {
@@ -453,6 +495,22 @@ function getRecipientIds(ChatMessageClass) {
   return Array.from(recipients)
     .map((recipient) => recipient?.id ?? recipient)
     .filter((recipientId) => typeof recipientId === 'string' && recipientId);
+}
+
+function getRollVisibilityData({
+  ChatMessageClass,
+  generation,
+  rollMode,
+  userId,
+}) {
+  const { kind } = normalizeRollMode(generation, rollMode);
+  if (kind === 'public') return {};
+  if (kind === 'self') return { whisper: [userId] };
+  const whisper = getRecipientIds(ChatMessageClass);
+  if (whisper.length === 0) {
+    throw new Error('Foundry did not provide any GM recipients.');
+  }
+  return kind === 'blind' ? { blind: true, whisper } : { whisper };
 }
 
 async function resolveSpeaker(target, ChatMessageClass, fromUuid) {
@@ -618,7 +676,7 @@ export function createChatCardService({
     return Object.freeze({ message });
   }
 
-  async function createNpcRollBatch(batch, { batchId } = {}) {
+  async function createNpcRollBatch(batch, { batchId, rollMode } = {}) {
     validateBatch(batch);
     if (!game?.user?.isGM) {
       throw new Error('Only a GM can create NPC roll chat cards.');
@@ -632,18 +690,18 @@ export function createChatCardService({
       throw new Error('Foundry roll and chat APIs are unavailable.');
     }
 
-    const whisper = getRecipientIds(ChatMessageClass);
-    if (whisper.length === 0) {
-      throw new Error('Foundry did not provide any GM recipients.');
-    }
-
     const sharedBatchId = batchId ?? createBatchId(randomId);
     const created = [];
     const failures = [];
     const localize = (key) => game.i18n.localize(key);
-    const createOptions = getRollMessageModeOptions(
-      getFoundryGeneration(game),
-    );
+    const generation = getFoundryGeneration(game);
+    const createOptions = getRollMessageModeOptions(generation, rollMode);
+    const visibility = getRollVisibilityData({
+      ChatMessageClass,
+      generation,
+      rollMode,
+      userId: game.user.id,
+    });
 
     for (const instruction of batch.rolls) {
       try {
@@ -669,7 +727,7 @@ export function createChatCardService({
           content,
           rolls: [roll],
           sound: config?.sounds?.dice,
-          whisper,
+          ...visibility,
           flags: {
             [MODULE_ID]: {
               feature: FEATURE_ID,
@@ -678,6 +736,10 @@ export function createChatCardService({
               tokenUuid: instruction.target.tokenUuid,
               actorUuid: instruction.target.actorUuid,
               batchId: sharedBatchId,
+              ...(instruction.modifier
+                ? { modifier: instruction.modifier }
+                : {}),
+              ...(rollMode ? { rollMode } : {}),
             },
           },
         }, createOptions);

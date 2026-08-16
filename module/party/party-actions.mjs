@@ -42,7 +42,7 @@ export function createPartyActionService({
     return token;
   }
 
-  async function createRollBatch(planBatch) {
+  async function createRollBatch(planBatch, options) {
     if (!game?.user?.isGM) {
       throw new PartyActionError(
         PARTY_ACTION_ERROR_CODES.gmRequired,
@@ -56,11 +56,14 @@ export function createPartyActionService({
         'No eligible Party Sheet target can roll this action.',
       );
     }
-    return chatCards.createNpcRollBatch(batch);
+    return chatCards.createNpcRollBatch(batch, options);
   }
 
-  function rollSave(actor, saveKey) {
-    return createRollBatch(() => npcRolls.planSaveBatch([actor], saveKey));
+  function rollSave(actor, saveKey, { modifier = 0, rollMode } = {}) {
+    return createRollBatch(
+      () => npcRolls.planSaveBatch([actor], saveKey, { modifier }),
+      rollMode ? { rollMode } : undefined,
+    );
   }
 
   function rollMorale(actors) {

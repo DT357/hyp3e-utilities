@@ -133,10 +133,14 @@ does not delete the Actor.
 
 - Drag a durable world `character` or `npc` Actor onto the Followers drop area.
 - Set a non-negative whole-number daily wage in GP.
-- At the normal Party Sheet width, save and morale controls follow HP/AC/DR on
-  the first line; Move, Share, Wage, Save, and remove occupy the second line.
+- At the normal Party Sheet width, HP, AC, DR, Move, Roll Morale, and remove
+  occupy the first line; Roll Save, Share, Wage, and Save occupy the second.
 - Set a share in quarter-share increments, then choose the compact **Save**
   action; its tooltip identifies the full **Save Wage and Share** operation.
+- Choose **Roll Save** to open the follower saving-throw window. Select one of
+  the five save categories, enter an optional whole-number situational modifier,
+  choose the Foundry roll type, and roll. The modifier is added to the d20 total
+  before comparison with the Actor's prepared save target.
 - Open the Actor, click its portrait to ping, use the final red X to remove it,
   or have the GM roll saves and individual/bulk NPC morale.
 - Authorized editors can preview and settle selected follower wages.

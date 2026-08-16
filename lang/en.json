@@ -57,6 +57,15 @@
         "save": "Save Permissions",
         "saved": "Party Sheet permissions saved."
       },
+      "followerSaveRoll": {
+        "title": "Follower Saving Throw",
+        "saveCategory": "Save category",
+        "modifier": "Situational modifier",
+        "rollMode": "Roll type",
+        "cancel": "Cancel",
+        "roll": "Roll Save",
+        "invalid": "Choose a valid save, whole-number modifier from -99 through 99, and roll type."
+      },
       "partySheet": {
         "title": "Party Sheet",
         "revision": "Revision {revision}",
@@ -290,6 +299,7 @@
       "total": "Total",
       "outcome": "Outcome",
       "category": "Category",
+      "modifier": "Modifier",
       "target": "Target",
       "result": "Result",
       "success": "Success",

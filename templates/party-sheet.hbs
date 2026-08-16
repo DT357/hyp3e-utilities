@@ -442,16 +442,9 @@
                     <div class="hyp3e-utilities__party-row-actions hyp3e-utilities__party-row-actions--follower">
                       {{#if ../canRollPartyActions}}
                         {{#if canRollSave}}
-                          <select
-                            data-field="party-save"
-                            aria-label="{{localize "hyp3e-utilities.applications.partySheet.saveCategory"}}"
-                          >
-                            {{#each @root.saveOptions}}
-                              <option value="{{id}}">{{localize label}}</option>
-                            {{/each}}
-                          </select>
                           <button
                             type="button"
+                            class="hyp3e-utilities__party-follower-save-action"
                             data-action="rollFollowerSave"
                             data-actor-uuid="{{actorUuid}}"
                           >{{localize "hyp3e-utilities.applications.partySheet.rollSave"}}</button>
@@ -459,6 +452,7 @@
                         {{#if canRollMorale}}
                           <button
                             type="button"
+                            class="hyp3e-utilities__party-follower-morale-action"
                             data-action="rollFollowerMorale"
                             data-actor-uuid="{{actorUuid}}"
                           >{{localize "hyp3e-utilities.applications.partySheet.rollMorale"}}</button>

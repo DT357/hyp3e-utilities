@@ -68,11 +68,22 @@ export function planReactionBatch(
 export function planSaveBatch(
   candidates,
   saveKey,
-  { adapter = hyp3eAdapter } = {},
+  { adapter = hyp3eAdapter, modifier: modifierValue = 0 } = {},
 ) {
   if (!SAVE_KEYS.includes(saveKey)) {
     throw new TypeError(`Unknown save category "${saveKey}".`);
   }
+  const modifier = Number(modifierValue);
+  if (
+    !Number.isSafeInteger(modifier)
+    || modifier < -99
+    || modifier > 99
+  ) {
+    throw new TypeError('A situational modifier from -99 through 99 is required.');
+  }
+  const formula = modifier === 0
+    ? '1d20'
+    : `1d20 ${modifier > 0 ? '+' : '-'} ${Math.abs(modifier)}`;
 
   return createBatch('save', candidates, (candidate) => {
     const actor = getActor(candidate);
@@ -88,13 +99,14 @@ export function planSaveBatch(
       roll: {
         kind: 'save',
         saveKey,
-        formula: '1d20',
+        formula,
+        modifier,
         comparison: 'greaterThanOrEqual',
         targetValue,
         target,
       },
     };
-  }, { saveKey });
+  }, { modifier, saveKey });
 }
 
 export function planMoraleBatch(

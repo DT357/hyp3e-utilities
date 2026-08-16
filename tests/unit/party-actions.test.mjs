@@ -9,8 +9,8 @@ import {
 function createHarness({ isGM = true, tokens = [] } = {}) {
   const calls = { chat: [], morale: [], ping: [], save: [] };
   const chatCards = {
-    async createNpcRollBatch(batch) {
-      calls.chat.push(batch);
+    async createNpcRollBatch(batch, options) {
+      calls.chat.push({ batch, options });
       return { created: batch.rolls, failures: [], skipped: batch.skipped };
     },
   };
@@ -23,8 +23,8 @@ function createHarness({ isGM = true, tokens = [] } = {}) {
         skipped: [],
       };
     },
-    planSaveBatch(candidates, saveKey) {
-      calls.save.push({ candidates, saveKey });
+    planSaveBatch(candidates, saveKey, options) {
+      calls.save.push({ candidates, options, saveKey });
       return {
         kind: 'save',
         rolls: candidates.map((actor) => ({ target: { actorUuid: actor.uuid } })),
@@ -86,17 +86,23 @@ test('save and morale actions delegate one unchanged batch to shared services', 
   const character = { uuid: 'Actor.character' };
   const npc = { uuid: 'Actor.npc' };
 
-  const saveReport = await harness.service.rollSave(character, 'device');
+  const saveReport = await harness.service.rollSave(character, 'device', {
+    modifier: 2,
+    rollMode: 'blindroll',
+  });
   const moraleReport = await harness.service.rollMorale([npc, character]);
 
   assert.deepEqual(harness.calls.save, [{
     candidates: [character],
+    options: { modifier: 2 },
     saveKey: 'device',
   }]);
   assert.deepEqual(harness.calls.morale, [[npc, character]]);
   assert.equal(harness.calls.chat.length, 2);
-  assert.equal(harness.calls.chat[0].kind, 'save');
-  assert.equal(harness.calls.chat[1].kind, 'morale');
+  assert.equal(harness.calls.chat[0].batch.kind, 'save');
+  assert.deepEqual(harness.calls.chat[0].options, { rollMode: 'blindroll' });
+  assert.equal(harness.calls.chat[1].batch.kind, 'morale');
+  assert.equal(harness.calls.chat[1].options, undefined);
   assert.equal(saveReport.created.length, 1);
   assert.equal(moraleReport.created.length, 2);
 });

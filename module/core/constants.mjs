@@ -45,6 +45,8 @@ export const TEMPLATE_PATHS = Object.freeze({
     `modules/${MODULE_ID}/templates/settings/reset-hud-position.hbs`,
   permissions:
     `modules/${MODULE_ID}/templates/settings/party-sheet-permissions.hbs`,
+  followerSaveRoll:
+    `modules/${MODULE_ID}/templates/follower-save-roll.hbs`,
   partySheet: `modules/${MODULE_ID}/templates/party-sheet.hbs`,
   npcActionHud:
     `modules/${MODULE_ID}/templates/npc-action-hud.hbs`,

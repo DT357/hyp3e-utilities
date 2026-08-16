@@ -1,0 +1,47 @@
+<section class="hyp3e-utilities__content hyp3e-utilities__follower-save-roll">
+  <p class="hyp3e-utilities__follower-save-roll-actor">{{actorName}}</p>
+
+  <label class="form-group">
+    <span>{{localize "hyp3e-utilities.applications.followerSaveRoll.saveCategory"}}</span>
+    <select name="saveKey">
+      {{#each saveOptions}}
+        <option value="{{id}}" {{#if selected}}selected{{/if}}>
+          {{localize label}}
+        </option>
+      {{/each}}
+    </select>
+  </label>
+
+  <label class="form-group">
+    <span>{{localize "hyp3e-utilities.applications.followerSaveRoll.modifier"}}</span>
+    <input
+      name="modifier"
+      type="number"
+      min="-99"
+      max="99"
+      step="1"
+      value="{{modifier}}"
+    >
+  </label>
+
+  <label class="form-group">
+    <span>{{localize "hyp3e-utilities.applications.followerSaveRoll.rollMode"}}</span>
+    <select name="rollMode">
+      {{#each rollModeOptions}}
+        <option value="{{id}}" {{#if selected}}selected{{/if}}>
+          {{localize label}}
+        </option>
+      {{/each}}
+    </select>
+  </label>
+
+  <footer class="hyp3e-utilities__follower-save-roll-footer">
+    <button type="button" data-action="cancel">
+      {{localize "hyp3e-utilities.applications.followerSaveRoll.cancel"}}
+    </button>
+    <button type="submit">
+      <i class="fa-solid fa-dice-d20" aria-hidden="true"></i>
+      {{localize "hyp3e-utilities.applications.followerSaveRoll.roll"}}
+    </button>
+  </footer>
+</section>

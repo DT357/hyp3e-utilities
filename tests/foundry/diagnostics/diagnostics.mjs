@@ -2102,6 +2102,12 @@ async function testProductionPartyFollowers(character, npc) {
   const followerActions = npcElement?.querySelector(
     '.hyp3e-utilities__party-row-actions--follower',
   );
+  const followerSaveAction = followerActions?.querySelector(
+    '.hyp3e-utilities__party-follower-save-action',
+  );
+  const followerMoraleAction = followerActions?.querySelector(
+    '.hyp3e-utilities__party-follower-morale-action',
+  );
   const followerRemove = npcElement?.querySelector(
     '.hyp3e-utilities__party-follower-remove--icon',
   );
@@ -2114,7 +2120,8 @@ async function testProductionPartyFollowers(character, npc) {
     )?.getBoundingClientRect?.(),
   ]));
   const followerEmploymentRect = followerEmployment?.getBoundingClientRect?.();
-  const followerActionsRect = followerActions?.getBoundingClientRect?.();
+  const followerSaveActionRect = followerSaveAction?.getBoundingClientRect?.();
+  const followerMoraleActionRect = followerMoraleAction?.getBoundingClientRect?.();
   const followerRemoveRect = followerRemove?.getBoundingClientRect?.();
   const centerY = (rect) => rect.top + (rect.height / 2);
   const compactFollowerRosterRendered = Boolean(
@@ -2123,24 +2130,32 @@ async function testProductionPartyFollowers(character, npc) {
     && followerPortrait.textContent.trim() === ''
     && shareInput?.closest('.hyp3e-utilities__party-member-stat--share')
     && wageInput?.closest('.hyp3e-utilities__party-employment--compact')
-    && followerActions?.querySelector('[data-field="party-save"]')
-    && followerActions?.querySelector('[data-action="rollFollowerSave"]')
-    && followerActions?.querySelector('[data-action="rollFollowerMorale"]')
+    && !followerActions?.querySelector('[data-field="party-save"]')
+    && followerSaveAction?.dataset.action === 'rollFollowerSave'
+    && followerMoraleAction?.dataset.action === 'rollFollowerMorale'
     && followerRemove?.querySelector('.fa-xmark')
     && followerRemove === npcElement.lastElementChild
     && Math.abs(centerY(followerStatRects.hp) - centerY(followerStatRects.ac)) <= 2
     && Math.abs(centerY(followerStatRects.ac) - centerY(followerStatRects.dr)) <= 2
-    && Math.abs(centerY(followerStatRects.dr) - centerY(followerActionsRect)) <= 2
-    && followerActionsRect.left >= followerStatRects.dr.right
-    && followerStatRects.movement.top > followerStatRects.hp.top
     && Math.abs(
-      centerY(followerStatRects.movement) - centerY(followerStatRects.share),
+      centerY(followerStatRects.dr) - centerY(followerStatRects.movement),
+    ) <= 2
+    && Math.abs(
+      centerY(followerStatRects.movement) - centerY(followerMoraleActionRect),
+    ) <= 2
+    && Math.abs(centerY(followerMoraleActionRect) - centerY(followerRemoveRect)) <= 2
+    && followerStatRects.movement.left >= followerStatRects.dr.right
+    && followerMoraleActionRect.left >= followerStatRects.movement.right
+    && followerRemoveRect.left >= followerMoraleActionRect.right
+    && followerSaveActionRect.top > followerStatRects.hp.top
+    && Math.abs(
+      centerY(followerSaveActionRect) - centerY(followerStatRects.share),
     ) <= 2
     && Math.abs(
       centerY(followerStatRects.share) - centerY(followerEmploymentRect),
     ) <= 2
-    && followerEmploymentRect.left >= followerStatRects.share.right
-    && Math.abs(centerY(followerEmploymentRect) - centerY(followerRemoveRect)) <= 2,
+    && followerStatRects.share.left >= followerSaveActionRect.right
+    && followerEmploymentRect.left >= followerStatRects.share.right,
   );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';
@@ -2318,12 +2333,30 @@ async function testProductionPartyActions(character, npc) {
     )].find((row) => row.querySelector(
       `[data-actor-uuid="${npc.uuid}"]`,
     ));
-    const followerSave = followerRow.querySelector('[data-field="party-save"]');
-    const followerFiveSaves = followerSave.options.length === 5;
-    followerSave.value = 'sorcery';
     followerRow.querySelector('[data-action="pingActor"]').click();
     const followerPinged = await waitUntil(() => pings.length === 2);
     followerRow.querySelector('[data-action="rollFollowerSave"]').click();
+    const followerSaveDialogOpened = await waitUntil(() => (
+      document.getElementById(`${MODULE_ID}-follower-save-roll`)
+    ));
+    const followerSaveDialog = document.getElementById(
+      `${MODULE_ID}-follower-save-roll`,
+    );
+    const followerSave = followerSaveDialog?.querySelector('[name="saveKey"]');
+    const followerModifier = followerSaveDialog?.querySelector(
+      '[name="modifier"]',
+    );
+    const followerRollMode = followerSaveDialog?.querySelector(
+      '[name="rollMode"]',
+    );
+    const followerFiveSaves = followerSave?.options.length === 5;
+    if (followerSave) followerSave.value = 'sorcery';
+    if (followerModifier) followerModifier.value = '2';
+    if (followerRollMode) {
+      followerRollMode.value = [...followerRollMode.options]
+        .find(({ value }) => ['gm', 'gmroll'].includes(value))?.value;
+    }
+    followerSaveDialog?.querySelector('button[type="submit"]')?.click();
     const followerSaveCreated = await waitUntil(() => partyMessages().length >= 2);
     followerRow.querySelector('[data-action="rollFollowerMorale"]').click();
     const followerMoraleCreated = await waitUntil(() => partyMessages().length >= 3);
@@ -2352,6 +2385,8 @@ async function testProductionPartyActions(character, npc) {
       action: message.getFlag(MODULE_ID, 'action'),
       actorUuid: message.getFlag(MODULE_ID, 'actorUuid'),
       category: message.getFlag(MODULE_ID, 'category'),
+      modifier: message.getFlag(MODULE_ID, 'modifier'),
+      rollMode: message.getFlag(MODULE_ID, 'rollMode'),
       whisper: [...message.whisper],
     }));
     const gmIds = new Set(game.users.filter((user) => user.isGM).map(
@@ -2366,6 +2401,7 @@ async function testProductionPartyActions(character, npc) {
       canvasActivated,
       memberFiveSaves,
       followerFiveSaves,
+      followerSaveDialogOpened,
       memberPinged,
       followerPinged,
       pingCentersMatch:
@@ -2385,6 +2421,8 @@ async function testProductionPartyActions(character, npc) {
         && messageFlags[1]?.action === 'save'
         && messageFlags[1]?.category === 'sorcery'
         && messageFlags[1]?.actorUuid === npc.uuid
+        && messageFlags[1]?.modifier === 2
+        && ['gm', 'gmroll'].includes(messageFlags[1]?.rollMode)
         && messageFlags.slice(2).every((entry) => (
           entry.action === 'morale' && entry.actorUuid === npc.uuid
         )),

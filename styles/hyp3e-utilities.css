@@ -500,10 +500,10 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-follower {
   grid-template-areas:
-    "portrait identity hp ac dr actions actions"
-    "portrait identity movement share employment employment remove";
+    "portrait identity hp ac dr movement morale remove"
+    "portrait identity save share employment employment employment .";
   grid-template-columns:
-    2.5rem minmax(9rem, 1fr) auto auto auto minmax(0, 1fr) 2rem;
+    2.5rem minmax(9rem, 1fr) auto auto auto auto auto 2rem;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower-portrait,
@@ -585,8 +585,7 @@
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower {
-  flex-wrap: nowrap;
-  grid-area: actions;
+  display: contents;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower:empty {
@@ -603,14 +602,45 @@
   white-space: nowrap;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-follower-save-action {
+  grid-area: save;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-follower-morale-action {
+  grid-area: morale;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-follower-remove--icon {
   grid-area: remove;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower.hyp3e-utilities__party-member--missing
   > .hyp3e-utilities__party-member-remove {
-  grid-area: actions;
+  grid-area: save;
   justify-self: start;
+}
+
+.hyp3e-utilities .hyp3e-utilities__follower-save-roll {
+  gap: 0.65rem;
+}
+
+.hyp3e-utilities .hyp3e-utilities__follower-save-roll .form-group {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1.25fr);
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__follower-save-roll-actor {
+  font-weight: 700;
+  margin: 0;
+}
+
+.hyp3e-utilities .hyp3e-utilities__follower-save-roll-footer {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-remove--icon {
@@ -787,14 +817,14 @@
       "portrait identity remove"
       ". hp hp"
       ". ac dr"
-      ". actions actions"
-      ". movement share"
+      ". movement morale"
+      ". save save"
+      ". share share"
       ". employment employment";
     grid-template-columns: 2.5rem 1fr auto;
   }
 
-  .hyp3e-utilities .hyp3e-utilities__party-employment--compact,
-  .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower {
+  .hyp3e-utilities .hyp3e-utilities__party-employment--compact {
     flex-wrap: wrap;
   }
 }

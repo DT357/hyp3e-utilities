@@ -48,6 +48,20 @@ test('save planner uses the prepared target including applied modifiers', () => 
   assert.equal(evaluateCheckRoll(batch.rolls[0], 11).success, false);
 });
 
+test('save planner applies a validated situational modifier to the formula', () => {
+  const positive = planSaveBatch([npcActor], 'death', { modifier: 3 });
+  const negative = planSaveBatch([npcActor], 'death', { modifier: -2 });
+
+  assert.equal(positive.modifier, 3);
+  assert.equal(positive.rolls[0].formula, '1d20 + 3');
+  assert.equal(positive.rolls[0].modifier, 3);
+  assert.equal(negative.rolls[0].formula, '1d20 - 2');
+  assert.throws(
+    () => planSaveBatch([npcActor], 'death', { modifier: 1.5 }),
+    /modifier/i,
+  );
+});
+
 test('save planner rejects unknown categories and skips missing targets', () => {
   const missingSaveNpc = withNpcSystem({
     saves: {

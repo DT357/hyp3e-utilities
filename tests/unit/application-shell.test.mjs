@@ -58,6 +58,10 @@ test('ApplicationV2 shells use shared namespace and template conventions', () =>
     classes.PartyPermissionsApplication.PARTS.main.template,
     TEMPLATE_PATHS.permissions,
   );
+  assert.equal(
+    classes.FollowerSaveRollApplication.PARTS.main.template,
+    TEMPLATE_PATHS.followerSaveRoll,
+  );
 });
 
 test('foundation templates preload as one explicit set', async () => {
@@ -606,13 +610,13 @@ test('Party Sheet Followers renders rows and routes employment, removal, and dro
   ]);
 });
 
-test('Party Sheet row actions reuse the party action service for ping, saves, and morale', async () => {
+test('Party Sheet row actions reuse the party action service and open follower saves in AppV2', async () => {
   const state = createPartyStateDefault();
   state.memberActorUuids = ['Actor.hero'];
   state.followerActorUuids = ['Actor.npc', 'Actor.character'];
   const hero = { uuid: 'Actor.hero' };
   const npc = { uuid: 'Actor.npc' };
-  const character = { uuid: 'Actor.character' };
+  const character = { name: 'Character Follower', uuid: 'Actor.character' };
   const actionCalls = [];
   const followerService = {
     getActor: (actorUuid) => ({
@@ -624,24 +628,43 @@ test('Party Sheet row actions reuse the party action service for ping, saves, an
       { actorUuid: 'Actor.character', canRollMorale: false },
     ],
   };
+  const game = {
+    release: { generation: 13 },
+    settings: {
+      get: (namespace, key) => {
+        if (namespace === 'core' && key === 'rollMode') return 'publicroll';
+        return key.includes('Minimum') ? 4 : [];
+      },
+    },
+    user: { id: 'gm', isGM: true, role: 4 },
+    users: [],
+  };
   const classes = createFoundationApplications({
     ApplicationV2: StubApplicationV2,
     HandlebarsApplicationMixin: (Base) => class extends Base {},
-    game: {
-      settings: { get: (_namespace, key) => key.includes('Minimum') ? 4 : [] },
-      user: { id: 'gm', isGM: true, role: 4 },
-      users: [],
+    config: {
+      ChatMessage: {},
+      Dice: {
+        rollModes: {
+          blindroll: 'CHAT.RollBlind',
+          gmroll: 'CHAT.RollPrivate',
+          publicroll: 'CHAT.RollPublic',
+          selfroll: 'CHAT.RollSelf',
+        },
+      },
     },
+    game,
     partyActionsProvider: () => ({
       pingActor: async (actorUuid) => actionCalls.push(['ping', actorUuid]),
       rollMorale: async (actors) => actionCalls.push([
         'morale',
         actors.map((actor) => actor.uuid),
       ]),
-      rollSave: async (actor, saveKey) => actionCalls.push([
+      rollSave: async (actor, saveKey, options) => actionCalls.push([
         'save',
         actor.uuid,
         saveKey,
+        options,
       ]),
     }),
     partyFollowersProvider: () => followerService,
@@ -667,11 +690,43 @@ test('Party Sheet row actions reuse the party action service for ping, saves, an
     dataset: { actorUuid: 'Actor.hero' },
   });
   await actions.rollMemberSave.call(app, undefined, saveTarget('Actor.hero'));
-  await actions.rollFollowerSave.call(
+  const followerSaveDialog = await actions.rollFollowerSave.call(
     app,
     undefined,
-    saveTarget('Actor.character'),
+    { dataset: { actorUuid: 'Actor.character' } },
   );
+  assert.equal(followerSaveDialog.rendered, true);
+  const repeatedFollowerSaveDialog = await actions.rollFollowerSave.call(
+    app,
+    undefined,
+    { dataset: { actorUuid: 'Actor.npc' } },
+  );
+  assert.equal(repeatedFollowerSaveDialog, followerSaveDialog);
+  assert.equal(repeatedFollowerSaveDialog.actorUuid, 'Actor.npc');
+  await actions.rollFollowerSave.call(app, undefined, {
+    dataset: { actorUuid: 'Actor.character' },
+  });
+  const dialogContext = await followerSaveDialog._prepareContext({});
+  assert.equal(dialogContext.actorName, 'Character Follower');
+  assert.equal(dialogContext.saveOptions.length, 5);
+  assert.equal(dialogContext.rollModeOptions.length, 4);
+  assert.equal(
+    dialogContext.rollModeOptions.find(({ selected }) => selected)?.id,
+    'publicroll',
+  );
+  await classes.FollowerSaveRollApplication.DEFAULT_OPTIONS.form.handler.call(
+    followerSaveDialog,
+    undefined,
+    undefined,
+    {
+      object: {
+        modifier: '-2',
+        rollMode: 'blindroll',
+        saveKey: 'device',
+      },
+    },
+  );
+  assert.equal(followerSaveDialog.closed, true);
   await actions.rollFollowerMorale.call(app, undefined, {
     dataset: { actorUuid: 'Actor.npc' },
   });
@@ -679,8 +734,13 @@ test('Party Sheet row actions reuse the party action service for ping, saves, an
 
   assert.deepEqual(actionCalls, [
     ['ping', 'Actor.hero'],
-    ['save', 'Actor.hero', 'sorcery'],
-    ['save', 'Actor.character', 'sorcery'],
+    ['save', 'Actor.hero', 'sorcery', undefined],
+    [
+      'save',
+      'Actor.character',
+      'device',
+      { modifier: -2, rollMode: 'blindroll' },
+    ],
     ['morale', ['Actor.npc']],
     ['morale', ['Actor.npc']],
   ]);

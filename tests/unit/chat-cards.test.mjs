@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   createChatCardService,
+  getRollModeChoices,
   getRollMessageModeOptions,
 } from '../../module/chat/chat-cards.mjs';
 import {
@@ -20,6 +21,7 @@ const TRANSLATIONS = {
   'hyp3e-utilities.chat.total': 'Total',
   'hyp3e-utilities.chat.outcome': 'Outcome',
   'hyp3e-utilities.chat.category': 'Category',
+  'hyp3e-utilities.chat.modifier': 'Modifier',
   'hyp3e-utilities.chat.target': 'Target',
   'hyp3e-utilities.chat.result': 'Result',
   'hyp3e-utilities.chat.success': 'Success',
@@ -235,6 +237,39 @@ test('save and morale cards use Foundry 13 roll mode and evaluated targets', asy
   assert.match(harness.messages[1].content, /Failure/);
 });
 
+test('selected save roll modes and modifiers reach the formula and message', async () => {
+  const targets = new Map([[npcActor.uuid, npcActor]]);
+  const publicHarness = createHarness({
+    generation: 13,
+    targets,
+    totals: [13],
+  });
+  const blindHarness = createHarness({
+    generation: 14,
+    targets,
+    totals: [9],
+  });
+
+  await publicHarness.service.createNpcRollBatch(
+    planSaveBatch([npcActor], 'death', { modifier: 2 }),
+    { rollMode: 'publicroll' },
+  );
+  await blindHarness.service.createNpcRollBatch(
+    planSaveBatch([npcActor], 'death', { modifier: -1 }),
+    { rollMode: 'blind' },
+  );
+
+  assert.equal(publicHarness.messages[0].rolls[0].formula, '1d20 + 2');
+  assert.equal('whisper' in publicHarness.messages[0], false);
+  assert.deepEqual(publicHarness.messageOptions[0], { rollMode: 'publicroll' });
+  assert.match(publicHarness.messages[0].content, /Modifier/);
+  assert.match(publicHarness.messages[0].content, /\+2/);
+  assert.equal(blindHarness.messages[0].rolls[0].formula, '1d20 - 1');
+  assert.deepEqual(blindHarness.messages[0].whisper, ['gm-one', 'gm-two']);
+  assert.equal(blindHarness.messages[0].blind, true);
+  assert.deepEqual(blindHarness.messageOptions[0], { messageMode: 'blind' });
+});
+
 test('partial skips and failures are collected and reported once', async () => {
   const validUuid = 'Scene.scene.Token.valid';
   const missingUuid = 'Scene.scene.Token.missing';
@@ -290,6 +325,32 @@ test('chat service fails closed for players or an empty GM recipient list', asyn
 test('roll-message mode options follow the Foundry generation', () => {
   assert.deepEqual(getRollMessageModeOptions(13), { rollMode: 'gmroll' });
   assert.deepEqual(getRollMessageModeOptions(14), { messageMode: 'gm' });
+  assert.deepEqual(
+    getRollMessageModeOptions(13, 'selfroll'),
+    { rollMode: 'selfroll' },
+  );
+  assert.deepEqual(
+    getRollMessageModeOptions(14, 'public'),
+    { messageMode: 'public' },
+  );
+});
+
+test('roll-mode choices normalize Foundry 13 and 14 configuration shapes', () => {
+  assert.deepEqual(getRollModeChoices({
+    ChatMessage: {},
+    Dice: { rollModes: { publicroll: 'CHAT.RollPublic' } },
+  }), { publicroll: 'CHAT.RollPublic' });
+  assert.deepEqual(getRollModeChoices({
+    ChatMessage: {
+      modes: {
+        blind: { label: 'CHAT.RollBlind' },
+        public: { label: 'CHAT.RollPublic' },
+      },
+    },
+  }), {
+    blind: 'CHAT.RollBlind',
+    public: 'CHAT.RollPublic',
+  });
 });
 
 test('marching-order reports are public, ordered, escaped, and retain empty ranks', async () => {

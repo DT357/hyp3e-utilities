@@ -322,7 +322,11 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     followerRoster,
-    /party-row-actions--follower[\s\S]*data-field="party-save"[\s\S]*rollFollowerSave[\s\S]*rollFollowerMorale/,
+    /party-row-actions--follower[\s\S]*party-follower-save-action[\s\S]*rollFollowerSave[\s\S]*party-follower-morale-action[\s\S]*rollFollowerMorale/,
+  );
+  assert.doesNotMatch(
+    followerRoster,
+    /party-row-actions--follower[\s\S]*data-field="party-save"/,
   );
   assert.ok(
     followerRoster.indexOf('party-row-actions--follower')
@@ -334,7 +338,7 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp ac dr actions actions"\s*"portrait identity movement share employment employment remove";/s,
+    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp ac dr movement morale remove"\s*"portrait identity save share employment employment employment \.";/s,
   );
   assert.match(
     styles,
@@ -342,7 +346,15 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-row-actions--follower\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-area:\s*actions;/s,
+    /party-row-actions--follower\s*\{[^}]*display:\s*contents;/s,
+  );
+  assert.match(
+    styles,
+    /party-follower-save-action\s*\{[^}]*grid-area:\s*save;/s,
+  );
+  assert.match(
+    styles,
+    /party-follower-morale-action\s*\{[^}]*grid-area:\s*morale;/s,
   );
   assert.match(
     styles,

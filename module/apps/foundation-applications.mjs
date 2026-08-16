@@ -7,6 +7,7 @@ import {
   SETTING_KEYS,
   TEMPLATE_PATHS,
 } from '../core/constants.mjs';
+import { getRollModeChoices } from '../chat/chat-cards.mjs';
 import { PARTY_FOLLOWER_OPERATIONS } from '../party/party-followers.mjs';
 import { evaluatePartyEditPermission } from '../party/party-permissions.mjs';
 import { PARTY_MARCHING_OPERATIONS } from '../party/party-marching-order.mjs';
@@ -45,6 +46,7 @@ function createRequestId() {
 export function createFoundationApplications({
   ApplicationV2,
   HandlebarsApplicationMixin,
+  config = globalThis.CONFIG,
   game,
   hooks = globalThis.Hooks,
   logger = console,
@@ -77,6 +79,7 @@ export function createFoundationApplications({
     ?.implementation,
 }) {
   const HandlebarsApplication = HandlebarsApplicationMixin(ApplicationV2);
+  let followerSaveRollInstance = null;
   let partySheetInstance = null;
 
   class FoundationApplication extends HandlebarsApplication {
@@ -223,6 +226,128 @@ export function createFoundationApplications({
       );
       notify(notifications, 'info', `${APP_NAMESPACE}.permissions.saved`);
       await this.render({ force: true });
+    }
+  }
+
+  class FollowerSaveRollApplication extends HandlebarsApplication {
+    constructor(actorUuid, options = {}) {
+      if (followerSaveRollInstance) {
+        followerSaveRollInstance.actorUuid = actorUuid;
+        return followerSaveRollInstance;
+      }
+      super(options);
+      this.actorUuid = actorUuid;
+      followerSaveRollInstance = this;
+    }
+
+    static DEFAULT_OPTIONS = {
+      id: `${MODULE_ID}-follower-save-roll`,
+      tag: 'form',
+      classes: [CSS_NAMESPACE, `${CSS_NAMESPACE}--application`],
+      window: {
+        title: `${APP_NAMESPACE}.followerSaveRoll.title`,
+        minimizable: false,
+        resizable: false,
+      },
+      position: { width: 380, height: 'auto' },
+      actions: { cancel: FollowerSaveRollApplication.cancel },
+      form: {
+        closeOnSubmit: false,
+        handler: FollowerSaveRollApplication.submit,
+      },
+    };
+
+    static PARTS = {
+      main: { template: TEMPLATE_PATHS.followerSaveRoll },
+    };
+
+    static async cancel() {
+      await this.close();
+    }
+
+    static async submit(_event, _form, formData) {
+      const actor = partyFollowersProvider()?.getActor?.(this.actorUuid);
+      const formObject = formData?.object ?? {};
+      const modifier = formObject.modifier === ''
+        ? 0
+        : Number(formObject.modifier);
+      const rollModes = getRollModeChoices(config);
+      if (
+        !actor
+        || !SAVE_KEYS.includes(formObject.saveKey)
+        || !Number.isSafeInteger(modifier)
+        || modifier < -99
+        || modifier > 99
+        || !Object.hasOwn(rollModes, formObject.rollMode)
+      ) {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.followerSaveRoll.invalid`,
+        );
+        return null;
+      }
+
+      try {
+        const report = await partyActionsProvider().rollSave(
+          actor,
+          formObject.saveKey,
+          { modifier, rollMode: formObject.rollMode },
+        );
+        if (report?.failures?.length || report?.skipped?.length) {
+          notify(
+            notifications,
+            'warn',
+            `${APP_NAMESPACE}.partySheet.partyActionPartial`,
+          );
+        }
+        await this.close();
+        return report;
+      }
+      catch (error) {
+        logger.warn?.('Follower saving throw failed.', error);
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+        );
+        return null;
+      }
+    }
+
+    async _prepareContext(options) {
+      const context = await super._prepareContext?.(options) ?? {};
+      const actor = partyFollowersProvider()?.getActor?.(this.actorUuid);
+      const rollModes = getRollModeChoices(config);
+      const configuredMode = game.settings.get?.('core', 'rollMode');
+      const selectedMode = Object.hasOwn(rollModes, configuredMode)
+        ? configuredMode
+        : Object.keys(rollModes).find((mode) => mode.startsWith('public'))
+          ?? Object.keys(rollModes)[0];
+      return {
+        ...context,
+        actorName: actor?.name ?? this.actorUuid,
+        modifier: 0,
+        rollModeOptions: Object.entries(rollModes).map(([id, label]) => ({
+          id,
+          label,
+          selected: id === selectedMode,
+        })),
+        saveOptions: SAVE_KEYS.map((id, index) => ({
+          id,
+          label: `${APP_NAMESPACE}.partySheet.saves.${id}`,
+          selected: index === 0,
+        })),
+      };
+    }
+
+    async close(options) {
+      try {
+        return await super.close(options);
+      }
+      finally {
+        if (followerSaveRollInstance === this) followerSaveRollInstance = null;
+      }
     }
   }
 
@@ -757,12 +882,17 @@ export function createFoundationApplications({
       const actor = partyFollowersProvider()?.getActor(
         target?.dataset?.actorUuid,
       );
-      const saveKey = target?.closest?.('[data-party-actor-row]')
-        ?.querySelector?.('[data-field="party-save"]')?.value;
-      return this._executePartyAction(
-        () => partyActionsProvider().rollSave(actor, saveKey),
-        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
-      );
+      if (!actor) {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+        );
+        return null;
+      }
+      const application = new FollowerSaveRollApplication(actor.uuid);
+      await application.render({ force: true });
+      return application;
     }
 
     static async rollFollowerMorale(_event, target) {
@@ -1810,6 +1940,7 @@ export function createFoundationApplications({
   }
 
   return Object.freeze({
+    FollowerSaveRollApplication,
     FoundationApplication,
     ResetHudPositionApplication,
     PartyPermissionsApplication,
