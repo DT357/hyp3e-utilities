@@ -2115,9 +2115,11 @@ async function testProductionPartyFollowers(character, npc) {
     )?.getBoundingClientRect?.(),
   ]));
   const followerEmploymentRect = followerEmployment?.getBoundingClientRect?.();
+  const followerActionsRect = followerActions?.getBoundingClientRect?.();
   const followerSaveActionRect = followerSaveAction?.getBoundingClientRect?.();
   const followerMoraleActionRect = followerMoraleAction?.getBoundingClientRect?.();
   const followerRemoveRect = followerRemove?.getBoundingClientRect?.();
+  const followerRowRect = npcElement?.getBoundingClientRect?.();
   const centerY = (rect) => rect.top + (rect.height / 2);
   const compactFollowerRosterRendered = Boolean(
     followerPortrait?.querySelector('img')
@@ -2140,6 +2142,8 @@ async function testProductionPartyFollowers(character, npc) {
     ) <= 2
     && followerSaveActionRect.left >= followerStatRects.dr.right
     && followerMoraleActionRect.left >= followerSaveActionRect.right
+    && Math.abs(followerActionsRect.right - followerRowRect.right) <= 2
+    && Math.abs(followerMoraleActionRect.right - followerRowRect.right) <= 2
     && followerStatRects.movement.top > followerStatRects.hp.top
     && Math.abs(
       centerY(followerStatRects.movement) - centerY(followerStatRects.share),
@@ -2152,7 +2156,8 @@ async function testProductionPartyFollowers(character, npc) {
     ) <= 2
     && followerStatRects.share.left >= followerStatRects.movement.right
     && followerEmploymentRect.left >= followerStatRects.share.right
-    && followerRemoveRect.left >= followerEmploymentRect.right,
+    && followerRemoveRect.left >= followerEmploymentRect.right
+    && Math.abs(followerRemoveRect.right - followerRowRect.right) <= 2,
   );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';

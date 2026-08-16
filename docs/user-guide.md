@@ -137,6 +137,7 @@ does not delete the Actor.
 - Set a non-negative whole-number daily wage in GP.
 - At the normal Party Sheet width, HP, AC, DR, Roll Save, and Roll Morale
   occupy the first line; Move, Share, Wage, Save, and remove occupy the second.
+  The roll-button group and remove control align to the row's right edge.
 - Set a share in quarter-share increments, then choose the compact **Save**
   action; its tooltip identifies the full **Save Wage and Share** operation.
 - Choose **Roll Save** to open the saving-throw window. Select one of

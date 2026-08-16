@@ -336,7 +336,7 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp ac dr save morale \."\s*"portrait identity movement share employment employment employment remove";/s,
+    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp ac dr rolls rolls rolls"\s*"portrait identity movement share employment employment employment remove";/s,
   );
   assert.match(
     styles,
@@ -348,15 +348,7 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-row-actions--follower\s*\{[^}]*display:\s*contents;/s,
-  );
-  assert.match(
-    styles,
-    /party-follower-save-action\s*\{[^}]*grid-area:\s*save;/s,
-  );
-  assert.match(
-    styles,
-    /party-follower-morale-action\s*\{[^}]*grid-area:\s*morale;/s,
+    /party-row-actions--follower\s*\{[^}]*display:\s*flex;[^}]*grid-area:\s*rolls;[^}]*justify-content:\s*flex-end;/s,
   );
   assert.match(
     styles,

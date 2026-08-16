@@ -500,7 +500,7 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-follower {
   grid-template-areas:
-    "portrait identity hp ac dr save morale ."
+    "portrait identity hp ac dr rolls rolls rolls"
     "portrait identity movement share employment employment employment remove";
   grid-template-columns:
     2.5rem minmax(9rem, 1fr) auto auto auto auto auto 2rem;
@@ -586,7 +586,10 @@
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower {
-  display: contents;
+  display: flex;
+  flex-wrap: nowrap;
+  grid-area: rolls;
+  justify-content: flex-end;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower:empty {
@@ -601,14 +604,6 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower button {
   white-space: nowrap;
-}
-
-.hyp3e-utilities .hyp3e-utilities__party-follower-save-action {
-  grid-area: save;
-}
-
-.hyp3e-utilities .hyp3e-utilities__party-follower-morale-action {
-  grid-area: morale;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower-remove--icon {
@@ -818,8 +813,8 @@
       "portrait identity remove"
       ". hp hp"
       ". ac dr"
-      ". movement morale"
-      ". save save"
+      ". rolls rolls"
+      ". movement movement"
       ". share share"
       ". employment employment";
     grid-template-columns: 2.5rem 1fr auto;
