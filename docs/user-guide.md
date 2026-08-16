@@ -133,6 +133,8 @@ does not delete the Actor.
 
 - Drag a durable world `character` or `npc` Actor onto the Followers drop area.
 - Set a non-negative whole-number daily wage in GP.
+- At the normal Party Sheet width, save and morale controls follow HP/AC/DR on
+  the first line; Move, Share, Wage, Save, and remove occupy the second line.
 - Set a share in quarter-share increments, then choose the compact **Save**
   action; its tooltip identifies the full **Save Wage and Share** operation.
 - Open the Actor, click its portrait to ping, use the final red X to remove it,

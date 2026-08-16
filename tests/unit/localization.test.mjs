@@ -334,7 +334,23 @@ test('Party Sheet follower roster mirrors compact member controls', async () => 
   );
   assert.match(
     styles,
-    /party-row-actions--follower\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-column:\s*3\s*\/\s*-1;/s,
+    /party-follower\s*\{[^}]*grid-template-areas:\s*"portrait identity hp ac dr actions actions"\s*"portrait identity movement share employment employment remove";/s,
+  );
+  assert.match(
+    styles,
+    /party-member-stats--follower\s*\{[^}]*display:\s*contents;/s,
+  );
+  assert.match(
+    styles,
+    /party-row-actions--follower\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-area:\s*actions;/s,
+  );
+  assert.match(
+    styles,
+    /party-employment--compact\s*\{[^}]*grid-area:\s*employment;/s,
+  );
+  assert.match(
+    styles,
+    /party-follower-remove--icon\s*\{[^}]*grid-area:\s*remove;/s,
   );
 });
 

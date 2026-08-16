@@ -499,24 +499,26 @@
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower {
+  grid-template-areas:
+    "portrait identity hp ac dr actions actions"
+    "portrait identity movement share employment employment remove";
   grid-template-columns:
-    2.5rem minmax(9rem, 1fr) minmax(12rem, 1.1fr) auto 2rem;
+    2.5rem minmax(9rem, 1fr) auto auto auto minmax(0, 1fr) 2rem;
 }
 
-.hyp3e-utilities .hyp3e-utilities__party-follower-portrait {
-  grid-column: 1;
-  grid-row: 1 / span 2;
+.hyp3e-utilities .hyp3e-utilities__party-follower-portrait,
+.hyp3e-utilities .hyp3e-utilities__party-follower
+  > .hyp3e-utilities__party-member-portrait-image {
+  grid-area: portrait;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower
   > .hyp3e-utilities__party-member-identity {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-area: identity;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-stats--follower {
-  grid-column: 3;
-  grid-row: 1;
+  display: contents;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-stats--follower input {
@@ -540,8 +542,7 @@
 .hyp3e-utilities .hyp3e-utilities__party-employment--compact {
   display: flex;
   flex-wrap: nowrap;
-  grid-column: 4;
-  grid-row: 1;
+  grid-area: employment;
   white-space: nowrap;
 }
 
@@ -585,8 +586,7 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower {
   flex-wrap: nowrap;
-  grid-column: 3 / -1;
-  grid-row: 2;
+  grid-area: actions;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower:empty {
@@ -604,8 +604,13 @@
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-follower-remove--icon {
-  grid-column: 5;
-  grid-row: 1;
+  grid-area: remove;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-follower.hyp3e-utilities__party-member--missing
+  > .hyp3e-utilities__party-member-remove {
+  grid-area: actions;
+  justify-self: start;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-remove--icon {
@@ -778,41 +783,19 @@
   }
 
   .hyp3e-utilities .hyp3e-utilities__party-follower {
+    grid-template-areas:
+      "portrait identity remove"
+      ". hp hp"
+      ". ac dr"
+      ". actions actions"
+      ". movement share"
+      ". employment employment";
     grid-template-columns: 2.5rem 1fr auto;
   }
 
-  .hyp3e-utilities .hyp3e-utilities__party-follower-portrait {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .hyp3e-utilities .hyp3e-utilities__party-follower
-    > .hyp3e-utilities__party-member-identity {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .hyp3e-utilities .hyp3e-utilities__party-follower .hyp3e-utilities__party-member-stats,
-  .hyp3e-utilities .hyp3e-utilities__party-employment {
-    grid-column: 2 / -1;
-  }
-
-  .hyp3e-utilities .hyp3e-utilities__party-member-stats--follower {
-    grid-row: 2;
-  }
-
-  .hyp3e-utilities .hyp3e-utilities__party-employment--compact {
-    grid-row: 3;
-  }
-
+  .hyp3e-utilities .hyp3e-utilities__party-employment--compact,
   .hyp3e-utilities .hyp3e-utilities__party-row-actions--follower {
-    grid-column: 2 / -1;
-    grid-row: 4;
-  }
-
-  .hyp3e-utilities .hyp3e-utilities__party-follower-remove--icon {
-    grid-column: 3;
-    grid-row: 1;
+    flex-wrap: wrap;
   }
 }
 

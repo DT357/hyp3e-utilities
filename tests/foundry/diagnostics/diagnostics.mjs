@@ -2096,9 +2096,6 @@ async function testProductionPartyFollowers(character, npc) {
   const followerPortrait = npcElement?.querySelector(
     '.hyp3e-utilities__party-follower-portrait[data-action="pingActor"]',
   );
-  const followerStats = npcElement?.querySelector(
-    '.hyp3e-utilities__party-member-stats--follower',
-  );
   const followerEmployment = npcElement?.querySelector(
     '.hyp3e-utilities__party-employment--compact',
   );
@@ -2116,9 +2113,10 @@ async function testProductionPartyFollowers(character, npc) {
       `.hyp3e-utilities__party-member-stat--${stat}`,
     )?.getBoundingClientRect?.(),
   ]));
-  const followerStatsRect = followerStats?.getBoundingClientRect?.();
   const followerEmploymentRect = followerEmployment?.getBoundingClientRect?.();
   const followerActionsRect = followerActions?.getBoundingClientRect?.();
+  const followerRemoveRect = followerRemove?.getBoundingClientRect?.();
+  const centerY = (rect) => rect.top + (rect.height / 2);
   const compactFollowerRosterRendered = Boolean(
     followerPortrait?.querySelector('img')
     && followerPortrait.getAttribute('aria-label')
@@ -2130,14 +2128,19 @@ async function testProductionPartyFollowers(character, npc) {
     && followerActions?.querySelector('[data-action="rollFollowerMorale"]')
     && followerRemove?.querySelector('.fa-xmark')
     && followerRemove === npcElement.lastElementChild
-    && Math.abs(followerStatRects.hp.top - followerStatRects.ac.top) <= 2
-    && Math.abs(followerStatRects.ac.top - followerStatRects.dr.top) <= 2
+    && Math.abs(centerY(followerStatRects.hp) - centerY(followerStatRects.ac)) <= 2
+    && Math.abs(centerY(followerStatRects.ac) - centerY(followerStatRects.dr)) <= 2
+    && Math.abs(centerY(followerStatRects.dr) - centerY(followerActionsRect)) <= 2
+    && followerActionsRect.left >= followerStatRects.dr.right
     && followerStatRects.movement.top > followerStatRects.hp.top
     && Math.abs(
-      followerStatRects.movement.top - followerStatRects.share.top,
+      centerY(followerStatRects.movement) - centerY(followerStatRects.share),
     ) <= 2
-    && followerStatsRect.right <= followerEmploymentRect.left
-    && followerActionsRect.top >= followerStatsRect.bottom,
+    && Math.abs(
+      centerY(followerStatRects.share) - centerY(followerEmploymentRect),
+    ) <= 2
+    && followerEmploymentRect.left >= followerStatRects.share.right
+    && Math.abs(centerY(followerEmploymentRect) - centerY(followerRemoveRect)) <= 2,
   );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';
