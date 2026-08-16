@@ -26,9 +26,10 @@ All notable changes to Hyp3e Utilities are documented here.
   icon after the save controls, moved member saves into the shared ApplicationV2
   save window, and made **Add Selected Actor** use the active scene's controlled
   token.
-- Compacted Follower rows into HP/AC/DR/Move/Morale/remove and
-  Save/Share/Wage lines, and moved follower saves into a small ApplicationV2
-  window with save-category, situational-modifier, and roll-type controls.
+- Compacted Follower rows into HP/AC/DR/Save/Morale and
+  Move/Share/Wage/Save/remove lines, and moved follower saving throws into a
+  small ApplicationV2 window with save-category, situational-modifier, and
+  roll-type controls.
 - Replaced the full-width character-sheet **To Party** controls with accessible
   dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft

@@ -500,8 +500,8 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-follower {
   grid-template-areas:
-    "portrait identity hp ac dr movement morale remove"
-    "portrait identity save share employment employment employment .";
+    "portrait identity hp ac dr save morale ."
+    "portrait identity movement share employment employment employment remove";
   grid-template-columns:
     2.5rem minmax(9rem, 1fr) auto auto auto auto auto 2rem;
 }
@@ -519,6 +519,13 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-member-stats--follower {
   display: contents;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stats--follower > div {
+  align-items: baseline;
+  display: flex;
+  gap: 0.25rem;
+  white-space: nowrap;
 }
 
 .hyp3e-utilities .hyp3e-utilities__party-member-stats--follower input {

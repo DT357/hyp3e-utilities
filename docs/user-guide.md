@@ -135,8 +135,8 @@ does not delete the Actor.
 
 - Drag a durable world `character` or `npc` Actor onto the Followers drop area.
 - Set a non-negative whole-number daily wage in GP.
-- At the normal Party Sheet width, HP, AC, DR, Move, Roll Morale, and remove
-  occupy the first line; Roll Save, Share, Wage, and Save occupy the second.
+- At the normal Party Sheet width, HP, AC, DR, Roll Save, and Roll Morale
+  occupy the first line; Move, Share, Wage, Save, and remove occupy the second.
 - Set a share in quarter-share increments, then choose the compact **Save**
   action; its tooltip identifies the full **Save Wage and Share** operation.
 - Choose **Roll Save** to open the saving-throw window. Select one of

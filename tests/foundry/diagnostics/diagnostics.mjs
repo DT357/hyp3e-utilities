@@ -2133,24 +2133,26 @@ async function testProductionPartyFollowers(character, npc) {
     && Math.abs(centerY(followerStatRects.hp) - centerY(followerStatRects.ac)) <= 2
     && Math.abs(centerY(followerStatRects.ac) - centerY(followerStatRects.dr)) <= 2
     && Math.abs(
-      centerY(followerStatRects.dr) - centerY(followerStatRects.movement),
+      centerY(followerStatRects.dr) - centerY(followerSaveActionRect),
     ) <= 2
     && Math.abs(
-      centerY(followerStatRects.movement) - centerY(followerMoraleActionRect),
+      centerY(followerSaveActionRect) - centerY(followerMoraleActionRect),
     ) <= 2
-    && Math.abs(centerY(followerMoraleActionRect) - centerY(followerRemoveRect)) <= 2
-    && followerStatRects.movement.left >= followerStatRects.dr.right
-    && followerMoraleActionRect.left >= followerStatRects.movement.right
-    && followerRemoveRect.left >= followerMoraleActionRect.right
-    && followerSaveActionRect.top > followerStatRects.hp.top
+    && followerSaveActionRect.left >= followerStatRects.dr.right
+    && followerMoraleActionRect.left >= followerSaveActionRect.right
+    && followerStatRects.movement.top > followerStatRects.hp.top
     && Math.abs(
-      centerY(followerSaveActionRect) - centerY(followerStatRects.share),
+      centerY(followerStatRects.movement) - centerY(followerStatRects.share),
     ) <= 2
     && Math.abs(
       centerY(followerStatRects.share) - centerY(followerEmploymentRect),
     ) <= 2
-    && followerStatRects.share.left >= followerSaveActionRect.right
-    && followerEmploymentRect.left >= followerStatRects.share.right,
+    && Math.abs(
+      centerY(followerEmploymentRect) - centerY(followerRemoveRect),
+    ) <= 2
+    && followerStatRects.share.left >= followerStatRects.movement.right
+    && followerEmploymentRect.left >= followerStatRects.share.right
+    && followerRemoveRect.left >= followerEmploymentRect.right,
   );
   if (wageInput) wageInput.value = '5';
   if (shareInput) shareInput.value = '0.75';
