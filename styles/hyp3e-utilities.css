@@ -500,8 +500,8 @@
 
 .hyp3e-utilities .hyp3e-utilities__party-follower {
   grid-template-areas:
-    "portrait identity hp ac dr rolls rolls rolls"
-    "portrait identity movement share employment employment employment remove";
+    "portrait identity hp movement share employment employment employment"
+    "portrait identity ac dr rolls rolls rolls remove";
   grid-template-columns:
     2.5rem minmax(9rem, 1fr) auto auto auto auto auto 2rem;
 }
@@ -811,12 +811,11 @@
   .hyp3e-utilities .hyp3e-utilities__party-follower {
     grid-template-areas:
       "portrait identity remove"
-      ". hp hp"
-      ". ac dr"
-      ". rolls rolls"
-      ". movement movement"
+      ". hp movement"
       ". share share"
-      ". employment employment";
+      ". employment employment"
+      ". ac dr"
+      ". rolls rolls";
     grid-template-columns: 2.5rem 1fr auto;
   }
 
