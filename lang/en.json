@@ -58,7 +58,7 @@
         "saved": "Party Sheet permissions saved."
       },
       "followerSaveRoll": {
-        "title": "Follower Saving Throw",
+        "title": "Saving Throw",
         "saveCategory": "Save category",
         "modifier": "Situational modifier",
         "rollMode": "Roll type",

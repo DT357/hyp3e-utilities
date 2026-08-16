@@ -266,7 +266,8 @@ export function createFoundationApplications({
     }
 
     static async submit(_event, _form, formData) {
-      const actor = partyFollowersProvider()?.getActor?.(this.actorUuid);
+      const actor = partyMembersProvider()?.getActor?.(this.actorUuid)
+        ?? partyFollowersProvider()?.getActor?.(this.actorUuid);
       const formObject = formData?.object ?? {};
       const modifier = formObject.modifier === ''
         ? 0
@@ -317,7 +318,8 @@ export function createFoundationApplications({
 
     async _prepareContext(options) {
       const context = await super._prepareContext?.(options) ?? {};
-      const actor = partyFollowersProvider()?.getActor?.(this.actorUuid);
+      const actor = partyMembersProvider()?.getActor?.(this.actorUuid)
+        ?? partyFollowersProvider()?.getActor?.(this.actorUuid);
       const rollModes = getRollModeChoices(config);
       const configuredMode = game.settings.get?.('core', 'rollMode');
       const selectedMode = Object.hasOwn(rollModes, configuredMode)
@@ -870,12 +872,17 @@ export function createFoundationApplications({
       const actor = partyMembersProvider()?.getActor(
         target?.dataset?.actorUuid,
       );
-      const saveKey = target?.closest?.('[data-party-actor-row]')
-        ?.querySelector?.('[data-field="party-save"]')?.value;
-      return this._executePartyAction(
-        () => partyActionsProvider().rollSave(actor, saveKey),
-        `${APP_NAMESPACE}.partySheet.rollUnavailable`,
-      );
+      if (!actor) {
+        notify(
+          notifications,
+          'error',
+          `${APP_NAMESPACE}.partySheet.rollUnavailable`,
+        );
+        return null;
+      }
+      const application = new FollowerSaveRollApplication(actor.uuid);
+      await application.render({ force: true });
+      return application;
     }
 
     static async rollFollowerSave(_event, target) {

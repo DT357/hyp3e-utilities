@@ -124,7 +124,9 @@ the Actor Directory users icon. Its six tabs share one revisioned world state.
   final red X to remove the member. Missing references retain a labeled
   **Clean Up** control.
 - Member statistics use two compact lines: HP/AC/DR followed by Move/Share.
-- GMs can roll one of the five saves or preview and award XP.
+- Choose **Roll Save** to open the saving-throw window. Select one of the five
+  save categories, enter an optional whole-number situational modifier, choose
+  the Foundry roll type, and roll. GMs can also preview and award XP.
 
 Only `character` Actors can be members. Removing a row changes Party State; it
 does not delete the Actor.
@@ -137,7 +139,7 @@ does not delete the Actor.
   occupy the first line; Roll Save, Share, Wage, and Save occupy the second.
 - Set a share in quarter-share increments, then choose the compact **Save**
   action; its tooltip identifies the full **Save Wage and Share** operation.
-- Choose **Roll Save** to open the follower saving-throw window. Select one of
+- Choose **Roll Save** to open the saving-throw window. Select one of
   the five save categories, enter an optional whole-number situational modifier,
   choose the Foundry roll type, and roll. The modifier is added to the d20 total
   before comparison with the Actor's prepared save target.

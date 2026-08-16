@@ -23,8 +23,9 @@ All notable changes to Hyp3e Utilities are documented here.
 
 - Compacted Overview member rows, moved token pinging to the member portrait,
   arranged statistics as HP/AC/DR and Move/Share lines, placed a red remove
-  icon after the save controls, and made **Add Selected Actor** use the active
-  scene's controlled token.
+  icon after the save controls, moved member saves into the shared ApplicationV2
+  save window, and made **Add Selected Actor** use the active scene's controlled
+  token.
 - Compacted Follower rows into HP/AC/DR/Move/Morale/remove and
   Save/Share/Wage lines, and moved follower saves into a small ApplicationV2
   window with save-category, situational-modifier, and roll-type controls.

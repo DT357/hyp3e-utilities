@@ -248,16 +248,14 @@ test('Party Sheet member roster keeps portrait ping and save actions compact', a
   );
   assert.match(
     memberRoster,
-    /party-row-actions--member[\s\S]*data-field="party-save"[\s\S]*data-action="rollMemberSave"/,
+    /party-row-actions--member[\s\S]*data-action="rollMemberSave"/,
   );
+  assert.doesNotMatch(memberRoster, /data-field="party-save"/);
   assert.match(
     styles,
     /party-row-actions--member\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*grid-column:\s*auto;/s,
   );
-  assert.match(
-    styles,
-    /party-row-actions--member select\s*\{[^}]*width:\s*7rem;/s,
-  );
+  assert.doesNotMatch(styles, /party-row-actions--member select\s*\{/s);
   assert.ok(
     memberRoster.indexOf('party-row-actions--member')
       < memberRoster.indexOf('party-member-remove--icon'),

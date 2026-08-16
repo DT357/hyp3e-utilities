@@ -610,11 +610,11 @@ test('Party Sheet Followers renders rows and routes employment, removal, and dro
   ]);
 });
 
-test('Party Sheet row actions reuse the party action service and open follower saves in AppV2', async () => {
+test('Party Sheet row actions reuse the shared saving-throw AppV2', async () => {
   const state = createPartyStateDefault();
   state.memberActorUuids = ['Actor.hero'];
   state.followerActorUuids = ['Actor.npc', 'Actor.character'];
-  const hero = { uuid: 'Actor.hero' };
+  const hero = { name: 'Hero', uuid: 'Actor.hero' };
   const npc = { uuid: 'Actor.npc' };
   const character = { name: 'Character Follower', uuid: 'Actor.character' };
   const actionCalls = [];
@@ -679,17 +679,32 @@ test('Party Sheet row actions reuse the party action service and open follower s
   assert.equal(context.canRollPartyActions, true);
   assert.equal(context.hasFollowerMorale, true);
 
-  const saveTarget = (actorUuid) => ({
-    closest: () => ({
-      querySelector: () => ({ value: 'sorcery' }),
-    }),
-    dataset: { actorUuid },
-  });
   const actions = classes.OpenPartySheetApplication.DEFAULT_OPTIONS.actions;
   await actions.pingActor.call(app, undefined, {
     dataset: { actorUuid: 'Actor.hero' },
   });
-  await actions.rollMemberSave.call(app, undefined, saveTarget('Actor.hero'));
+  const memberSaveDialog = await actions.rollMemberSave.call(
+    app,
+    undefined,
+    { dataset: { actorUuid: 'Actor.hero' } },
+  );
+  assert.equal(memberSaveDialog.rendered, true);
+  assert.equal(memberSaveDialog.actorUuid, 'Actor.hero');
+  const memberDialogContext = await memberSaveDialog._prepareContext({});
+  assert.equal(memberDialogContext.actorName, 'Hero');
+  await classes.FollowerSaveRollApplication.DEFAULT_OPTIONS.form.handler.call(
+    memberSaveDialog,
+    undefined,
+    undefined,
+    {
+      object: {
+        modifier: '1',
+        rollMode: 'gmroll',
+        saveKey: 'sorcery',
+      },
+    },
+  );
+  assert.equal(memberSaveDialog.closed, true);
   const followerSaveDialog = await actions.rollFollowerSave.call(
     app,
     undefined,
@@ -734,7 +749,12 @@ test('Party Sheet row actions reuse the party action service and open follower s
 
   assert.deepEqual(actionCalls, [
     ['ping', 'Actor.hero'],
-    ['save', 'Actor.hero', 'sorcery', undefined],
+    [
+      'save',
+      'Actor.hero',
+      'sorcery',
+      { modifier: 1, rollMode: 'gmroll' },
+    ],
     [
       'save',
       'Actor.character',

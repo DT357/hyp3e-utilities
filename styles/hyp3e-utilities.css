@@ -574,12 +574,6 @@
   grid-column: auto;
 }
 
-.hyp3e-utilities .hyp3e-utilities__party-row-actions--member select {
-  flex: 0 0 7rem;
-  min-width: 0;
-  width: 7rem;
-}
-
 .hyp3e-utilities .hyp3e-utilities__party-row-actions--member button {
   white-space: nowrap;
 }

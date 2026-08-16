@@ -1910,9 +1910,6 @@ async function testProductionPartyMembers(character, npc) {
   const memberSaveActions = memberElement?.querySelector(
     '.hyp3e-utilities__party-row-actions--member',
   );
-  const memberSaveSelect = memberSaveActions?.querySelector(
-    '[data-field="party-save"]',
-  );
   const memberSaveButton = memberSaveActions?.querySelector(
     '[data-action="rollMemberSave"]',
   );
@@ -1932,7 +1929,6 @@ async function testProductionPartyMembers(character, npc) {
   ]));
   const memberSaveActionsRect = memberSaveActions?.getBoundingClientRect?.();
   const memberRemoveRect = memberRemoveButton?.getBoundingClientRect?.();
-  const saveSelectRect = memberSaveSelect?.getBoundingClientRect?.();
   const saveButtonRect = memberSaveButton?.getBoundingClientRect?.();
   const portraitPingIntegrated = Boolean(
     portraitPing?.querySelector('img')
@@ -1940,10 +1936,9 @@ async function testProductionPartyMembers(character, npc) {
     && portraitPing.textContent.trim() === '',
   );
   const memberSaveActionsCompact = Boolean(
-    memberSaveSelect
-    && memberSaveButton
-    && saveSelectRect.width <= 120
-    && Math.abs(saveSelectRect.top - saveButtonRect.top) <= 2,
+    memberSaveButton
+    && !memberSaveActions.querySelector('[data-field="party-save"]')
+    && saveButtonRect.width <= 120,
   );
   const memberControlsDoNotOverlap = Boolean(
     memberRemoveButton?.querySelector('.fa-xmark')
@@ -2313,12 +2308,24 @@ async function testProductionPartyActions(character, npc) {
     )].find((row) => row.querySelector(
       `[data-actor-uuid="${character.uuid}"]`,
     ));
-    const memberSave = memberRow.querySelector('[data-field="party-save"]');
-    const memberFiveSaves = memberSave.options.length === 5;
-    memberSave.value = 'device';
     memberRow.querySelector('[data-action="pingActor"]').click();
     const memberPinged = await waitUntil(() => pings.length === 1);
     memberRow.querySelector('[data-action="rollMemberSave"]').click();
+    const memberSaveDialogOpened = await waitUntil(() => (
+      document.getElementById(`${MODULE_ID}-follower-save-roll`)
+    ));
+    const memberSaveDialog = document.getElementById(
+      `${MODULE_ID}-follower-save-roll`,
+    );
+    const memberSave = memberSaveDialog?.querySelector('[name="saveKey"]');
+    const memberRollMode = memberSaveDialog?.querySelector('[name="rollMode"]');
+    const memberFiveSaves = memberSave?.options.length === 5;
+    if (memberSave) memberSave.value = 'device';
+    if (memberRollMode) {
+      memberRollMode.value = [...memberRollMode.options]
+        .find(({ value }) => ['gm', 'gmroll'].includes(value))?.value;
+    }
+    memberSaveDialog?.querySelector('button[type="submit"]')?.click();
     const memberSaveCreated = await waitUntil(() => partyMessages().length >= 1);
 
     sheet.element.querySelector(
@@ -2400,6 +2407,7 @@ async function testProductionPartyActions(character, npc) {
     return {
       canvasActivated,
       memberFiveSaves,
+      memberSaveDialogOpened,
       followerFiveSaves,
       followerSaveDialogOpened,
       memberPinged,
