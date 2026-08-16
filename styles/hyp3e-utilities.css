@@ -457,6 +457,41 @@
   margin: 0;
 }
 
+.hyp3e-utilities .hyp3e-utilities__party-member-stats--overview {
+  grid-template-areas:
+    "hp hp ac ac dr dr"
+    "movement movement movement share share share";
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stats--overview div {
+  align-items: baseline;
+  display: flex;
+  gap: 0.25rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stat--hp {
+  grid-area: hp;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stat--ac {
+  grid-area: ac;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stat--dr {
+  grid-area: dr;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stat--movement {
+  grid-area: movement;
+}
+
+.hyp3e-utilities .hyp3e-utilities__party-member-stat--share {
+  grid-area: share;
+}
+
 .hyp3e-utilities .hyp3e-utilities__party-member--missing {
   border-inline-start: 0.25rem solid var(--color-level-warning, #9f6500);
   color: inherit;

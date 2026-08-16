@@ -1922,6 +1922,14 @@ async function testProductionPartyMembers(character, npc) {
   const memberStatsRect = memberElement?.querySelector(
     '.hyp3e-utilities__party-member-stats',
   )?.getBoundingClientRect?.();
+  const memberStatRects = Object.fromEntries([
+    'hp', 'ac', 'dr', 'movement', 'share',
+  ].map((stat) => [
+    stat,
+    memberElement?.querySelector(
+      `.hyp3e-utilities__party-member-stat--${stat}`,
+    )?.getBoundingClientRect?.(),
+  ]));
   const memberSaveActionsRect = memberSaveActions?.getBoundingClientRect?.();
   const memberRemoveRect = memberRemoveButton?.getBoundingClientRect?.();
   const saveSelectRect = memberSaveSelect?.getBoundingClientRect?.();
@@ -1943,6 +1951,15 @@ async function testProductionPartyMembers(character, npc) {
     && memberRemoveButton.textContent.trim() === ''
     && memberStatsRect.right <= memberSaveActionsRect.left
     && memberSaveActionsRect.right <= memberRemoveRect.left,
+  );
+  const memberStatsUseTwoVisibleLines = Boolean(
+    Math.abs(memberStatRects.hp.top - memberStatRects.ac.top) <= 2
+    && Math.abs(memberStatRects.ac.top - memberStatRects.dr.top) <= 2
+    && memberStatRects.movement.top > memberStatRects.hp.top
+    && Math.abs(
+      memberStatRects.movement.top - memberStatRects.share.top,
+    ) <= 2
+    && memberStatRects.share.right <= memberStatsRect.right + 1,
   );
 
   sheet.element?.querySelector(
@@ -2016,6 +2033,7 @@ async function testProductionPartyMembers(character, npc) {
     portraitPingIntegrated,
     memberSaveActionsCompact,
     memberControlsDoNotOverlap,
+    memberStatsUseTwoVisibleLines,
     actorSheetOpened,
     removedThroughUi,
     actorDropAdded,

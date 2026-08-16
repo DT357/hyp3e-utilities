@@ -206,12 +206,12 @@
                   {{/if}}
                 </div>
                 {{#unless missing}}
-                  <dl class="hyp3e-utilities__party-member-stats">
-                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}} / {{summary.hp.max}}</dd></div>
-                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
-                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
-                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
-                    <div><dt>{{localize "hyp3e-utilities.applications.partySheet.share"}}</dt><dd>{{share}}</dd></div>
+                  <dl class="hyp3e-utilities__party-member-stats hyp3e-utilities__party-member-stats--overview">
+                    <div class="hyp3e-utilities__party-member-stat--hp"><dt>{{localize "hyp3e-utilities.applications.partySheet.hp"}}</dt><dd>{{summary.hp.value}}/{{summary.hp.max}}</dd></div>
+                    <div class="hyp3e-utilities__party-member-stat--ac"><dt>{{localize "hyp3e-utilities.applications.partySheet.ac"}}</dt><dd>{{summary.armor.ac}}</dd></div>
+                    <div class="hyp3e-utilities__party-member-stat--dr"><dt>{{localize "hyp3e-utilities.applications.partySheet.dr"}}</dt><dd>{{summary.armor.dr}}</dd></div>
+                    <div class="hyp3e-utilities__party-member-stat--movement"><dt>{{localize "hyp3e-utilities.applications.partySheet.movement"}}</dt><dd>{{summary.movement}}</dd></div>
+                    <div class="hyp3e-utilities__party-member-stat--share"><dt>{{localize "hyp3e-utilities.applications.partySheet.share"}}</dt><dd>{{share}}</dd></div>
                   </dl>
                 {{/unless}}
                 {{#unless missing}}

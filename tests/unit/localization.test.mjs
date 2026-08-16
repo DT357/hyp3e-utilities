@@ -270,6 +270,25 @@ test('Party Sheet member roster keeps portrait ping and save actions compact', a
     styles,
     /party-member-remove--icon\s*\{[^}]*color:\s*var\(--color-level-error,[^}]*width:\s*2rem;/s,
   );
+  const hpIndex = memberRoster.indexOf('party-member-stat--hp');
+  const acIndex = memberRoster.indexOf('party-member-stat--ac');
+  const drIndex = memberRoster.indexOf('party-member-stat--dr');
+  const movementIndex = memberRoster.indexOf('party-member-stat--movement');
+  const shareIndex = memberRoster.indexOf('party-member-stat--share');
+  assert.ok(hpIndex < acIndex && acIndex < drIndex);
+  assert.ok(drIndex < movementIndex && movementIndex < shareIndex);
+  assert.match(
+    memberRoster,
+    /party-member-stat--hp[\s\S]*\{\{summary\.hp\.value\}\}\/\{\{summary\.hp\.max\}\}/,
+  );
+  assert.match(
+    styles,
+    /party-member-stats--overview\s*\{[^}]*grid-template-areas:\s*"hp hp ac ac dr dr"\s*"movement movement movement share share share";/s,
+  );
+  assert.match(
+    styles,
+    /party-member-stats--overview div\s*\{[^}]*display:\s*flex;[^}]*white-space:\s*nowrap;/s,
+  );
 });
 
 test('fixed HUD foreground colors meet WCAG AA contrast', () => {
