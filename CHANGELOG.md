@@ -2,7 +2,7 @@
 
 All notable changes to Hyp3e Utilities are documented here.
 
-## 1.0.0 — 2026-08-15
+## 1.0.0 — 2026-08-16
 
 ### Added
 
@@ -34,6 +34,9 @@ All notable changes to Hyp3e Utilities are documented here.
 - Kept Shared Equipment quantity metrics and Take controls on one row, with
   clearer spacing between Quantity, Bundle, and Maximum.
 - Kept all five Treasure coin-split entry fields on one desktop row.
+- Made the rich-text editor's native save control persist Party and Treasure
+  notes directly, removed the redundant secondary save buttons, and removed
+  the internal revision counter from the Party Sheet header.
 - Replaced the full-width character-sheet **To Party** controls with accessible
   dolly icons inside the native item-action clusters.
 - Kept XP, coin, and wage preview inputs out of the Party Sheet's unsaved-draft

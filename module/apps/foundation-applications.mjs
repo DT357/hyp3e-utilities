@@ -363,6 +363,7 @@ export function createFoundationApplications({
       this._followerDrafts = new Map();
       this._marchingNoteDrafts = new Map();
       this._partyNoteDraft = null;
+      this._partyNoteSavePromise = null;
       this._partyTabScrollPositions = new Map();
       this._supplyDraft = null;
       this._wageDraft = null;
@@ -408,7 +409,6 @@ export function createFoundationApplications({
         rollMemberSave: OpenPartySheetApplication.rollMemberSave,
         saveFollower: OpenPartySheetApplication.saveFollower,
         saveMarchingNote: OpenPartySheetApplication.saveMarchingNote,
-        savePartyNotes: OpenPartySheetApplication.savePartyNotes,
         saveSupplies: OpenPartySheetApplication.saveSupplies,
         selectTab: OpenPartySheetApplication.selectTab,
         settleWages: OpenPartySheetApplication.settleWages,
@@ -976,19 +976,32 @@ export function createFoundationApplications({
     }
 
     static async savePartyNotes() {
-      await this._flushPartyNoteEditors();
-      const draft = this._partyNoteDraft;
-      if (!draft) return null;
-      const response = await this._requestPartyOperation(
-        PARTY_NOTE_OPERATIONS.set,
-        draft.values,
-        draft.baseRevision,
-        `${APP_NAMESPACE}.partySheet.noteOperationFailed`,
-      );
-      if (!response?.ok) return response;
-      this._partyNoteDraft = null;
-      await this.render({ force: true });
-      return response;
+      if (this._partyNoteSavePromise) return this._partyNoteSavePromise;
+      // Assign the guard before closing sibling editors can emit another save.
+      const pendingSave = Promise.resolve().then(async () => {
+        await this._flushPartyNoteEditors();
+        const draft = this._partyNoteDraft;
+        if (!draft) return null;
+        const response = await this._requestPartyOperation(
+          PARTY_NOTE_OPERATIONS.set,
+          draft.values,
+          draft.baseRevision,
+          `${APP_NAMESPACE}.partySheet.noteOperationFailed`,
+        );
+        if (!response?.ok) return response;
+        this._partyNoteDraft = null;
+        await this.render({ force: true });
+        return response;
+      });
+      this._partyNoteSavePromise = pendingSave;
+      try {
+        return await pendingSave;
+      }
+      finally {
+        if (this._partyNoteSavePromise === pendingSave) {
+          this._partyNoteSavePromise = null;
+        }
+      }
     }
 
     async _requestPartyOperation(
@@ -1323,8 +1336,22 @@ export function createFoundationApplications({
               context.state.revision,
             );
           };
-          editor.addEventListener('change', capture);
           editor.addEventListener('input', capture);
+          editor.addEventListener('change', capture);
+          editor.addEventListener('close', async () => {
+            capture();
+            try {
+              await OpenPartySheetApplication.savePartyNotes.call(this);
+            }
+            catch (error) {
+              logger.warn?.('Party Sheet note save failed.', error);
+              notify(
+                notifications,
+                'error',
+                `${APP_NAMESPACE}.partySheet.noteOperationFailed`,
+              );
+            }
+          });
         }
         host.replaceChildren(editor);
       }

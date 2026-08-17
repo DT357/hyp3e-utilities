@@ -4112,7 +4112,9 @@ async function testPlayerNotes(partyMutations) {
     const staleWarningRendered = await waitUntil(() => Boolean(
       sheet.element?.querySelector('.hyp3e-utilities__party-draft-status strong'),
     ));
-    sheet.element.querySelector('[data-action="savePartyNotes"]').click();
+    sheet.element.querySelector(
+      '[data-party-note-editor] prose-mirror[name="notes"]',
+    ).dispatchEvent(new Event('close', { bubbles: true }));
     await wait(300);
     const staleSaveRejected =
       api.partyStore.getState().revision === draftRevision + 1
@@ -4136,7 +4138,11 @@ async function testPlayerNotes(partyMutations) {
     sheet._capturePartyNoteDraft('notes', final.notes);
     sheet._capturePartyNoteDraft('gems', final.treasureNotes.gems);
     sheet._capturePartyNoteDraft('misc', final.treasureNotes.misc);
-    sheet.element.querySelector('[data-action="savePartyNotes"]').click();
+    const partyEditor = sheet.element.querySelector(
+      '[data-party-note-editor] prose-mirror[name="notes"]',
+    );
+    partyEditor.value = final.notes;
+    partyEditor.dispatchEvent(new Event('close', { bubbles: true }));
     const validSavePersisted = await waitUntil(() => {
       const state = api.partyStore.getState();
       return state.notes === final.notes

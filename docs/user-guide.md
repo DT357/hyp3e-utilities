@@ -24,10 +24,10 @@ and SocketLib 1.1.4 or newer. The verified combinations are Foundry 13.351 with
    Utilities**, and accept Foundry's SocketLib dependency prompt if it appears.
 6. Reload the world when Foundry asks.
 
-The manifest URL becomes available when an authorized public release is
-published. For a private release-candidate test, extract the supplied
-`hyp3e-utilities.zip` into `<Foundry Data>/Data/modules/hyp3e-utilities`, then
-restart Foundry and complete steps 5–6.
+For a manual installation, download `hyp3e-utilities.zip` from the latest
+GitHub release, extract it into
+`<Foundry Data>/Data/modules/hyp3e-utilities`, then restart Foundry and complete
+steps 5–6.
 
 Use Foundry's normal **Update** action for later public versions. Do not rename
 the installed `hyp3e-utilities` directory; its name must match the module ID.
@@ -176,12 +176,15 @@ one row. GMs also see treasury recovery/binding controls.
 
 Gems/jewelry and other descriptive treasure have rich-text fields here. These
 notes are descriptive Party State; they are not embedded Items or coin values.
+Use the editor's own save control to persist a change; no second Party Sheet
+save action is required.
 
 ### Notes
 
 Party notes store shared plans and reminders. Their HTML is sanitized at the
 active-GM boundary before persistence. Notes are visible to Party Sheet
-viewers, so do not put GM-only secrets in them.
+viewers, so do not put GM-only secrets in them. The editor's own save control
+persists the change directly.
 
 ### Drafts and keyboard navigation
 

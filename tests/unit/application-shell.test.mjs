@@ -1204,7 +1204,7 @@ test('Party Sheet rich-text notes preserve drafts and save all fields atomically
           listeners.set(name, listener);
         },
         dispatch(name) {
-          listeners.get(name)?.({ currentTarget: editor, target: editor });
+          return listeners.get(name)?.({ currentTarget: editor, target: editor });
         },
         isDirty() { return this.dirty; },
       };
@@ -1315,7 +1315,10 @@ test('Party Sheet rich-text notes preserve drafts and save all fields atomically
   });
   assert.equal(stale.hasStaleDraft, true);
 
-  await actions.savePartyNotes.call(app);
+  await Promise.all([
+    hosts[0].editor.dispatch('close'),
+    hosts[0].editor.dispatch('close'),
+  ]);
 
   assert.deepEqual(requests, [{
     operation: PARTY_NOTE_OPERATIONS.set,

@@ -229,6 +229,27 @@ test('Party Sheet tabs, movement controls, editors, and focus styles are accessi
   assert.match(styles, /\.hyp3e-utilities :is\([^)]*\):focus-visible/);
 });
 
+test('Party Sheet header omits the internal Party State revision', async () => {
+  const template = await readFile(
+    path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'),
+    'utf8',
+  );
+
+  assert.doesNotMatch(template, /partySheet\.revision/);
+});
+
+test('Party Sheet rich-text notes use only the native editor save control', async () => {
+  const template = await readFile(
+    path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'),
+    'utf8',
+  );
+
+  assert.match(template, /data-party-note-field="notes"/);
+  assert.match(template, /data-party-note-field="gems"/);
+  assert.match(template, /data-party-note-field="misc"/);
+  assert.doesNotMatch(template, /data-action="savePartyNotes"/);
+});
+
 test('Party Sheet member roster keeps portrait ping and save actions compact', async () => {
   const [template, styles] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, 'templates', 'party-sheet.hbs'), 'utf8'),
