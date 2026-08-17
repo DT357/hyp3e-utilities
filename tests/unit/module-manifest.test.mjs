@@ -111,6 +111,7 @@ test('release workflow publishes only the validated artifact set', async () => {
   assert.match(workflow, /uses: actions\/upload-artifact@v7/);
   assert.match(workflow, /uses: actions\/download-artifact@v8/);
   assert.match(workflow, /sha256sum --check SHA256SUMS\.txt/);
+  assert.match(workflow, /--repo "\$\{GITHUB_REPOSITORY\}"/);
   for (const releaseAsset of [
     'hyp3e-utilities.zip',
     'module.json',

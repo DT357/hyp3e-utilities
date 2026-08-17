@@ -93,6 +93,7 @@ jobs:
           release-artifacts/hyp3e-utilities.zip
           release-artifacts/module.json
           release-artifacts/SHA256SUMS.txt
+          --repo "${GITHUB_REPOSITORY}"
           --verify-tag
           --generate-notes
           --title "Hyp3e Utilities ${GITHUB_REF_NAME}"
