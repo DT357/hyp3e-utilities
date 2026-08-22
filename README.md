@@ -52,21 +52,39 @@ at-a-glance. There is also an additional setting to display more detailed
 information for each NPC, adding HP, AC, DR, movement, and morale scores to the
 selected NPC information cards.
 
+Compact HUD:
+<img width="1113" height="834" alt="image" src="https://github.com/user-attachments/assets/82d22e33-2b43-459b-9e9c-256d5489a36b" />
+
+Detailed HUD:
+<img width="1034" height="385" alt="image" src="https://github.com/user-attachments/assets/2cfc0cfa-38bb-4178-a313-acf72897a6f8" />
+
+
 ### Shared Party Sheet
 
 The Party Sheet provides six coordinated tabs:
 
 - **Overview** — party membership, compact combat statistics, token pinging,
   saving throws, shares, and XP distribution.
+  <img width="930" height="1372" alt="image" src="https://github.com/user-attachments/assets/e3dea884-4705-499c-a796-c0a50064c495" />
+
 - **Followers** — character or NPC followers, shares, GP wages, saving throws,
   morale, and wage settlement.
+  <img width="905" height="846" alt="image" src="https://github.com/user-attachments/assets/f3087127-a0cb-492a-828f-51a1c46b2862" />
+
 - **Marching Order** — Unassigned, Front, Middle, and Rear groups with drag,
   keyboard controls, rank notes, and a public chat report.
+  <img width="934" height="1479" alt="image" src="https://github.com/user-attachments/assets/663c2479-bb9e-4544-8f85-5b1762f9869a" />
+
 - **Supplies** — manual torch, lantern, oil, and ration tracking plus shared
   treasury equipment.
+  <img width="927" height="899" alt="image" src="https://github.com/user-attachments/assets/97a90ba5-19d1-4c6f-a0d0-198bb406b128" />
+
 - **Treasure** — a managed party treasury, all five `hyp3e` coin denominations,
   coin distribution, and rich-text treasure notes.
+  <img width="1926" height="1507" alt="image" src="https://github.com/user-attachments/assets/af79a45e-348c-4857-b2f3-6e823f6d4db7" />
+
 - **Notes** — shared, sanitized rich-text plans and reminders.
+<img width="927" height="420" alt="image" src="https://github.com/user-attachments/assets/9a687487-a8b9-43f1-953b-b921a6c1c53b" />
 
 Open the Party Sheet from **Game Settings → Configure Settings → Hyp3e
 Utilities**, or use the users icon added to the Actor Directory.
