@@ -121,6 +121,31 @@ test('release workflow publishes only the validated artifact set', async () => {
   }
 });
 
+test('Foundry publication workflow validates and submits release metadata without embedded credentials', async () => {
+  const workflow = await readFile(
+    projectFileUrl('.github/workflows/publish-to-foundry.yml'),
+    'utf8',
+  );
+
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /dry_run:/);
+  assert.match(
+    workflow,
+    /FOUNDRY_PACKAGE_RELEASE_TOKEN: \$\{\{ secrets\.FOUNDRY_PACKAGE_RELEASE_TOKEN \}\}/,
+  );
+  assert.match(
+    workflow,
+    /https:\/\/foundryvtt\.com\/_api\/packages\/release_version\//,
+  );
+  assert.match(
+    workflow,
+    /releases\/download\/\$\{RELEASE_TAG\}\/module\.json/,
+  );
+  assert.match(workflow, /"dry-run": \$dry_run/);
+  assert.match(workflow, /Authorization: \$\{FOUNDRY_PACKAGE_RELEASE_TOKEN\}/);
+  assert.doesNotMatch(workflow, /fvttp_/);
+});
+
 test('Foundry compatibility diagnostics declare their test dependencies', async () => {
   const diagnosticManifest = await readProjectJson(
     'tests/foundry/diagnostics/module.json',

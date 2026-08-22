@@ -1,0 +1,161 @@
+name: Publish Release to Foundry VTT
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub release tag to publish
+        required: true
+        default: v1.0.0
+        type: string
+      dry_run:
+        description: Validate without saving the Foundry package version
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundry-package-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Submit release metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate public release assets and build request
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release tag must be a v-prefixed semantic version."
+            exit 1
+          fi
+
+          version="${RELEASE_TAG#v}"
+          manifest_url="https://github.com/${REPOSITORY}/releases/download/${RELEASE_TAG}/module.json"
+          archive_url="https://github.com/${REPOSITORY}/releases/download/${RELEASE_TAG}/hyp3e-utilities.zip"
+          notes_url="https://github.com/${REPOSITORY}/releases/tag/${RELEASE_TAG}"
+
+          curl --fail --silent --show-error --location \
+            "$manifest_url" \
+            --output release-manifest.json
+          curl --fail --silent --show-error --location \
+            "$archive_url" \
+            --output /dev/null
+
+          manifest_id="$(jq -r '.id // empty' release-manifest.json)"
+          manifest_version="$(jq -r '.version // empty' release-manifest.json)"
+          minimum="$(jq -r '.compatibility.minimum // empty' release-manifest.json)"
+          verified="$(jq -r '.compatibility.verified // empty' release-manifest.json)"
+          maximum="$(jq -r '.compatibility.maximum // empty' release-manifest.json)"
+          declared_download="$(jq -r '.download // empty' release-manifest.json)"
+
+          if [[ "$manifest_id" != "hyp3e-utilities" ]]; then
+            echo "::error::Release manifest has the wrong package ID: $manifest_id"
+            exit 1
+          fi
+          if [[ "$manifest_version" != "$version" ]]; then
+            echo "::error::Release manifest version $manifest_version does not match tag $RELEASE_TAG."
+            exit 1
+          fi
+          if [[ -z "$minimum" || -z "$verified" || -z "$maximum" ]]; then
+            echo "::error::Release manifest must declare minimum, verified, and maximum compatibility."
+            exit 1
+          fi
+          if [[ "$declared_download" != "$archive_url" ]]; then
+            echo "::warning title=Moving release download URL::The published manifest does not point to its tag-specific archive. Correct this before the next release so older manifests remain immutable."
+          fi
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            dry_run=true
+          else
+            dry_run=false
+          fi
+
+          jq -n \
+            --arg id "$manifest_id" \
+            --argjson dry_run "$dry_run" \
+            --arg version "$manifest_version" \
+            --arg manifest "$manifest_url" \
+            --arg notes "$notes_url" \
+            --arg minimum "$minimum" \
+            --arg verified "$verified" \
+            --arg maximum "$maximum" \
+            '{
+              id: $id,
+              "dry-run": $dry_run,
+              release: {
+                version: $version,
+                manifest: $manifest,
+                notes: $notes,
+                compatibility: {
+                  minimum: $minimum,
+                  verified: $verified,
+                  maximum: $maximum
+                }
+              }
+            }' > foundry-release.json
+
+      - name: Submit release to Foundry VTT
+        env:
+          FOUNDRY_PACKAGE_RELEASE_TOKEN: ${{ secrets.FOUNDRY_PACKAGE_RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$FOUNDRY_PACKAGE_RELEASE_TOKEN" ]]; then
+            echo "::error::Repository secret FOUNDRY_PACKAGE_RELEASE_TOKEN is not configured."
+            exit 1
+          fi
+
+          http_status="$(
+            curl --silent --show-error \
+              --output foundry-response.json \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header 'Content-Type: application/json' \
+              --header "Authorization: ${FOUNDRY_PACKAGE_RELEASE_TOKEN}" \
+              --data @foundry-release.json \
+              https://foundryvtt.com/_api/packages/release_version/
+          )"
+
+          if jq -e . foundry-response.json > /dev/null 2>&1; then
+            response_status="$(jq -r '.status // empty' foundry-response.json)"
+            response_message="$(jq -r '.message // empty' foundry-response.json)"
+            package_page="$(jq -r '.page // empty' foundry-response.json)"
+          else
+            response_status=""
+            response_message="Foundry returned a non-JSON response."
+            package_page=""
+          fi
+
+          if [[ "$http_status" != "200" || "$response_status" != "success" ]]; then
+            echo "::error::Foundry submission failed (HTTP $http_status): $response_message"
+            exit 1
+          fi
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            mode="dry run"
+          else
+            mode="publication"
+          fi
+          echo "Foundry accepted the $mode request for $RELEASE_TAG."
+          {
+            echo "### Foundry package API"
+            echo "- Mode: ${mode}"
+            echo "- Release: ${RELEASE_TAG}"
+            if [[ -n "$package_page" ]]; then
+              echo "- Package page: ${package_page}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
