@@ -461,16 +461,13 @@ function getFoundryGeneration(game) {
 }
 
 export function getRollModeChoices(config = globalThis.CONFIG) {
-  const messageModes = config?.ChatMessage?.modes;
-  if (messageModes) {
-    return Object.fromEntries(Object.entries(messageModes).map(
-      ([mode, definition]) => [
-        mode,
-        typeof definition === 'string' ? definition : definition.label,
-      ],
-    ));
-  }
-  return { ...(config?.Dice?.rollModes ?? {}) };
+  const modes = config?.ChatMessage?.modes ?? config?.Dice?.rollModes ?? {};
+  return Object.fromEntries(Object.entries(modes).map(
+    ([mode, definition]) => [
+      mode,
+      typeof definition === 'string' ? definition : definition.label,
+    ],
+  ));
 }
 
 function normalizeRollMode(generation, rollMode) {

@@ -17,7 +17,7 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
   assert.equal(manifest.title, 'Hyp3e Utilities');
   assert.equal(packageMetadata.name, manifest.id);
   assert.equal(packageMetadata.version, manifest.version);
-  assert.equal(manifest.version, '1.0.0');
+  assert.equal(manifest.version, '1.0.1');
   assert.equal(packageMetadata.license, 'MIT');
   assert.equal(manifest.license, 'LICENSE');
   assert.equal(manifest.socket, true);
@@ -63,7 +63,7 @@ test('release URLs use the current repository and artifact names', async () => {
   );
   assert.equal(
     manifest.download,
-    `${repositoryUrl}/releases/latest/download/hyp3e-utilities.zip`,
+    `${repositoryUrl}/releases/download/v${manifest.version}/hyp3e-utilities.zip`,
   );
 });
 

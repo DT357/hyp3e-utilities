@@ -1,8 +1,8 @@
 # Hyp3e Utilities Design
 
-Status: Initial implementation design
+Status: Implemented 1.0 behavior reconciled; design gap and current acceptance work remain
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-10-01
 
 Target module: Hyp3e Utilities
 
@@ -10,24 +10,33 @@ Module ID: <code>hyp3e-utilities</code>
 
 ## 1. Purpose
 
-Hyp3e Utilities is a Foundry Virtual Tabletop module for the <code>hyp3e</code> system. Its first two major features will be:
+Hyp3e Utilities is a Foundry Virtual Tabletop module for the <code>hyp3e</code> system. Its two major features are:
 
 1. A GM-facing NPC Action HUD for fast bulk reaction, saving throw, and morale rolls from selected NPC tokens.
 2. A shared Party Sheet for party composition, followers, marching order, supplies, treasury, inventory, notes, XP awards, follower wages, and treasure distribution.
 
 The S&W Utilities module is the workflow and interaction reference. It is not a system API reference. All actor data paths, roll rules, item behavior, and writebacks must be adapted to Hyperborea.
 
-This document defines the intended product behavior, architecture, system mappings, implementation phases, and acceptance criteria.
+This document describes current product behavior, architecture, system mappings,
+and acceptance criteria. The original phases are retained as implementation
+history. Unimplemented expectations are called out below rather than treated as
+completed features; dated runtime findings apply only to their recorded versions.
 
 ## 2. Reference Baseline
 
 | Reference | Snapshot reviewed | Role |
 | --- | --- | --- |
 | S&W Utilities | Manifest version 2026.04.09 in <code>References/sw-utilities</code> | UX and feature reference |
-| Hyperborea 3rd Edition | <code>hyp3e</code> 4.1.0, <code>dev</code> commit <code>8d9aae354712087dacfea10fb0fd5a1f6beca8db</code> | Data model and behavior reference |
-| Foundry VTT | Minimum 13, verified 14.365, maximum 14 | Platform target |
+| Hyperborea 3rd Edition | <code>hyp3e</code> 4.3.1, <code>dev</code> commit <code>498364a5b0199359508293e343ac22fa4df3f14a</code> | Current pinned data model and behavior reference |
+| Foundry VTT | Declared generations 13–14; manifest verified build remains 14.365 | Platform target; current focused checks used 13.351 and 14.368 |
 
-The <code>hyp3e</code> checkout is a moving development branch. All field mappings in this document are compatibility contracts owned by this module and must be covered by tests so upstream changes are detected.
+The read-only <code>References/hyp3e</code> checkout is pinned for this work item;
+do not refresh the upstream branch during validation. The original design and
+August acceptance used 4.1.0 commit
+<code>8d9aae354712087dacfea10fb0fd5a1f6beca8db</code> on Foundry 14.365 and
+4.0.3 on Foundry 13.351. Field mappings remain module-owned contracts covered
+by tests. Focused 4.3.1 checks and the roll-mode repair passed, but full current
+acceptance remains incomplete; see [compatibility notes](docs/compatibility-notes.md).
 
 ## 3. Goals and Non-Goals
 
@@ -313,12 +322,15 @@ Runtime identity testing established these rules:
 Each row includes:
 
 - token display name;
-- optional monster/NPC subtype;
 - current/max HP bar;
 - missing-morale indicator where applicable;
 - a button that opens the exact token actor sheet.
 
 The HUD should store token UUID and actor UUID in its view model. Resolve the token first so synthetic actors retain the correct context.
+
+The per-client <code>displayDetailedNpcInformation</code> setting defaults to
+true. Detailed cards show HP, AC, DR, movement, and morale; compact cards retain
+the name and health bar. NPC subtype is not displayed in the HUD.
 
 ### 6.3 Actions
 
@@ -408,11 +420,12 @@ Foundry 13.351 and 14.365 runtime validation confirmed the ApplicationV2 plus Ha
 ### 7.2 Overview Tab
 
 - Accept world actors of type <code>character</code>.
-- Add actors from directory selection, controlled linked tokens, and drag/drop.
-- Reject synthetic unlinked token actors because they are not durable world party members.
+- Add Selected Actor uses the first controlled scene token and resolves its durable world Actor. Add Controlled Characters accepts linked character tokens; Actor drag/drop accepts durable world characters.
+- Never store a synthetic token Actor as a member. The single-token Add Selected Actor action may resolve its base world character before adding it; synthetic Actor drops remain unsupported.
 - Show portrait, name, race, class, level, HP, AC, DR, movement, and share value.
+- Members default to one share. Overview displays their shares read-only; only follower shares have editing controls.
 - Open actor sheet and ping a token on the current scene.
-- Offer a category-specific save action rather than a generic save.
+- Offer a saving-throw dialog with the five categories, a whole-number situational modifier, and Foundry roll-mode choices. Party Sheet rolls are GM-only.
 - Mark deleted or unresolved actor references and allow cleanup.
 - Make XP distribution GM-only.
 
@@ -441,7 +454,7 @@ Foundry 13.351 and 14.365 runtime validation confirmed the ApplicationV2 plus Ha
 - Keep manual fields for torches, lanterns, oil, and rations.
 - Do not silently derive or consume these values from actor inventory.
 - Show shared weapons, armor and shields, and gear from the managed treasury Actor.
-- Open the real embedded item sheet.
+- Current inventory rows expose transfer controls but no direct Item-sheet action. A GM can open the Treasury Actor from Treasure, then open its embedded Item sheet. The original direct-opening requirement remains an unresolved design gap; see Section 16.
 - Support actor-to-party and party-to-actor transfers with quantity prompts.
 
 ### 7.6 Treasure Tab
@@ -475,8 +488,8 @@ Foundry 13.351 and 14.365 runtime validation confirmed the ApplicationV2 plus Ha
 - Never update <code>npc.system.xp</code>.
 - Give NPC recipients no bonus or penalty adjustment, include their base allocation in the division, and persist no XP for them.
 - Show base, signed adjustment, total, writeback status, total shares, and undistributed base XP.
-- Create an audit chat message for every awarded recipient.
-- Clearly label NPC chat messages as allocations with no actor writeback.
+- Create one public audit chat report per completed distribution, listing the awarded recipients.
+- Clearly label NPC allocations in that report as having no actor writeback.
 
 ### 7.9 Follower Wages
 
@@ -508,54 +521,28 @@ For party-to-actor transfer:
 5. Only after destination success, decrement or delete the treasury source.
 6. Roll back the destination if the treasury mutation fails.
 
-Containers with contents require explicit handling and are out of scope for the first transfer release. Reject them with a clear message rather than orphaning contained items.
+All containers, including empty ones, are rejected. Transfer only supported
+loose physical Items. Emptying a container does not make the container itself
+transferable.
 
 ## 8. Target Architecture
 
-### 8.1 Recommended File Layout
+### 8.1 Current File Layout
 
-    module/
-      hyp3e-utilities.mjs
-      constants.mjs
-      settings.mjs
-      hooks.mjs
-      system/
-        hyp3e-adapter.mjs
-      hud/
-        npc-action-hud.mjs
-        npc-action-service.mjs
-        reaction-table.mjs
-      party/
-        party-sheet.mjs
-        party-controller.mjs
-        party-state.mjs
-        party-permissions.mjs
-        party-socket.mjs
-        party-treasury.mjs
-        party-members.mjs
-        marching-order.mjs
-        item-transfer.mjs
-        distributions/
-          xp-distribution.mjs
-          coin-distribution.mjs
-          follower-payment.mjs
-      chat/
-        chat-cards.mjs
-      utils/
-        numbers.mjs
-        documents.mjs
-    templates/
-      hud/
-      party/
-    styles/
-      hyp3e-utilities.css
-    lang/
-      en.json
-    tests/
-      unit/
-      fixtures/
+| Location | Responsibility |
+| --- | --- |
+| <code>module/hyp3e-utilities.mjs</code>, <code>module/core/</code> | Entry point, bootstrap/hooks, constants, logging |
+| <code>module/settings/</code> | Settings registration |
+| <code>module/adapters/hyp3e-adapter.mjs</code> | System field contracts |
+| <code>module/apps/foundation-applications.mjs</code> | Party Sheet, saving-throw dialog, and settings applications |
+| <code>module/hud/</code> | NPC selection, HUD lifecycle, roll planners, reaction table |
+| <code>module/party/</code> | State, permissions, member/follower services, treasury, transfers, and distribution planners/executors |
+| <code>module/socket/</code> | SocketLib transport |
+| <code>module/chat/</code> | Chat reports and roll-mode compatibility |
+| <code>templates/</code>, <code>styles/</code>, <code>lang/</code> | UI assets and localization |
+| <code>tests/unit/</code>, <code>tests/fixtures/</code>, <code>tests/foundry/</code> | Local tests, fixtures, and runtime diagnostics |
 
-This is a responsibility boundary, not a requirement for one file per tiny function. Merge files when a component remains small; do not recreate a monolith.
+This replaces the initial proposed layout; it is not a refactoring plan.
 
 ### 8.2 Hyperborea Adapter
 
@@ -644,6 +631,7 @@ Why this is preferred over serialized setting entries:
 | Key | Scope | Default | Purpose |
 | --- | --- | --- | --- |
 | <code>enableNpcActionHud</code> | world | false | Enables the GM HUD |
+| <code>displayDetailedNpcInformation</code> | client | true | Switches between detailed NPC statistics and compact name/health cards |
 | <code>npcActionHudPosition</code> | client | empty object | Stores HUD position and width |
 | <code>partyState</code> | world, hidden | schema default | Shared party metadata |
 | <code>partySheetMinimumEditRole</code> | world | GM | Minimum role shown editing controls |
@@ -938,7 +926,7 @@ Exit criteria:
 
 - real item UUIDs remain valid;
 - full and partial transfers preserve total quantity;
-- unsupported items and non-empty containers are rejected safely;
+- unsupported items and all containers, including empty containers, are rejected safely;
 - failed source mutation does not duplicate or destroy items.
 
 ### Phase 5: XP, Wages, and Treasure Distribution
@@ -1024,7 +1012,7 @@ Exit criteria:
 | Follower wage source | Module-local daily GP value |
 | Wage currency | GP only for the first release |
 | Supplies | Manual fields; no automatic consumption |
-| Containers | Reject non-empty containers in the first transfer release |
+| Containers | Reject all containers, including empty containers; transfer supported loose Items only |
 | Theme | Hyperborea-compatible dark utility styling without depending on private system selectors |
 
 Changing an accepted behavior must update this document before implementation so tests and UI expectations remain aligned.
@@ -1041,3 +1029,21 @@ The initial Hyp3e Utilities build is complete when:
 - permission enforcement is authoritative, not only visual;
 - no known workflow can silently duplicate, destroy, or misdirect actor items, XP, or coins;
 - installation and tagged GitHub release artifacts work from the module manifest.
+
+## 16. Remaining Design Gap and Future Ideas
+
+The original Supplies requirement for opening an embedded Item sheet directly
+from an inventory row is not implemented. The current GM path goes through the
+Treasury Actor. A maintainer decision is still needed to implement the direct
+action or explicitly revise that requirement; the original milestone labels
+do not resolve this gap.
+
+Group reaction rolls using a spokesperson's adjustment, follower loyalty rolls,
+and currency conversion for wages are possible later enhancements. Editable
+member shares would also require a new feature; they are not provided by the
+current Overview. None of these ideas has an assigned version or delivery date.
+Attacks, damage, initiative, encounter generation, and expedition/supply
+automation remain outside the initial scope.
+
+Current acceptance and follow-up work are tracked in the
+[implementation plan](IMPLEMENTATION-PLAN.md#15-current-project-status).

@@ -1,21 +1,42 @@
 # Compatibility Notes
 
-## Supported platform target
+## Current platform target and acceptance — 2026-10-01
 
 Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
-`hyp3e` system. Runtime validation is tracked separately for each Foundry major.
+`hyp3e` system (minimum 4.0.3) and SocketLib (minimum 1.1.4). Manifest verified
+build 14.365 remains unchanged. Declarations are separate from the exact
+combinations and artifacts exercised below.
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
-| 14.365 | 4.1.0 (`dev`) | Passed through ITM-007 / M4 | Full isolated run recorded under `docs/test-runs/` |
-| 13.351 | 4.0.3 | Passed through ITM-007 / M4 | Isolated portable-build run recorded under `docs/test-runs/` |
+| 13.351 | 4.0.3 | Historical full matrix passed | August artifact; see HRD-005 and QA-001 records |
+| 14.365 | 4.1.0 (`dev`) | Historical full matrix passed | August artifact; see HRD-005 and QA-001 records |
+| 13.351 | 4.3.1 | Focused checks passed; full matrix incomplete | Distributions/transfers passed; repaired save dialog passed; broad diagnostic work remains |
+| 14.368 | 4.3.1 | Focused checks passed; full matrix incomplete | Distributions/transfers and repaired save dialog passed; broad diagnostic work remains |
 
-The Foundry 14 run used `hyp3e` commit
-`8d9aae354712087dacfea10fb0fd5a1f6beca8db`. Both runs used SocketLib v1.1.4
-for the diagnostic dependency; the two-client caller-authentication proof was
-performed in Foundry 14.
+The current reference is pinned at
+`498364a5b0199359508293e343ac22fa4df3f14a` (4.3.1); October runs used SocketLib
+v1.1.4. The original Foundry 14 reference was
+`8d9aae354712087dacfea10fb0fd5a1f6beca8db` (4.1.0).
 
-## Verified findings
+The Foundry 13 `getRollModeChoices` failure is repaired in version 1.0.1.
+Object-valued roll-mode definitions now supply their label strings to the save
+dialog. The regression suite passed 250 tests; actual character/NPC save
+dialogs rendered and submitted on both current cores.
+
+Full-package acceptance remains incomplete. Stale revision/HP assertions,
+the unresolved PAR-009 player diagnostic failure, and the HUD-006 scene-loading
+race must be addressed before a complete release-shaped GM/player rerun.
+These are tracked as QA-002 in the implementation plan. Focused passes do not
+renew theme, accessibility, lifecycle, or all shared-editing coverage.
+
+See the [October validation record](test-runs/2026-10-01-hyp3e-431-validation.md)
+for artifact identity, evidence, and the limits of each pass.
+
+## Historical verified findings — August baseline
+
+The findings below retain the original milestone evidence. Their UI details,
+test counts, and versions describe those runs, not the current development copy.
 
 ### Module lifecycle (PB-003)
 
@@ -512,15 +533,19 @@ runs produced no unexpected module or core exception. Full evidence, package
 hash, and console disposition are recorded in
 `docs/test-runs/2026-08-15-hrd005-clean-matrix.md`.
 
-## Current gate
+## Historical release-candidate gate — 2026-08-15
 
-Milestones 1 through 6 are complete. No compatibility finding contradicts the
-approved architecture. The exact 1.0.0 candidate ZIP passed structural and
+Milestones 1 through 6 were recorded complete for the original baseline. The
+exact 1.0.0 candidate ZIP passed structural and
 checksum validation and clean Foundry 14.365 package discovery after the full
 Foundry 13/14 matrix passed with the same production code. Final acceptance and
 defect disposition are recorded in
 `docs/test-runs/2026-08-15-qa001-final-acceptance.md`.
 
-Public manifest installation and update remain untested by design because no
-release has been authorized. That external operation is isolated in REL-001
-and does not alter the supported compatibility claim until it passes.
+At that gate, public manifest installation and update remained untested because
+publication was not authorized. REL-001 retains that local record. The October 1
+release preparation subsequently confirmed that `v1.0.0` is published on GitHub.
+The maintainer requested a 1.0.1 patch release after the remaining acceptance
+limits were reported. QA-002 remains open; this request does not establish a
+full 4.3.1 compatibility pass. See the
+[patch release record](test-runs/2026-10-01-v1.0.1-release.md).

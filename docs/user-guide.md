@@ -5,9 +5,17 @@ Hyperborea 3rd Edition (`hyp3e`) Foundry system. The Party Sheet can be viewed
 by players and edited by GMs, configured role levels, or specifically granted
 users.
 
-The supported release matrix is Foundry VTT 13–14, `hyp3e` 4.0.3 or newer,
-and SocketLib 1.1.4 or newer. The verified combinations are Foundry 13.351 with
-`hyp3e` 4.0.3 and Foundry 14.365 with `hyp3e` 4.1.0.
+## Requirements and Tested Versions
+
+The module requires Foundry VTT 13–14, `hyp3e` 4.0.3 or newer, and SocketLib
+1.1.4 or newer. Earlier full testing covered Foundry 13.351 with `hyp3e` 4.0.3
+and Foundry 14.365 with `hyp3e` 4.1.0.
+
+As of 2026-10-01, full testing with `hyp3e` 4.3.1 is still incomplete. Focused
+checks passed for XP, coins, wages, and item transfers on Foundry 13.351 and
+14.368. Version 1.0.1 fixes the Foundry 13 saving-throw window and its repair
+passed save-dialog checks on both versions. See the [Changelog](../CHANGELOG.md)
+for the changes; update older installed copies to receive the fix.
 
 ## Installation
 
@@ -26,7 +34,8 @@ and SocketLib 1.1.4 or newer. The verified combinations are Foundry 13.351 with
 
 For a manual installation, download `hyp3e-utilities.zip` from the latest
 GitHub release, extract it into
-`<Foundry Data>/Data/modules/hyp3e-utilities`, then restart Foundry and complete
+your Foundry user-data folder so the manifest is at
+`Data/modules/hyp3e-utilities/module.json`, then restart Foundry and complete
 steps 5–6.
 
 Use Foundry's normal **Update** action for later public versions. Do not rename
@@ -46,7 +55,8 @@ the installed `hyp3e-utilities` directory; its name must match the module ID.
 7. Confirm the Treasure tab reports a bound Party Treasury. The first active GM
    initializes this managed `treasure` Actor in the **Hyp3e Utilities** Actor
    folder.
-8. Add party members and followers, then set their shares and follower wages
+8. Add party members and followers. Members start with one share, displayed
+   read-only. Set followers' shares and daily GP wages, then save those values
    before attempting distributions.
 
 The managed treasury is an ordinary world Actor with a module flag and Party
@@ -124,6 +134,8 @@ the Actor Directory users icon. Its six tabs share one revisioned world state.
   final red X to remove the member. Missing references retain a labeled
   **Clean Up** control.
 - Member statistics use two compact lines: HP/AC/DR followed by Move/Share.
+- Member shares default to one and cannot be edited in Overview. Editable
+  quarter shares are available for followers.
 - Choose **Roll Save** to open the saving-throw window. Select one of the five
   save categories, enter an optional whole-number situational modifier, choose
   the Foundry roll type, and roll. GMs can also preview and award XP.
@@ -166,6 +178,9 @@ non-negative whole-number values are accepted and saved together.
 This tab also lists the managed treasury's shared equipment for authorized
 editors. Supported Items show Quantity, Bundle, and Maximum in separated
 columns, with **Take** immediately to their right.
+
+Inventory rows do not open Item sheets directly. A GM can use **Open Treasury
+Actor** on Treasure and open an Item from that Actor's sheet.
 
 ### Treasure
 
@@ -268,8 +283,9 @@ Supported physical Item types are `weapon`, `armor`, `shield`, and ordinary
 equipment stacks are kept distinct. Quantity, bundle, and maximum metadata are
 preserved. A successful transfer creates a public audit chat card.
 
-Containers and unsupported types such as spells cannot be transferred. Remove
-container contents and transfer supported loose Items individually.
+Containers, including empty ones, and unsupported types such as spells cannot
+be transferred. Remove container contents and transfer supported loose Items
+individually; the container itself remains unsupported.
 
 ## Recovery and Troubleshooting
 
@@ -280,7 +296,7 @@ Back up the world before manually deleting or rebinding treasury Actors.
 | HUD does not appear | Confirm the world setting is enabled, the current user is a GM, a scene is ready, and one or more `npc` tokens are controlled. Reset its position if necessary. |
 | Party Sheet says Read only | Have a GM review the minimum role and explicit editor list. Actor ownership is still required for player additions/transfers. |
 | Player requests fail | Keep one active GM client connected, confirm SocketLib is active, and reload both clients after changing modules or permissions. |
-| Treasury is missing | A GM opens Treasure and chooses **Create or Recreate Treasury**. The missing binding is retained until that explicit recovery. |
+| Treasury is missing | If no valid treasury remains, a GM opens Treasure and chooses **Create or Recreate Treasury**. If exactly one existing flagged treasury is found during initialization, the module reconnects it automatically. Multiple candidates require the GM to choose **Bind**. |
 | Multiple treasury candidates appear | A GM reviews the flagged candidates and chooses **Bind** for the intended Actor. The module never deletes duplicate candidates automatically. |
 | A member/follower row is missing its Actor | Use **Clean Up** on the marked row. Normal deletion hooks also prune tracked member/follower metadata. |
 | A draft is stale | Compare it with current shared data, then discard or re-enter the intended values and save against the current revision. |
@@ -295,12 +311,14 @@ do not post a full-success report.
 
 ## Current Limitations
 
-- Only Foundry 13–14 and `hyp3e` 4.0.3 or newer are supported by this release.
+- The declared requirements are Foundry 13–14 and `hyp3e` 4.0.3 or newer;
+  see **Requirements and Tested Versions** above for the testing limits.
 - English is the only bundled localization.
 - The NPC Action HUD and Party Sheet save/morale rolls are GM-only.
 - XP distribution and treasury creation/rebinding are GM-only.
 - Player-initiated shared operations require an active GM and SocketLib.
 - Containers are not transferable; only supported loose physical Items are.
+- Member shares are read-only; follower shares are editable in quarter steps.
 - Token-synthetic Actors cannot be party members/followers or Item-transfer
   endpoints; use durable world Actors.
 - Wages use GP only and are treasury deductions, not follower-sheet income.
@@ -308,8 +326,8 @@ do not post a full-success report.
 - NPC XP and coin shares are consumed without NPC-sheet writeback.
 - Party and treasure notes are shared with Party Sheet viewers and are not a
   private GM journal.
-- The managed treasury does not silently replace a deleted Actor or choose
-  among duplicates.
+- A missing treasury is not automatically recreated. A single existing flagged
+  treasury can be reconnected; the GM must choose among multiple candidates.
 
 ## Core Workflow Acceptance Checklist
 
@@ -319,7 +337,7 @@ A new-world tester can use this short path after installation:
 2. Configure one Player as an explicit editor and open the Party Sheet from
    Game Settings.
 3. Add one character member, one character follower, and one NPC follower.
-4. Save quarter shares and whole-GP wages.
+4. Save follower quarter shares and whole-GP wages.
 5. Arrange Front/Middle/Rear, save a note, and post the order to chat.
 6. Save all four supply counts plus party/gem/miscellaneous notes.
 7. Confirm the managed treasury; add a supported Item and coins to it.

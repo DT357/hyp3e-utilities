@@ -353,6 +353,21 @@ test('roll-mode choices normalize Foundry 13 and 14 configuration shapes', () =>
   });
 });
 
+test('Foundry 13 object-valued roll modes expose their localization labels', () => {
+  const rollModes = {
+    publicroll: { label: 'CHAT.RollPublic', icon: 'fa-solid fa-globe' },
+    gmroll: { label: 'CHAT.RollPrivate', icon: 'fa-solid fa-user-secret' },
+    blindroll: { label: 'CHAT.RollBlind', icon: 'fa-solid fa-eye-slash' },
+    selfroll: { label: 'CHAT.RollSelf', icon: 'fa-solid fa-dice-d20' },
+  };
+  assert.deepEqual(getRollModeChoices({ Dice: { rollModes } }), {
+    publicroll: 'CHAT.RollPublic',
+    gmroll: 'CHAT.RollPrivate',
+    blindroll: 'CHAT.RollBlind',
+    selfroll: 'CHAT.RollSelf',
+  });
+});
+
 test('marching-order reports are public, ordered, escaped, and retain empty ranks', async () => {
   const harness = createHarness({ userIsGm: false });
   const report = await harness.service.createMarchingOrderReport({

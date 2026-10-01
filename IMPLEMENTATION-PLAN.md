@@ -1,10 +1,12 @@
 # Hyp3e Utilities Implementation Plan
 
-Version: 1.0
+Version: 1.1
 
 Created: 2026-08-14
 
-Status: 1.0.0 source release candidate complete; publication authorization required
+Last reconciled: 2026-10-01
+
+Status: Initial implementation recorded complete; current 4.3.1 acceptance incomplete
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -14,12 +16,18 @@ This document is the tactical execution plan for Hyp3e Utilities. The design doc
 
 Implementation should proceed one milestone at a time. A work item is complete only when its code, automated tests where applicable, and listed manual verification all pass.
 
+Milestones 0–6 and their dated work-item records describe the original August
+implementation and tested artifacts. Their `DONE` labels do not certify the
+current development copy against newer systems or cores. See Sections 15–16
+for current acceptance work and the remaining design gap.
+
 ### Status values
 
 - `TODO`: Ready or waiting on a dependency.
 - `IN PROGRESS`: Actively being implemented.
 - `BLOCKED`: Cannot proceed until the named issue is resolved.
 - `DONE`: Completion checks passed and evidence was recorded.
+- `AUTHORIZATION REQUIRED`: External publication awaits explicit authorization.
 
 ### Working rules
 
@@ -45,7 +53,8 @@ The following decisions are approved and do not require further design work:
 - An `npc` Actor can consume a share for allocation purposes, but no XP or coins are persisted to it.
 - NPC allocations are still shown in the distribution preview and final chat report.
 - Wages use GP only in the initial implementation.
-- Non-empty containers are unsupported initially and must be rejected without partial transfer.
+- All containers, including empty ones, are unsupported and rejected without partial transfer.
+- Member shares default to one and are displayed read-only; follower shares are editable in quarter increments.
 
 ## 3. Milestone Roadmap
 
@@ -244,7 +253,7 @@ M3 is complete when all MAR, SUP, NOT, and REF items are `DONE` and the 0.3.0 pa
 | ITM-003 | `DONE` | ITM-002 | Treasury-to-character transfer operation | Same matrix as ITM-002 with reversed authority and destination |
 | ITM-004 | `DONE` | ITM-002, ITM-003 | Correct quantity, bundle, maximum, and merge semantics | Verified fixtures for weapon, armor, shield, and item types |
 | ITM-005 | `DONE` | ITM-002, ITM-003, PB-007 | Supported drag/drop entry points on Party and Actor sheets | Valid drop, unauthorized drop, cancelled dialog, and invalid payload |
-| ITM-006 | `DONE` | ITM-001 | Explicit container and unsupported-item rejection | Non-empty container causes no document mutation and a clear notice |
+| ITM-006 | `DONE` | ITM-001 | Explicit container and unsupported-item rejection | Containers, including empty ones, cause no document mutation and a clear notice |
 | ITM-007 | `DONE` | ITM-002, ITM-003 | Transfer audit chat/report and compensating rollback | Injected failure at each write boundary leaves consistent documents |
 
 M4 is complete when all TRY and ITM items are `DONE`; no tested failure path duplicates or destroys an item; and the 0.4.0 package passes all earlier regression matrices.
@@ -276,6 +285,9 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 
 ## 10. Milestone 6 — 1.0.0 Hardening
 
+The completion records below apply to the August acceptance baseline. Current
+4.3.1 acceptance is tracked separately as QA-002.
+
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
 | HRD-001 | `DONE` | M1–M5 | Party-state and treasury migration coverage for every released schema | Upgrade fixtures from each released version |
@@ -291,15 +303,22 @@ Milestone 6 may prepare the unpublished 1.0.0 source release candidate when all
 M6 items are `DONE`, the repository is clean, and the validated artifact matches
 the committed source. Public release readiness additionally requires REL-001.
 
-### Post-authorization publication gate
+### Original publication gate
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
 | REL-001 | `AUTHORIZATION REQUIRED` | QA-001, explicit publication authorization | Create the signed-off `v1.0.0` tag and GitHub release from the validated workflow artifact | Verify published checksums, then install and update from the live manifest URL in a new disposable Foundry data directory |
 
-REL-001 is deliberately outside Milestone 6 because its external publication
-effects require separate authorization. Until it passes, the repository may be
-release-candidate complete but no public release is claimed.
+REL-001 retains the original local publication record. The October 1 release
+preparation confirmed that GitHub release `v1.0.0` already exists; its publication
+step has occurred, but its live installation/update verification is not
+established by this record. Do not recreate or move that tag.
+
+After the remaining QA-002 limits were reported, the maintainer requested that
+the repair and documentation be committed, pushed, and released. The current
+patch is 1.0.1, using the existing Validate and Release workflow. This release
+does not close QA-002 or expand compatibility declarations. See the
+[patch release record](docs/test-runs/2026-10-01-v1.0.1-release.md).
 
 ## 11. Automated Test Map
 
@@ -356,18 +375,38 @@ The pre-build portion of this sequence is complete:
 3. PB-008 proved trustworthy SocketLib caller identity.
 4. PB-009 made the test runner part of `npm run check`.
 
-Milestones 0 through 6 are complete. The 1.0.0 source release candidate is
-accepted. Do not create a tag or public release until publication is explicitly
-authorized; after authorization, proceed with REL-001.
+Milestones 0 through 6 were recorded complete for the original 1.0.0 candidate.
+For current work, use QA-002 and the status below rather than repeating this
+historical execution batch.
 
 ## 15. Current Project Status
 
-- Product design: Complete for the planned 1.0 scope.
-- Module foundation: FND-001 through FND-006 are implemented and validated.
-- Official `hyp3e` reference: Connected to the upstream `dev` branch.
+- Product behavior: The two core features are implemented. Direct Item-sheet opening from Supplies remains an unresolved design expectation.
+- Module foundation: FND-001 through FND-006 retain their dated implementation/validation records.
+- Official `hyp3e` reference: Read-only 4.3.1 at `498364a5b0199359508293e343ac22fa4df3f14a`; do not advance the reference during validation.
 - S&W Utilities reference analysis: Incorporated into the design.
-- Implementation: Milestones 0 through 6 are complete.
-- Immediate next batch: Await explicit publication authorization, then complete REL-001.
+- Implementation: Milestones 0 through 6 are recorded complete for the August baseline, not renewed as current compatibility acceptance.
+- Current repair: `getRollModeChoices` label normalization passed 250 local tests and focused save-dialog checks on Foundry 13.351 and 14.368 with hyp3e 4.3.1.
+- Patch release: The maintainer requested publication of this repair and documentation as the next patch (1.0.1); compatibility declarations remain unchanged.
+- Immediate next batch: Repair the diagnostic companion and complete QA-002 before claiming full 4.3.1 compatibility or preparing a newly validated release.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
+
+## 16. Current Follow-up Work
+
+| ID | Status | Scope | Completion evidence |
+| --- | --- | --- | --- |
+| QA-002 | `TODO` | Repair stale UI assertions, resolve the PAR-009 player diagnostic failure and HUD-006 scene-loading race, then rerun the full current Foundry 13/14 GM/player matrix | A release-shaped candidate passes all required assertions; record exact versions, hashes, console disposition, and cleanup. Failed or skipped gates do not count as passes. |
+
+The [2026-10-01 validation record](docs/test-runs/2026-10-01-hyp3e-431-validation.md)
+distinguishes the repaired product defect from unresolved diagnostic work.
+
+The Supplies direct Item-sheet action is an unimplemented design expectation,
+not an approved new coding task in this documentation update. Its implementation
+or explicit removal from the design requires a maintainer decision. Current
+GM access through the Treasury Actor is documented in the user guide.
+
+There is no scheduled post-1.0 feature roadmap. Group reaction, loyalty rolls,
+wage currency conversion, and editable member shares remain unassigned ideas;
+none is a promised release feature. See the design's Section 16.

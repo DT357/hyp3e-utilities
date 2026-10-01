@@ -646,10 +646,10 @@ test('Party Sheet row actions reuse the shared saving-throw AppV2', async () => 
       ChatMessage: {},
       Dice: {
         rollModes: {
-          blindroll: 'CHAT.RollBlind',
-          gmroll: 'CHAT.RollPrivate',
-          publicroll: 'CHAT.RollPublic',
-          selfroll: 'CHAT.RollSelf',
+          blindroll: { label: 'CHAT.RollBlind', icon: 'fa-solid fa-eye-slash' },
+          gmroll: { label: 'CHAT.RollPrivate', icon: 'fa-solid fa-user-secret' },
+          publicroll: { label: 'CHAT.RollPublic', icon: 'fa-solid fa-globe' },
+          selfroll: { label: 'CHAT.RollSelf', icon: 'fa-solid fa-dice-d20' },
         },
       },
     },
@@ -725,6 +725,12 @@ test('Party Sheet row actions reuse the shared saving-throw AppV2', async () => 
   assert.equal(dialogContext.actorName, 'Character Follower');
   assert.equal(dialogContext.saveOptions.length, 5);
   assert.equal(dialogContext.rollModeOptions.length, 4);
+  assert.deepEqual(dialogContext.rollModeOptions.map(({ label }) => label), [
+    'CHAT.RollBlind',
+    'CHAT.RollPrivate',
+    'CHAT.RollPublic',
+    'CHAT.RollSelf',
+  ]);
   assert.equal(
     dialogContext.rollModeOptions.find(({ selected }) => selected)?.id,
     'publicroll',

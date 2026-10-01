@@ -1,5 +1,6 @@
 node_modules/
 .foundry-test/
+foundry_module/
 *.zip
 .DS_Store
 Thumbs.db

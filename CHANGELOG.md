@@ -2,20 +2,42 @@
 
 All notable changes to Hyp3e Utilities are documented here.
 
+## 1.0.1 — 2026-10-01
+
+### Fixed
+
+- Fixed the Party Sheet saving-throw window failing to open in Foundry 13
+  when preparing the available roll types.
+
+### Documentation
+
+- Reworked the README for players and GMs and corrected feature descriptions,
+  share editing, treasury recovery, and current testing status.
+- Reconciled the design and implementation plan with the current module;
+  retained dated acceptance records for the versions they tested.
+
+### Compatibility
+
+- Existing Foundry and system requirements are unchanged. Full testing with
+  hyp3e 4.3.1 remains incomplete; the focused saving-throw repair has passed
+  on Foundry 13.351 and 14.368.
+- The download link now points to this version's archive so older manifests
+  continue to download their matching version.
+
 ## 1.0.0 — 2026-08-16
 
 ### Added
 
-- A configurable NPC Action HUD with multi-NPC attacks, five-save selection,
-  checks, reaction rolls, damage, and reset controls.
-- A versioned Party Sheet with Overview, Members, Followers, Supplies,
+- A configurable NPC Action HUD with reaction rolls, five-save selection,
+  morale rolls, Actor-sheet access, health displays, and reset controls.
+- A shared Party Sheet with Overview, Followers, Marching Order, Supplies,
   Treasure, and Notes workflows.
 - Previewed and audited XP, coin, and GP-only wage distributions, including
   character XP adjustments and intentionally consumed NPC shares.
 - Bidirectional Item transfers between character Actors and the managed party
   treasury.
-- Role-level and explicit-user Party Sheet editing permissions through
-  SocketLib-authoritative GM mutations.
+- Party Sheet editing permissions by Foundry role or named user, with shared
+  changes handled by a connected GM through SocketLib.
 - Recovery, migration, localization, accessibility, lifecycle, and Foundry
   13/14 compatibility coverage.
 
