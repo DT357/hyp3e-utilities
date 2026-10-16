@@ -1,8 +1,8 @@
 # Hyp3e Utilities Design
 
-Status: Implemented 1.0 behavior reconciled; design gap and current acceptance work remain
+Status: Implemented 1.0 behavior reconciled; 4.5.0 compatibility validated; Supplies design gap remains
 
-Last reviewed: 2026-10-01
+Last reviewed: 2026-10-16
 
 Target module: Hyp3e Utilities
 
@@ -27,16 +27,18 @@ completed features; dated runtime findings apply only to their recorded versions
 | Reference | Snapshot reviewed | Role |
 | --- | --- | --- |
 | S&W Utilities | Manifest version 2026.04.09 in <code>References/sw-utilities</code> | UX and feature reference |
-| Hyperborea 3rd Edition | <code>hyp3e</code> 4.3.1, <code>dev</code> commit <code>498364a5b0199359508293e343ac22fa4df3f14a</code> | Current pinned data model and behavior reference |
-| Foundry VTT | Declared generations 13–14; manifest verified build remains 14.365 | Platform target; current focused checks used 13.351 and 14.368 |
+| Hyperborea 3rd Edition | Published <code>hyp3e</code> 4.5.0, tag commit <code>0a7f19db3025e0062f239cdf689e64cb3a061962</code> | Current tested package and behavior baseline |
+| Foundry VTT | Declared generations 13–14; version 1.0.2 verified build 14.369 | Current GM/player checks use 13.351 and 14.369 |
 
-The read-only <code>References/hyp3e</code> checkout is pinned for this work item;
-do not refresh the upstream branch during validation. The original design and
+The read-only <code>References/hyp3e</code> checkout remains at development commit
+<code>3439d5f971e36e8537bbf604b35aee27811dcd2d</code>; validation used a separately
+downloaded published archive. The original design and
 August acceptance used 4.1.0 commit
 <code>8d9aae354712087dacfea10fb0fd5a1f6beca8db</code> on Foundry 14.365 and
 4.0.3 on Foundry 13.351. Field mappings remain module-owned contracts covered
-by tests. Focused 4.3.1 checks and the roll-mode repair passed, but full current
-acceptance remains incomplete; see [compatibility notes](docs/compatibility-notes.md).
+by tests. The maintainer confirmed 4.3.1 compatibility. The current 4.5.0
+matrix, exact artifact identities, and upstream limitations are recorded in
+[compatibility notes](docs/compatibility-notes.md).
 
 ## 3. Goals and Non-Goals
 

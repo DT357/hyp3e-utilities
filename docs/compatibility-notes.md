@@ -1,34 +1,50 @@
 # Compatibility Notes
 
-## Current platform target and acceptance — 2026-10-01
+## Current platform target and acceptance — 2026-10-16
 
 Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
 `hyp3e` system (minimum 4.0.3) and SocketLib (minimum 1.1.4). Manifest verified
-build 14.365 remains unchanged. Declarations are separate from the exact
+build is 14.369 for version 1.0.2. Declarations are separate from the exact
 combinations and artifacts exercised below.
 
 | Foundry | `hyp3e` | Result | Notes |
 | --- | --- | --- | --- |
 | 13.351 | 4.0.3 | Historical full matrix passed | August artifact; see HRD-005 and QA-001 records |
 | 14.365 | 4.1.0 (`dev`) | Historical full matrix passed | August artifact; see HRD-005 and QA-001 records |
-| 13.351 | 4.3.1 | Focused checks passed; full matrix incomplete | Distributions/transfers passed; repaired save dialog passed; broad diagnostic work remains |
-| 14.368 | 4.3.1 | Focused checks passed; full matrix incomplete | Distributions/transfers and repaired save dialog passed; broad diagnostic work remains |
+| 13.351 / 14.368 | 4.3.1 | Maintainer-confirmed compatibility; focused automated checks passed | The October 1 report retains the limits of that historical automation run |
+| 13.351 | Published 4.5.0 | Utilities GM/player matrix passed | Upstream equipment-compendium migration error and core chat-animation race recorded separately |
+| 14.369 | Published 4.5.0 | Utilities GM/player matrix passed | Core chat-animation race reproduced with all modules disabled |
 
-The current reference is pinned at
-`498364a5b0199359508293e343ac22fa4df3f14a` (4.3.1); October runs used SocketLib
-v1.1.4. The original Foundry 14 reference was
+The current test target is the published hyp3e **v4.5.0** archive, tag commit
+`0a7f19db3025e0062f239cdf689e64cb3a061962`, with SocketLib v1.1.4. Its SHA-256
+and exact candidate identity are recorded in the
+[4.5.0 validation record](test-runs/2026-10-16-hyp3e-450-validation.md).
+The workspace reference remains untouched at development commit
+`3439d5f971e36e8537bbf604b35aee27811dcd2d` (also version 4.5.0).
+The October 1 reference was `498364a5b0199359508293e343ac22fa4df3f14a`
+(4.3.1). The original Foundry 14 reference was
 `8d9aae354712087dacfea10fb0fd5a1f6beca8db` (4.1.0).
 
 The Foundry 13 `getRollModeChoices` failure is repaired in version 1.0.1.
 Object-valued roll-mode definitions now supply their label strings to the save
-dialog. The regression suite passed 250 tests; actual character/NPC save
-dialogs rendered and submitted on both current cores.
+dialog. The original repair passed 250 local tests. The current 1.0.2 suite
+passes 253 tests, including manual-installation staging checks; actual
+character/NPC save dialogs rendered and submitted on both current cores.
 
-Full-package acceptance remains incomplete. Stale revision/HP assertions,
-the unresolved PAR-009 player diagnostic failure, and the HUD-006 scene-loading
-race must be addressed before a complete release-shaped GM/player rerun.
-These are tracked as QA-002 in the implementation plan. Focused passes do not
-renew theme, accessibility, lifecycle, or all shared-editing coverage.
+The current matrix replaces obsolete revision/HP assertions and uses a real
+observable follower Actor for PAR-009. The runner connects the explicitly
+authorized diagnostic Player and waits for GM-side cleanup to finish. HUD-006
+completed on both current cores without changing production HUD behavior.
+Keyboard navigation, focus, labels, light/dark themes, window lifecycle, and
+module disable/reload are included in current acceptance. Expected negative
+results are checked explicitly; an empty error array alone is not a pass.
+
+Core's chat-notification animation can fail during rapid message deletion or
+theme changes. The identical `#postNotification` null-element failure occurs
+with every module disabled on both cores. The published hyp3e equipment pack
+also contains data that Foundry 13 cannot fully migrate. Neither issue is fixed
+or suppressed by Utilities. All module assertions pass; these upstream issues
+remain documented limitations of the tested environment.
 
 See the [October validation record](test-runs/2026-10-01-hyp3e-431-validation.md)
 for artifact identity, evidence, and the limits of each pass.
@@ -545,7 +561,8 @@ defect disposition are recorded in
 At that gate, public manifest installation and update remained untested because
 publication was not authorized. REL-001 retains that local record. The October 1
 release preparation subsequently confirmed that `v1.0.0` is published on GitHub.
-The maintainer requested a 1.0.1 patch release after the remaining acceptance
-limits were reported. QA-002 remains open; this request does not establish a
-full 4.3.1 compatibility pass. See the
+The maintainer requested a 1.0.1 patch release after the remaining automated
+acceptance limits were reported. QA-002 was still open at that time; the
+maintainer subsequently confirmed 4.3.1 compatibility, and QA-002 is now closed
+by the 4.5.0 candidate matrix above. See the historical
 [patch release record](test-runs/2026-10-01-v1.0.1-release.md).

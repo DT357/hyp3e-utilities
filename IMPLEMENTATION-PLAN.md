@@ -4,9 +4,9 @@ Version: 1.1
 
 Created: 2026-08-14
 
-Last reconciled: 2026-10-01
+Last reconciled: 2026-10-16
 
-Status: Initial implementation recorded complete; current 4.3.1 acceptance incomplete
+Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 GitHub release authorized and in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -285,8 +285,8 @@ M5 is complete when all XP, COIN, WAGE, and DST items are `DONE`, conservation/i
 
 ## 10. Milestone 6 — 1.0.0 Hardening
 
-The completion records below apply to the August acceptance baseline. Current
-4.3.1 acceptance is tracked separately as QA-002.
+The completion records below apply to the August acceptance baseline. The
+subsequent 4.5.0 acceptance is tracked separately as QA-002.
 
 | ID | Status | Depends on | Deliverable | Verification |
 | --- | --- | --- | --- | --- |
@@ -315,9 +315,9 @@ step has occurred, but its live installation/update verification is not
 established by this record. Do not recreate or move that tag.
 
 After the remaining QA-002 limits were reported, the maintainer requested that
-the repair and documentation be committed, pushed, and released. The current
-patch is 1.0.1, using the existing Validate and Release workflow. This release
-does not close QA-002 or expand compatibility declarations. See the
+the repair and documentation be committed, pushed, and released. That patch
+was 1.0.1, using the existing Validate and Release workflow. It did not close
+QA-002 or expand compatibility declarations. See the
 [patch release record](docs/test-runs/2026-10-01-v1.0.1-release.md).
 
 ## 11. Automated Test Map
@@ -383,12 +383,13 @@ historical execution batch.
 
 - Product behavior: The two core features are implemented. Direct Item-sheet opening from Supplies remains an unresolved design expectation.
 - Module foundation: FND-001 through FND-006 retain their dated implementation/validation records.
-- Official `hyp3e` reference: Read-only 4.3.1 at `498364a5b0199359508293e343ac22fa4df3f14a`; do not advance the reference during validation.
+- Official `hyp3e` test target: Published 4.5.0 at tag commit `0a7f19db3025e0062f239cdf689e64cb3a061962`. The separate read-only development reference remains at `3439d5f971e36e8537bbf604b35aee27811dcd2d`.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 6 are recorded complete for the August baseline, not renewed as current compatibility acceptance.
 - Current repair: `getRollModeChoices` label normalization passed 250 local tests and focused save-dialog checks on Foundry 13.351 and 14.368 with hyp3e 4.3.1.
-- Patch release: The maintainer requested publication of this repair and documentation as the next patch (1.0.1); compatibility declarations remain unchanged.
-- Immediate next batch: Repair the diagnostic companion and complete QA-002 before claiming full 4.3.1 compatibility or preparing a newly validated release.
+- Maintainer confirmation: hyp3e 4.3.1 runs correctly; the old automated matrix's limitations do not negate that confirmation.
+- Patch release: 1.0.1 is published. Version 1.0.2 has verified Foundry build 14.369 and current 4.5.0 test evidence.
+- Next release action: The maintainer authorized the 1.0.2 GitHub release on October 16. Commit and push the reviewed package, run the tag-triggered release workflow, and verify the published assets against the committed allowlist. Foundry package submission is a separate workflow.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
@@ -397,7 +398,8 @@ historical execution batch.
 
 | ID | Status | Scope | Completion evidence |
 | --- | --- | --- | --- |
-| QA-002 | `TODO` | Repair stale UI assertions, resolve the PAR-009 player diagnostic failure and HUD-006 scene-loading race, then rerun the full current Foundry 13/14 GM/player matrix | A release-shaped candidate passes all required assertions; record exact versions, hashes, console disposition, and cleanup. Failed or skipped gates do not count as passes. |
+| QA-002 | `DONE` | Repair stale UI assertions and PAR-009 fixtures; rerun HUD-006 and the current Foundry 13/14 GM/player matrix | [4.5.0 validation and 1.0.2 candidate](docs/test-runs/2026-10-16-hyp3e-450-validation.md): all Utilities assertions pass; exact identities, core-only control reproductions, and upstream limitations recorded. |
+| REL-002 | `IN PROGRESS` | Publish version 1.0.2 through the GitHub release workflow | Maintainer authorization received October 16; final package checks and public asset verification are required before marking complete. |
 
 The [2026-10-01 validation record](docs/test-runs/2026-10-01-hyp3e-431-validation.md)
 distinguishes the repaired product defect from unresolved diagnostic work.

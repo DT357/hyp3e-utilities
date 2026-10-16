@@ -8,14 +8,19 @@ users.
 ## Requirements and Tested Versions
 
 The module requires Foundry VTT 13–14, `hyp3e` 4.0.3 or newer, and SocketLib
-1.1.4 or newer. Earlier full testing covered Foundry 13.351 with `hyp3e` 4.0.3
-and Foundry 14.365 with `hyp3e` 4.1.0.
+1.1.4 or newer. Version 1.0.2 has been tested with the published `hyp3e`
+4.5.0 system on Foundry 13.351 and 14.369, with both GM and player accounts.
+The maintainer also confirmed that `hyp3e` 4.3.1 works correctly.
 
-As of 2026-10-01, full testing with `hyp3e` 4.3.1 is still incomplete. Focused
-checks passed for XP, coins, wages, and item transfers on Foundry 13.351 and
-14.368. Version 1.0.1 fixes the Foundry 13 saving-throw window and its repair
-passed save-dialog checks on both versions. See the [Changelog](../CHANGELOG.md)
-for the changes; update older installed copies to receive the fix.
+Version 1.0.1 fixed the Foundry 13 saving-throw window; that fix is retained.
+Version 1.0.2 refreshes compatibility information and installation checks.
+See the [Changelog](../CHANGELOG.md) for the changes.
+
+Two issues in the tested Foundry/system combination were recorded separately:
+the system's equipment compendium reports a migration error on Foundry 13,
+and Foundry can log a chat animation error when messages are removed quickly
+or themes change. Utilities' tested features passed despite these upstream
+issues. They are not repaired by this module update.
 
 ## Installation
 

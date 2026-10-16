@@ -256,6 +256,8 @@ async function testTokenIdentity(npc) {
       && linkedB.actor.system.hp.value === 7;
     const syntheticRetainsSnapshot =
       unlinked.actor.system.hp.value === initialSyntheticHp;
+    const syntheticTracksBaseBeforeOverride =
+      unlinked.actor.system.hp.value === 7;
 
     await unlinked.actor.update({ 'system.hp.value': 3 });
     const syntheticUpdateIsIsolated =
@@ -298,6 +300,7 @@ async function testTokenIdentity(npc) {
       syntheticActorHasDistinctUuid: unlinked.actor.uuid !== npc.uuid,
       linkedTracksBaseActor,
       syntheticRetainsSnapshot,
+      syntheticTracksBaseBeforeOverride,
       syntheticUpdateIsIsolated,
       deletedTokenAbsent: !scene.tokens.has(deletedTokenId),
       selection,
@@ -1805,6 +1808,14 @@ async function grantDiagnosticPartyAccess() {
     'partySheetExplicitEditorUserIds',
     [...new Set([...current, ...playerUserIds])],
   );
+  await Actor.create({
+    name: `${RUN_PREFIX} Draft Follower`,
+    type: 'character',
+    ownership: Object.fromEntries(playerUserIds.map((id) => [
+      id, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER,
+    ])),
+    flags: { [DIAGNOSTIC_ID]: { draftConflictFixture: true } },
+  });
   return playerUserIds;
 }
 
@@ -1820,8 +1831,10 @@ async function testProductionPartySheetApplication() {
     () => first.rendered && first.element?.isConnected,
   );
   const tabButtons = [...first.element.querySelectorAll('[role="tab"]')];
-  const initialRevisionText = first.element.textContent.includes(
-    String(api.partyStore.getState().revision),
+  const editingStatusVisible = first.element.querySelector(
+    '.hyp3e-utilities__party-access',
+  )?.textContent.trim() === game.i18n.localize(
+    `${MODULE_ID}.applications.partySheet.editable`,
   );
   const settingsMenuUsesSingletonClass = menu?.type === PartySheet;
   const followersButton = first.element.querySelector(
@@ -1863,7 +1876,7 @@ async function testProductionPartySheetApplication() {
     singletonBeforeRender,
     rendered,
     sixTabs: tabButtons.length === 6,
-    initialRevisionText,
+    editingStatusVisible,
     settingsMenuUsesSingletonClass,
     tabChanged,
     externalUpdateRerendered,
@@ -2022,8 +2035,8 @@ async function testProductionPartyMembers(character, npc) {
     overviewRendered,
     overviewShowsCharacter:
       overviewText.includes(character.name)
-      && overviewText.includes(
-        `${characterRow?.summary?.hp?.value} / ${characterRow?.summary?.hp?.max}`,
+      && overviewText.replace(/\s/g, '').includes(
+        `${characterRow?.summary?.hp?.value}/${characterRow?.summary?.hp?.max}`,
       ),
     portraitPingIntegrated,
     memberSaveActionsCompact,
@@ -3693,7 +3706,10 @@ async function runGmDiagnostics() {
 
 async function testPlayerDraftConflict(partyMutations) {
   const api = game.modules.get(MODULE_ID).api;
-  const actorUuid = `Actor.par009${game.user.id}`;
+  const actorUuid = game.actors.find((actor) => (
+    actor.getFlag(DIAGNOSTIC_ID, 'draftConflictFixture') === true
+  ))?.uuid;
+  if (!actorUuid) throw new Error('PAR-009 requires its real follower fixture.');
   const addResult = await partyMutations.request(
     'party.compatibilityFollowerMutation',
     {
@@ -3702,6 +3718,7 @@ async function testPlayerDraftConflict(partyMutations) {
       requestId: `par009-${game.user.id}-add`,
     },
   );
+  if (!addResult.ok) throw new Error(`PAR-009 setup failed: ${addResult.error.code}`);
   await waitUntil(() => api.partyStore.getState().followerActorUuids.includes(
     actorUuid,
   ));
@@ -3717,6 +3734,10 @@ async function testPlayerDraftConflict(partyMutations) {
       sheet.element?.querySelector('[data-tab="followers"]')
         ?.getAttribute('aria-selected') === 'true'
     ));
+    const inputsReady = await waitUntil(() => Boolean(sheet.element?.querySelector(
+      `[data-follower-row][data-actor-uuid="${actorUuid}"] [data-field="follower-wage"]`,
+    )));
+    if (!inputsReady) throw new Error('PAR-009 follower editing controls did not render.');
     const row = sheet.element.querySelector(
       `[data-follower-row][data-actor-uuid="${actorUuid}"]`,
     );
@@ -4564,8 +4585,12 @@ Hooks.once('ready', async () => {
     };
     await itemTransferCleanup();
     itemTransferCleanup = async () => {};
+    await Actor.deleteDocuments(game.actors.filter((actor) => (
+      actor.getFlag(DIAGNOSTIC_ID, 'draftConflictFixture') === true
+    )).map((actor) => actor.id));
     await treasuryViewCleanup();
     treasuryViewCleanup = async () => {};
+    results.playerCleanupComplete = true;
     publishResults();
   });
 

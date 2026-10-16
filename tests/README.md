@@ -36,3 +36,18 @@ Run the full repository validation with:
 ```powershell
 npm run check
 ```
+
+The full check also rebuilds and validates the ignored
+`foundry_module/hyp3e-utilities/` manual-installation folder from
+`scripts/release-files.txt`. Use `npm run stage` to rebuild it separately or
+`npm run stage:check` to verify its exact file set and contents without
+replacing it. Never edit generated staging files.
+
+For the runtime companion, connect the Player named
+`Hyp3e Utilities Compatibility Player`; the GM diagnostic grants that account
+editing access and creates its real follower fixture. Wait for
+`Hyp3eUtilitiesCompatibility.playerCleanupComplete === true` on the GM before
+starting distribution tests. A `complete` status alone does not prove success:
+review individual assertions and distinguish deliberate rejected requests from
+unexpected failures. Current evidence and upstream-console dispositions are in
+[the 4.5.0 validation record](../docs/test-runs/2026-10-16-hyp3e-450-validation.md).

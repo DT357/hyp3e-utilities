@@ -2,6 +2,26 @@
 
 All notable changes to Hyp3e Utilities are documented here.
 
+## 1.0.2 — 2026-10-16
+
+### Compatibility
+
+- Validated NPC rolls, the Party Sheet, shared editing, treasury transfers,
+  XP awards, coin splits, and wages with the published hyp3e 4.5.0 system on
+  Foundry 13.351 and 14.369.
+- Updated the verified Foundry build to 14.369. Minimum requirements remain
+  unchanged. The maintainer has also confirmed hyp3e 4.3.1 compatibility.
+- Recorded upstream compendium-migration and chat-animation issues separately
+  from the passing Utilities checks; see the User Guide for their scope.
+
+### Maintenance
+
+- Corrected stale test expectations and the player follower-editing fixture.
+- Added repeatable generation and verification of the manual installation
+  folder, including checks for stale, missing, or changed files.
+- Updated the README and compatibility documentation. Gameplay behavior and
+  stored party data are unchanged.
+
 ## 1.0.1 — 2026-10-01
 
 ### Fixed
@@ -18,9 +38,10 @@ All notable changes to Hyp3e Utilities are documented here.
 
 ### Compatibility
 
-- Existing Foundry and system requirements are unchanged. Full testing with
-  hyp3e 4.3.1 remains incomplete; the focused saving-throw repair has passed
-  on Foundry 13.351 and 14.368.
+- Existing Foundry and system requirements are unchanged. The maintainer
+  confirmed hyp3e 4.3.1 compatibility. The focused saving-throw repair passed
+  on Foundry 13.351 and 14.368; the automated full-matrix work recorded on
+  October 1 was completed against hyp3e 4.5.0 for version 1.0.2.
 - The download link now points to this version's archive so older manifests
   continue to download their matching version.
 
