@@ -6,7 +6,7 @@ Created: 2026-08-14
 
 Last reconciled: 2026-10-16
 
-Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 published on GitHub
+Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 published on GitHub and Foundry
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -389,7 +389,7 @@ historical execution batch.
 - Current repair: `getRollModeChoices` label normalization passed 250 local tests and focused save-dialog checks on Foundry 13.351 and 14.368 with hyp3e 4.3.1.
 - Maintainer confirmation: hyp3e 4.3.1 runs correctly; the old automated matrix's limitations do not negate that confirmation.
 - Patch release: [Version 1.0.2](https://github.com/DT357/hyp3e-utilities/releases/tag/v1.0.2) is published with verified Foundry build 14.369 and current 4.5.0 test evidence.
-- Release verification: Both GitHub workflow jobs passed; all 52 published files match the release commit, checksums pass, and the stable manifest serves 1.0.2. Foundry package submission is a separate workflow and was not run for this release.
+- Release verification: Both GitHub workflow jobs passed; all 52 published files match the release commit, checksums pass, and the stable manifest serves 1.0.2. The separately authorized Foundry dry run and publication also passed; the public package listing shows 1.0.2 with verified build 14.369.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
