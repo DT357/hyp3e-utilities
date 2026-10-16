@@ -6,6 +6,8 @@ Original scope: validate the newest published system and prepare a local release
 candidate. Publication was outside that validation request. The maintainer
 subsequently authorized the 1.0.2 GitHub release on October 16; this record
 preserves the exact local candidate and runtime evidence before publication.
+The subsequent [publication record](2026-10-16-v1.0.2-release.md) identifies
+the released archive and the documentation-only changes made after this run.
 
 Result: **PASS for Utilities; 1.0.2 prepared locally.** The upstream findings
 below remain visible and are excluded only after separate control testing or

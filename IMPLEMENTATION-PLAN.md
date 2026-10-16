@@ -6,7 +6,7 @@ Created: 2026-08-14
 
 Last reconciled: 2026-10-16
 
-Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 GitHub release authorized and in progress
+Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 published on GitHub
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -388,8 +388,8 @@ historical execution batch.
 - Implementation: Milestones 0 through 6 are recorded complete for the August baseline, not renewed as current compatibility acceptance.
 - Current repair: `getRollModeChoices` label normalization passed 250 local tests and focused save-dialog checks on Foundry 13.351 and 14.368 with hyp3e 4.3.1.
 - Maintainer confirmation: hyp3e 4.3.1 runs correctly; the old automated matrix's limitations do not negate that confirmation.
-- Patch release: 1.0.1 is published. Version 1.0.2 has verified Foundry build 14.369 and current 4.5.0 test evidence.
-- Next release action: The maintainer authorized the 1.0.2 GitHub release on October 16. Commit and push the reviewed package, run the tag-triggered release workflow, and verify the published assets against the committed allowlist. Foundry package submission is a separate workflow.
+- Patch release: [Version 1.0.2](https://github.com/DT357/hyp3e-utilities/releases/tag/v1.0.2) is published with verified Foundry build 14.369 and current 4.5.0 test evidence.
+- Release verification: Both GitHub workflow jobs passed; all 52 published files match the release commit, checksums pass, and the stable manifest serves 1.0.2. Foundry package submission is a separate workflow and was not run for this release.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
@@ -399,7 +399,7 @@ historical execution batch.
 | ID | Status | Scope | Completion evidence |
 | --- | --- | --- | --- |
 | QA-002 | `DONE` | Repair stale UI assertions and PAR-009 fixtures; rerun HUD-006 and the current Foundry 13/14 GM/player matrix | [4.5.0 validation and 1.0.2 candidate](docs/test-runs/2026-10-16-hyp3e-450-validation.md): all Utilities assertions pass; exact identities, core-only control reproductions, and upstream limitations recorded. |
-| REL-002 | `IN PROGRESS` | Publish version 1.0.2 through the GitHub release workflow | Maintainer authorization received October 16; final package checks and public asset verification are required before marking complete. |
+| REL-002 | `DONE` | Publish version 1.0.2 through the GitHub release workflow | [Publication and asset verification](docs/test-runs/2026-10-16-v1.0.2-release.md): release workflow passed; public checksums, exact committed contents, compatibility metadata, and latest manifest verified. |
 
 The [2026-10-01 validation record](docs/test-runs/2026-10-01-hyp3e-431-validation.md)
 distinguishes the repaired product defect from unresolved diagnostic work.

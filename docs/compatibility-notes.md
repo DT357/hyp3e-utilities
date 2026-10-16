@@ -19,6 +19,11 @@ The current test target is the published hyp3e **v4.5.0** archive, tag commit
 `0a7f19db3025e0062f239cdf689e64cb3a061962`, with SocketLib v1.1.4. Its SHA-256
 and exact candidate identity are recorded in the
 [4.5.0 validation record](test-runs/2026-10-16-hyp3e-450-validation.md).
+Version 1.0.2 was subsequently published through the successful GitHub release
+workflow. All 52 published files match the release commit; checksums and the
+stable installation manifest passed verification. See the
+[publication record](test-runs/2026-10-16-v1.0.2-release.md) for the released
+archive's identity and its documentation-only differences from the tested candidate.
 The workspace reference remains untouched at development commit
 `3439d5f971e36e8537bbf604b35aee27811dcd2d` (also version 4.5.0).
 The October 1 reference was `498364a5b0199359508293e343ac22fa4df3f14a`
