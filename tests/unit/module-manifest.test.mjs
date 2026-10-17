@@ -17,7 +17,7 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
   assert.equal(manifest.title, 'Hyp3e Utilities');
   assert.equal(packageMetadata.name, manifest.id);
   assert.equal(packageMetadata.version, manifest.version);
-  assert.equal(manifest.version, '1.0.2');
+  assert.equal(manifest.version, '1.0.3');
   assert.equal(packageMetadata.license, 'MIT');
   assert.equal(manifest.license, 'LICENSE');
   assert.equal(manifest.socket, true);

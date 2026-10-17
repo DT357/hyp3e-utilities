@@ -97,8 +97,8 @@ recorded in chat so everyone can follow what changed.
 - Hyperborea 3rd Edition (`hyp3e`) 4.0.3 or newer
 - [SocketLib](https://foundryvtt.com/packages/socketlib) 1.1.4 or newer
 
-Tested with `hyp3e` 4.5.0 on Foundry 13.351 and 14.369. Compatibility with
-`hyp3e` 4.3.1 is also confirmed by the maintainer. See the
+Tested with `hyp3e` 4.6.0 on Foundry 13.351 and 14.369. Previous validation
+covered `hyp3e` 4.5.0, and the maintainer confirmed 4.3.1 compatibility. See the
 [User Guide](docs/user-guide.md) for setup and detailed instructions.
 
 ## Installation

@@ -4,9 +4,9 @@ Version: 1.1
 
 Created: 2026-08-14
 
-Last reconciled: 2026-10-16
+Last reconciled: 2026-10-17
 
-Status: Initial implementation complete; 4.5.0 validation complete; 1.0.2 published on GitHub and Foundry
+Status: Initial implementation complete; 4.6.0 and 1.0.3 archive acceptance passed; GitHub release in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -383,13 +383,13 @@ historical execution batch.
 
 - Product behavior: The two core features are implemented. Direct Item-sheet opening from Supplies remains an unresolved design expectation.
 - Module foundation: FND-001 through FND-006 retain their dated implementation/validation records.
-- Official `hyp3e` test target: Published 4.5.0 at tag commit `0a7f19db3025e0062f239cdf689e64cb3a061962`. The separate read-only development reference remains at `3439d5f971e36e8537bbf604b35aee27811dcd2d`.
+- Official `hyp3e` test target: Published 4.6.0 at tag commit `58dad834ea295436e5d8cc39a180246eb488860f`, matching the read-only reference. The 4.5.0 results remain historical acceptance evidence.
 - S&W Utilities reference analysis: Incorporated into the design.
 - Implementation: Milestones 0 through 6 are recorded complete for the August baseline, not renewed as current compatibility acceptance.
 - Current repair: `getRollModeChoices` label normalization passed 250 local tests and focused save-dialog checks on Foundry 13.351 and 14.368 with hyp3e 4.3.1.
 - Maintainer confirmation: hyp3e 4.3.1 runs correctly; the old automated matrix's limitations do not negate that confirmation.
-- Patch release: [Version 1.0.2](https://github.com/DT357/hyp3e-utilities/releases/tag/v1.0.2) is published with verified Foundry build 14.369 and current 4.5.0 test evidence.
-- Release verification: Both GitHub workflow jobs passed; all 52 published files match the release commit, checksums pass, and the stable manifest serves 1.0.2. The separately authorized Foundry dry run and publication also passed; the public package listing shows 1.0.2 with verified build 14.369.
+- Patch release: Version 1.0.3 is prepared for hyp3e 4.6.0 with verified Foundry build 14.369. Version 1.0.2 remains published on GitHub and Foundry.
+- Release authorization: The maintainer requested a GitHub commit and release after successful 4.6.0 validation. The 1.0.3 archive must pass final acceptance before tagging; Foundry package publication is a separate action.
 - Software license: MIT (`PB-001` complete).
 - Local module name and ID: Hyp3e Utilities / `hyp3e-utilities`.
 - Public repository: `https://github.com/DT357/hyp3e-utilities` (`PB-010` complete).
@@ -400,6 +400,8 @@ historical execution batch.
 | --- | --- | --- | --- |
 | QA-002 | `DONE` | Repair stale UI assertions and PAR-009 fixtures; rerun HUD-006 and the current Foundry 13/14 GM/player matrix | [4.5.0 validation and 1.0.2 candidate](docs/test-runs/2026-10-16-hyp3e-450-validation.md): all Utilities assertions pass; exact identities, core-only control reproductions, and upstream limitations recorded. |
 | REL-002 | `DONE` | Publish version 1.0.2 through the GitHub release workflow | [Publication and asset verification](docs/test-runs/2026-10-16-v1.0.2-release.md): release workflow passed; public checksums, exact committed contents, compatibility metadata, and latest manifest verified. |
+| QA-003 | `DONE` | Validate Utilities against hyp3e 4.6.0 on Foundry 13/14 | [4.6.0 validation record](docs/test-runs/2026-10-17-hyp3e-460-validation.md): baseline and final 1.0.3 archive passed the complete GM/player matrix; hashes, expected errors, and cleanup verified. |
+| REL-003 | `IN PROGRESS` | Commit and publish version 1.0.3 on GitHub after QA-003 passes | Authorized October 17; verify workflow, published checksums, committed contents, and stable manifest. |
 
 The [2026-10-01 validation record](docs/test-runs/2026-10-01-hyp3e-431-validation.md)
 distinguishes the repaired product defect from unresolved diagnostic work.

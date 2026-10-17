@@ -50,4 +50,4 @@ editing access and creates its real follower fixture. Wait for
 starting distribution tests. A `complete` status alone does not prove success:
 review individual assertions and distinguish deliberate rejected requests from
 unexpected failures. Current evidence and upstream-console dispositions are in
-[the 4.5.0 validation record](../docs/test-runs/2026-10-16-hyp3e-450-validation.md).
+[the 4.6.0 validation record](../docs/test-runs/2026-10-17-hyp3e-460-validation.md).

@@ -2,6 +2,19 @@
 
 All notable changes to Hyp3e Utilities are documented here.
 
+## 1.0.3 — 2026-10-17
+
+### Compatibility
+
+- Validated the NPC Action HUD, Party Sheet, shared editing, treasury transfers,
+  XP awards, coin splits, and wages with hyp3e 4.6.0 on Foundry 13.351 and 14.369.
+- Confirmed GM and player workflows, keyboard controls, light and dark themes,
+  and module enable/disable behavior.
+- Updated compatibility information in the README and User Guide. Requirements,
+  gameplay behavior, and saved party data are unchanged.
+- The previously documented hyp3e equipment-compendium migration issue on
+  Foundry 13 and Foundry chat-animation issue remain upstream limitations.
+
 ## 1.0.2 — 2026-10-16
 
 ### Compatibility

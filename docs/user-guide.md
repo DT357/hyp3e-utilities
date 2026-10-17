@@ -8,12 +8,14 @@ users.
 ## Requirements and Tested Versions
 
 The module requires Foundry VTT 13–14, `hyp3e` 4.0.3 or newer, and SocketLib
-1.1.4 or newer. Version 1.0.2 has been tested with the published `hyp3e`
-4.5.0 system on Foundry 13.351 and 14.369, with both GM and player accounts.
-The maintainer also confirmed that `hyp3e` 4.3.1 works correctly.
+1.1.4 or newer. Version 1.0.3 has been tested with the published `hyp3e`
+4.6.0 system on Foundry 13.351 and 14.369, with both GM and player accounts.
+Previous validation covered `hyp3e` 4.5.0, and the maintainer confirmed that
+`hyp3e` 4.3.1 works correctly.
 
 Version 1.0.1 fixed the Foundry 13 saving-throw window; that fix is retained.
-Version 1.0.2 refreshes compatibility information and installation checks.
+Version 1.0.2 refreshed compatibility information and installation checks.
+Version 1.0.3 confirms hyp3e 4.6.0 compatibility without changing gameplay.
 See the [Changelog](../CHANGELOG.md) for the changes.
 
 Two issues in the tested Foundry/system combination were recorded separately:

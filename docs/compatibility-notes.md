@@ -1,8 +1,37 @@
 # Compatibility Notes
 
-## Current platform target and acceptance — 2026-10-16
+## Current platform target and acceptance — 2026-10-17
 
-Hyp3e Utilities currently declares Foundry VTT 13 through 14 and requires the
+Version 1.0.3 retains Foundry 13–14 support, verified build 14.369, hyp3e
+minimum 4.0.3, and SocketLib minimum 1.1.4. The current validation target is
+the published **hyp3e 4.6.0** package, matching the read-only reference at
+commit `58dad834ea295436e5d8cc39a180246eb488860f`.
+
+| Foundry | hyp3e | Result |
+| --- | --- | --- |
+| 13.351 | 4.6.0 | Utilities GM/player diagnostics, distributions, UI, and disable/reload checks passed |
+| 14.369 | 4.6.0 | Utilities GM/player diagnostics, distributions, UI, and disable/reload checks passed |
+
+All 253 local tests pass. Each runtime run checks 37 GM diagnostic groups,
+13 player groups, 509 positive boolean observations, and 18 expected negative
+observations. NPC actions, synthetic-Actor identity, shared permissions, stale
+edits, treasury transfers, XP/coin/wage distributions, keyboard focus, light/dark
+themes, and application lifecycle remain covered. No production code changes
+were required for 4.6.0.
+
+The existing equipment-compendium migration error on Foundry 13 and core
+`#postNotification` chat-animation error remain separately classified upstream
+issues. The latter was reproduced with every module disabled during the
+October 16 control runs on these same core builds. No new unclassified browser
+or server error was accepted as a pass.
+
+See the [4.6.0 validation record](test-runs/2026-10-17-hyp3e-460-validation.md)
+for exact artifacts, versions, checksums, and acceptance results. Prior 4.5.0
+validation and maintainer-confirmed 4.3.1 compatibility remain recorded below.
+
+## Previous acceptance — 2026-10-16
+
+Hyp3e Utilities 1.0.2 declared Foundry VTT 13 through 14 and required the
 `hyp3e` system (minimum 4.0.3) and SocketLib (minimum 1.1.4). Manifest verified
 build is 14.369 for version 1.0.2. Declarations are separate from the exact
 combinations and artifacts exercised below.
@@ -24,7 +53,7 @@ workflow. All 52 published files match the release commit; checksums and the
 stable installation manifest passed verification. See the
 [publication record](test-runs/2026-10-16-v1.0.2-release.md) for the released
 archive's identity and its documentation-only differences from the tested candidate.
-The workspace reference remains untouched at development commit
+At the time of that run, the workspace reference was at development commit
 `3439d5f971e36e8537bbf604b35aee27811dcd2d` (also version 4.5.0).
 The October 1 reference was `498364a5b0199359508293e343ac22fa4df3f14a`
 (4.3.1). The original Foundry 14 reference was
