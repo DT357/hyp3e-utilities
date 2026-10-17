@@ -28,6 +28,9 @@ or server error was accepted as a pass.
 See the [4.6.0 validation record](test-runs/2026-10-17-hyp3e-460-validation.md)
 for exact artifacts, versions, checksums, and acceptance results. Prior 4.5.0
 validation and maintainer-confirmed 4.3.1 compatibility remain recorded below.
+The [1.0.3 publication record](test-runs/2026-10-17-v1.0.3-release.md) confirms
+that the public files match the tested candidate and install successfully
+through Foundry's manifest URL flow.
 
 ## Previous acceptance — 2026-10-16
 

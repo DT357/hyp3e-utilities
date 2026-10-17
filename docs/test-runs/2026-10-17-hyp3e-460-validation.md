@@ -7,6 +7,9 @@ Utilities 1.0.3 on GitHub if acceptance passes.
 
 Status: **PASS — Utilities 1.0.2 baseline and final 1.0.3 archive passed.**
 
+The subsequent [GitHub publication record](2026-10-17-v1.0.3-release.md)
+contains the released ZIP identity and successful public-manifest installation.
+
 ## Exact inputs
 
 - Read-only system reference: tag `v4.6.0`, commit
