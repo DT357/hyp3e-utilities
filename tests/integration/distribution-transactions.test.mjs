@@ -33,7 +33,7 @@ function createActor(id, type, { coins = {}, xp = 0 } = {}) {
     name: id,
     system: {
       details: {
-        experience: { bonus: 0, value: String(xp) },
+        xp: { bonus: 0, value: String(xp) },
       },
       money: Object.fromEntries(COIN_KEYS.map((key) => [
         key,
@@ -182,6 +182,7 @@ test('XP distribution duplicate request IDs write and audit exactly once', async
     heroWrites: harness.hero.updateCallCount,
     npcWrites: harness.npc.updateCallCount,
   }, { audit: 1, heroWrites: 1, npcWrites: 0 });
+  assert.equal(harness.hero.system.details.xp.value, '60');
 });
 
 test('coin distribution duplicate request IDs write and audit exactly once', async () => {

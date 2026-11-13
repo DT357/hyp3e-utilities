@@ -1,5 +1,45 @@
 # Compatibility Notes
 
+## hyp3e 4.9.2 release validation — 2026-11-13
+
+Utilities 1.0.4 records hyp3e 4.9.2 as the most recent verified system version
+and includes the previously unreleased formatted-XP and coin corrections below.
+The minimum system requirement remains 4.0.3; Foundry declarations are unchanged.
+Tests use the official published system archive, tag commit
+`ad53440d19f2677211e64bc0fdd89dfeddfc47e9`, on Foundry 13.351 and 14.369.
+The full GM/player matrix includes both formatting regressions, transaction
+safety, permissions, synthetic Actors, themes, keyboard and lifecycle checks.
+The upstream v13 equipment-journal migration and core chat-animation exceptions
+remain documented; additional unclassified errors are not accepted.
+See [the release record](test-runs/2026-11-13-v1.0.4-release.md) for exact artifacts
+and results. Earlier dated entries describe their original unreleased candidates.
+
+## Coin and XP corrections in development — 2026-10-22
+
+The unreleased repair now covers formatted coin balances and split amounts as
+well as XP. All 264 local tests, the complete Foundry 13.351/14.369 matrix on
+hyp3e 4.6.0, and the copied v14 campaign with all 15 enabled modules passed.
+The 53-file candidate and staging tree were verified. See the
+[coin regression record](test-runs/2026-10-22-coin-formatting.md) for reproduction,
+conservation checks, artifact hashes and the existing upstream exceptions.
+The published 1.0.3 package remains unchanged; historical losses require review.
+
+## XP correction in development — 2026-10-21
+
+The released 1.0.3 XP tests missed character totals saved with thousands
+separators. A copied campaign reproduced both overwritten XP and apparently
+skipped recipients. The unreleased fix parses formatted totals and rejects
+unreadable totals instead of assuming zero. See the
+[XP regression record](test-runs/2026-10-21-xp-formatting.md) for the reproduction,
+repair and validation. The historical compatibility results below cover their
+recorded cases; they did not exercise this input format.
+
+All 257 local tests and the complete Foundry 13.351/14.369 GM/player matrix
+pass with hyp3e 4.6.0, including the added formatted-XP diagnostic. The v14
+campaign copy also passes repeated awards, character-sheet saves and reloads
+with all 15 of its enabled modules present. The manifest version and published
+1.0.3 package have not changed.
+
 ## Current platform target and acceptance — 2026-10-17
 
 Version 1.0.3 retains Foundry 13–14 support, verified build 14.369, hyp3e

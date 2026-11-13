@@ -18,7 +18,7 @@ assert.deepEqual(manifest.relationships?.systems, [
   {
     id: 'hyp3e',
     type: 'system',
-    compatibility: { minimum: '4.0.3' },
+    compatibility: { minimum: '4.0.3', verified: '4.9.2' },
   },
 ]);
 assert.deepEqual(manifest.relationships?.requires, [

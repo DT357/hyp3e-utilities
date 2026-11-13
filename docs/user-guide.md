@@ -8,18 +8,20 @@ users.
 ## Requirements and Tested Versions
 
 The module requires Foundry VTT 13–14, `hyp3e` 4.0.3 or newer, and SocketLib
-1.1.4 or newer. Version 1.0.3 has been tested with the published `hyp3e`
-4.6.0 system on Foundry 13.351 and 14.369, with both GM and player accounts.
-Previous validation covered `hyp3e` 4.5.0, and the maintainer confirmed that
+1.1.4 or newer. Version 1.0.4 has been tested with the published `hyp3e`
+4.9.2 system on Foundry 13.351 and 14.369, with both GM and player accounts.
+Previous validation covered `hyp3e` 4.6.0 and 4.5.0, and the maintainer confirmed that
 `hyp3e` 4.3.1 works correctly.
 
 Version 1.0.1 fixed the Foundry 13 saving-throw window; that fix is retained.
 Version 1.0.2 refreshed compatibility information and installation checks.
 Version 1.0.3 confirms hyp3e 4.6.0 compatibility without changing gameplay.
+Version 1.0.4 preserves formatted XP and coin balances and records hyp3e 4.9.2
+as the most recent verified system version.
 See the [Changelog](../CHANGELOG.md) for the changes.
 
 Two issues in the tested Foundry/system combination were recorded separately:
-the system's equipment compendium reports a migration error on Foundry 13,
+the system's equipment journal compendium reports a migration error on Foundry 13,
 and Foundry can log a chat animation error when messages are removed quickly
 or themes change. Utilities' tested features passed despite these upstream
 issues. They are not repaired by this module update.
@@ -240,6 +242,12 @@ and the final award is added to that character sheet. An `npc` share consumes
 its base allocation but does not change the NPC sheet. One public chat report
 records the completed transaction.
 
+The upcoming XP fix preserves totals written with thousands separators, such
+as `1,375` or `1.375`, and stops an award if a character's existing total cannot
+be read. Released version 1.0.3 can replace formatted totals instead of adding
+to them. The fix does not recover previously lost XP; check campaign records
+before correcting old totals.
+
 ### Coins
 
 1. On Treasure, enter how many CP/SP/EP/GP/PP to split; each amount is capped by
@@ -252,6 +260,12 @@ records the completed transaction.
 Each `character` award is added to that Actor's purse. An `npc` allocation is
 removed from the split without NPC writeback. Integer-floor remainders stay in
 the Party Treasury. One public chat report records the completed transaction.
+
+The upcoming coin fix accepts amounts such as `1,250` or `1.250`, preserves
+formatted purse and treasury balances, and stops a split if a balance cannot
+be read. Released version 1.0.3 can overwrite formatted balances, including
+other coin types when only gold is split. The fix does not restore previously
+lost coins; use campaign records to reconcile old balances.
 
 ### Wages
 

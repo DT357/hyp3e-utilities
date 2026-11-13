@@ -124,6 +124,7 @@ function createHarness() {
     hero,
     npc,
     preview,
+    previewService,
     reports,
     retainer,
     service,
@@ -174,6 +175,51 @@ test('coin transaction restores earlier character purses after a later character
     cp: 1, sp: 1, ep: 1, gp: 1, pp: 1,
   });
   assert.deepEqual(hyp3eAdapter.getMoney(harness.treasury), harness.preview.availableCoins);
+  assert.equal(harness.reports.length, 0);
+});
+
+test('gold split adds to formatted purses and preserves every untouched denomination', async () => {
+  const harness = createHarness();
+  for (const actor of [harness.hero, harness.retainer, harness.treasury]) {
+    for (const key of COIN_KEYS) actor.system.money[key].value = '1,000';
+  }
+  harness.treasury.system.money.gp.value = '6.251';
+  const input = { splitCoins: { cp: 0, sp: 0, ep: 0, gp: '1,250', pp: 0 } };
+  for (let award = 1; award <= 2; award++) {
+    const preview = harness.previewService.getPreview(input);
+    const response = await harness.service.distribute(preview, 7, `formatted-${award}`);
+    assert.equal(response.ok, true);
+    assert.deepEqual(hyp3eAdapter.getMoney(harness.hero), { cp: 1000, sp: 1000, ep: 1000, gp: 1000 + 625 * award, pp: 1000 });
+    assert.deepEqual(hyp3eAdapter.getMoney(harness.retainer), { cp: 1000, sp: 1000, ep: 1000, gp: 1000 + 312 * award, pp: 1000 });
+    assert.deepEqual(hyp3eAdapter.getMoney(harness.treasury), { cp: 1000, sp: 1000, ep: 1000, gp: 6251 - 1249 * award, pp: 1000 });
+    assert.equal(response.value.consumedNpcTotals.gp, 312);
+  }
+  assert.equal(harness.npc.updateCallCount, 0);
+});
+
+test('unreadable recipient money rolls back the split without replacing it with zero', async () => {
+  const harness = createHarness();
+  harness.retainer.system.money.pp.value = 'unknown';
+  const response = await harness.service.distribute(harness.preview, 7);
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, PARTY_COIN_AWARD_ERROR_CODES.invalidBalance);
+  assert.deepEqual(hyp3eAdapter.getMoney(harness.hero), { cp: 1, sp: 1, ep: 1, gp: 1, pp: 1 });
+  assert.equal(harness.retainer.system.money.pp.value, 'unknown');
+  assert.deepEqual(hyp3eAdapter.getMoney(harness.treasury), harness.preview.availableCoins);
+  assert.equal(harness.reports.length, 0);
+});
+
+test('failed formatted coin distribution restores the treasury and character totals', async () => {
+  const harness = createHarness();
+  for (const actor of [harness.hero, harness.retainer, harness.treasury]) {
+    for (const key of COIN_KEYS) actor.system.money[key].value = '1,250';
+  }
+  harness.auditFailure = true;
+  const response = await harness.service.distribute(harness.previewService.getPreview(), 7);
+  assert.equal(response.ok, false);
+  for (const actor of [harness.hero, harness.retainer, harness.treasury]) {
+    assert.deepEqual(hyp3eAdapter.getMoney(actor), Object.fromEntries(COIN_KEYS.map(key => [key, 1250])));
+  }
   assert.equal(harness.reports.length, 0);
 });
 

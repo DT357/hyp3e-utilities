@@ -160,6 +160,33 @@ test('XP award transaction restores earlier character writes after a later failu
   assert.equal(harness.reports.length, 0);
 });
 
+test('XP awards add to formatted totals for every character and accumulate across awards', async () => {
+  const harness = createHarness();
+  harness.hero.system.details.xp.value = '12,345';
+  harness.retainer.system.details.xp.value = '6.789';
+  const first = await harness.service.distribute(harness.preview, 7, 'first');
+  assert.equal(first.ok, true);
+  assert.equal(harness.hero.system.details.xp.value, '12785');
+  assert.equal(harness.retainer.system.details.xp.value, '6979');
+  assert.deepEqual(harness.reports[0].recipients.slice(0, 2).map(entry => entry.beforeXp), [12345, 6789]);
+  const second = await harness.service.distribute(harness.preview, 7, 'second');
+  assert.equal(second.ok, true);
+  assert.equal(harness.hero.system.details.xp.value, '13225');
+  assert.equal(harness.retainer.system.details.xp.value, '7169');
+  assert.equal(harness.npc.system.xp, '75');
+});
+
+test('unreadable XP stops the award and rolls back earlier recipients', async () => {
+  const harness = createHarness();
+  harness.retainer.system.details.xp.value = 'unknown';
+  const response = await harness.service.distribute(harness.preview, 7);
+  assert.equal(response.ok, false);
+  assert.equal(response.error.code, PARTY_XP_AWARD_ERROR_CODES.invalidExperience);
+  assert.equal(harness.hero.system.details.xp.value, '1000');
+  assert.equal(harness.retainer.system.details.xp.value, 'unknown');
+  assert.equal(harness.reports.length, 0);
+});
+
 test('XP award transaction reports a failed compensation explicitly', async () => {
   const harness = createHarness();
   harness.retainer.failOnUpdateCalls = new Set([1]);

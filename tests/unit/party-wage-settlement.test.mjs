@@ -159,6 +159,26 @@ test('wage settlement deducts only treasury GP and audits positive selected paym
   assert.equal(harness.reports[0].remainingGp, 2);
 });
 
+test('wages preserve formatted treasury balances in all denominations', async () => {
+  const harness = createHarness();
+  for (const key of COIN_KEYS) harness.treasury.system.money[key].value = '1,000';
+  const preview = harness.previewService.getPreview();
+  const response = await harness.service.settle(preview, 12);
+  assert.equal(response.ok, true);
+  assert.deepEqual(hyp3eAdapter.getMoney(harness.treasury), { cp: 1000, sp: 1000, ep: 1000, gp: 992, pp: 1000 });
+});
+
+test('wage write refuses an unreadable non-GP balance without changing the treasury', async () => {
+  const harness = createHarness();
+  harness.treasury.system.money.pp.value = 'unknown';
+  const response = await harness.service.settle(harness.preview, 12);
+  assert.equal(response.ok, false);
+  assert.equal(harness.treasury.system.money.gp.value, '10');
+  assert.equal(harness.treasury.system.money.pp.value, 'unknown');
+  assert.equal(harness.treasury.updateCallCount, 0);
+  assert.equal(harness.reports.length, 0);
+});
+
 test('wage settlement restores treasury after audit failure', async () => {
   const harness = createHarness();
   harness.auditFailure = true;

@@ -51,3 +51,18 @@ starting distribution tests. A `complete` status alone does not prove success:
 review individual assertions and distinguish deliberate rejected requests from
 unexpected failures. Current evidence and upstream-console dispositions are in
 [the 4.6.0 validation record](../docs/test-runs/2026-10-17-hyp3e-460-validation.md).
+
+After `Hyp3eUtilitiesM5.setup()` and `runGmXp()`, run
+`Hyp3eUtilitiesM5.runFormattedXp()` as GM. It verifies comma/period-formatted
+character XP, accumulation across two awards, and duplicate-request handling,
+then restores the fixture totals. Run `cleanup()` after all distribution checks.
+Use copied campaign data only in isolated test worlds; never commit personal
+world data or make the automated suite depend on it.
+
+Also run `Hyp3eUtilitiesM5.runFormattedCoins()` as GM after the distribution
+fixtures are initialized. It exercises formatted treasury/character balances
+and split amounts in all five denominations, two successive splits, NPC
+consumption, retained remainders and duplicate requests. It restores the fixture
+purses before the remaining tests; `cleanup()` removes its audit messages.
+Results for the combined XP/coin repair are in the
+[coin formatting regression record](../docs/test-runs/2026-10-22-coin-formatting.md).

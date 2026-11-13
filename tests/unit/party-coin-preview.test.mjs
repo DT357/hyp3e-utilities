@@ -132,6 +132,19 @@ test('coin preview defaults to all available coins and positive-share recipients
   assert.equal(response.value.distributions[2].included, false);
 });
 
+test('coin preview accepts formatted split input and rejects unreadable amounts or treasury balances', async () => {
+  const harness = createHarness();
+  harness.treasury.system.money.gp.value = '6,250';
+  const splitCoins = { cp: '', sp: '', ep: '', gp: '1,250', pp: '' };
+  const response = await harness.service.requestPreview({ splitCoins }, 12);
+  assert.equal(response.ok, true);
+  assert.equal(response.value.availableCoins.gp, 6250);
+  assert.equal(response.value.splitCoins.gp, 1250);
+  assert.equal((await harness.service.requestPreview({ splitCoins: { ...splitCoins, gp: '1,2' } }, 12)).ok, false);
+  harness.treasury.system.money.pp.value = 'unknown';
+  assert.equal((await harness.service.requestPreview({ splitCoins }, 12)).ok, false);
+});
+
 test('coin preview rejects stale and malformed requests before calculation', async () => {
   const harness = createHarness();
   const stale = await harness.service.requestPreview({}, 11);

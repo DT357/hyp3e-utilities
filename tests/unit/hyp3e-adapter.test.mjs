@@ -66,6 +66,38 @@ test('adapter reads NPC-only fields without treating NPC XP as writable', () => 
   assert.equal(hyp3eAdapter.canWriteMoney(npcActor), false);
 });
 
+test('adapter preserves formatted coin balances and refuses unreadable money writes', () => {
+  const actor = structuredClone(characterActor);
+  for (const [index, key] of ['cp', 'sp', 'ep', 'gp', 'pp'].entries()) {
+    actor.system.money[key].value = `${index + 1}${index % 2 ? '.' : ','}250`;
+  }
+  const expected = { cp: 1250, sp: 2250, ep: 3250, gp: 4250, pp: 5250 };
+  assert.deepEqual(hyp3eAdapter.getMoney(actor), expected);
+  assert.equal(hyp3eAdapter.buildMoneyUpdate({ gp: '1,250' })['system.money.gp.value'], '1250');
+  actor.system.money.gp.value = 'bad';
+  assert.equal(hyp3eAdapter.getMoney(actor).gp, null);
+  assert.throws(() => hyp3eAdapter.buildMoneyUpdate(hyp3eAdapter.getMoney(actor)), /coin|money/i);
+});
+
+test('character XP accepts hyp3e thousands separators without losing the existing total', () => {
+  for (const [stored, expected] of [
+    ['1,250', 1250], ['12,345,678', 12345678], ['1.250', 1250],
+    ['12.345.678', 12345678], [' 1250 ', 1250], ['', 0], [1250, 1250],
+  ]) {
+    const actor = structuredClone(characterActor);
+    actor.system.details.xp.value = stored;
+    assert.equal(hyp3eAdapter.getCharacterExperience(actor).value, expected, String(stored));
+  }
+});
+
+test('unreadable character XP is distinguishable from an actual zero total', () => {
+  for (const stored of ['bad', '12,34', '1.5', '-5', '9007199254740992', null, undefined]) {
+    const actor = structuredClone(characterActor);
+    actor.system.details.xp.value = stored;
+    assert.equal(hyp3eAdapter.getCharacterExperience(actor).value, null, String(stored));
+  }
+});
+
 test('adapter preserves synthetic Actor identity and token-specific values', () => {
   const summary = hyp3eAdapter.getActorSummary(syntheticNpcActor);
 
@@ -222,11 +254,11 @@ test('adapter normalizes invalid numeric storage safely', () => {
   };
 
   assert.deepEqual(hyp3eAdapter.getCharacterExperience(malformedCharacter), {
-    value: 0,
+    value: null,
     bonus: 0,
   });
-  assert.equal(hyp3eAdapter.getMoney(malformedCharacter).gp, 3);
-  assert.equal(hyp3eAdapter.getMoney(malformedCharacter).pp, 0);
+  assert.equal(hyp3eAdapter.getMoney(malformedCharacter).gp, null);
+  assert.equal(hyp3eAdapter.getMoney(malformedCharacter).pp, null);
 });
 
 test('adapter preserves missing save, morale, and loyalty values as null', () => {

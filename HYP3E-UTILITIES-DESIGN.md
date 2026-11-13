@@ -1,8 +1,8 @@
 # Hyp3e Utilities Design
 
-Status: Implemented 1.0 behavior reconciled; 4.6.0 compatibility validated; Supplies design gap remains
+Status: Implemented 1.0 behavior reconciled; 4.9.2 compatibility validated; Supplies design gap remains
 
-Last reviewed: 2026-10-17
+Last reviewed: 2026-11-13
 
 Target module: Hyp3e Utilities
 
@@ -27,16 +27,16 @@ completed features; dated runtime findings apply only to their recorded versions
 | Reference | Snapshot reviewed | Role |
 | --- | --- | --- |
 | S&W Utilities | Manifest version 2026.04.09 in <code>References/sw-utilities</code> | UX and feature reference |
-| Hyperborea 3rd Edition | Published <code>hyp3e</code> 4.6.0, tag commit <code>58dad834ea295436e5d8cc39a180246eb488860f</code> | Current tested package and behavior baseline |
-| Foundry VTT | Declared generations 13–14; version 1.0.3 verified build 14.369 | Current GM/player checks use 13.351 and 14.369 |
+| Hyperborea 3rd Edition | Published <code>hyp3e</code> 4.9.2, tag commit <code>ad53440d19f2677211e64bc0fdd89dfeddfc47e9</code> | Current tested package and behavior baseline |
+| Foundry VTT | Declared generations 13–14; version 1.0.4 verified build 14.369 | Current GM/player checks use 13.351 and 14.369 |
 
-The read-only <code>References/hyp3e</code> checkout is pinned to the 4.6.0 tag
+The read-only <code>References/hyp3e</code> checkout is pinned to the 4.9.2 tag
 above. Validation used the matching published archive, including its compiled
 packs, and verified shared source files against that reference. The original design and
 August acceptance used 4.1.0 commit
 <code>8d9aae354712087dacfea10fb0fd5a1f6beca8db</code> on Foundry 14.365 and
 4.0.3 on Foundry 13.351. Field mappings remain module-owned contracts covered
-by tests. The maintainer confirmed 4.3.1 compatibility. The current 4.6.0
+by tests. The maintainer confirmed 4.3.1 compatibility. The current 4.9.2
 matrix, exact artifact identities, and upstream limitations are recorded in
 [compatibility notes](docs/compatibility-notes.md).
 

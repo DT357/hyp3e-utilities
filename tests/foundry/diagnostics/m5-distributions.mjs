@@ -241,6 +241,67 @@ async function runPlayerCoinsAndWages() {
   };
 }
 
+async function runFormattedXp() {
+  if (!game.user.isGM) throw new Error('Formatted XP diagnostics require a GM.');
+  const api = getApi();
+  const hero = findFixture('hero');
+  const retainer = findFixture('retainer');
+  const original = [hero, retainer].map(actor => actor.system.details.xp.value);
+  try {
+    await hero.update({ 'system.details.xp.value': '1,100' });
+    await retainer.update({ 'system.details.xp.value': '2.200' });
+    const preview = api.partyXp.getPreview({ totalXp: 400 });
+    const revision = api.partyStore.getState().revision;
+    const requestId = `m5-formatted-xp-${foundry.utils.randomID()}`;
+    const first = await api.partyXpAwards.distribute(preview, revision, requestId);
+    const duplicate = await api.partyXpAwards.distribute(preview, revision, requestId);
+    const firstTotals = [hero, retainer].map(actor => actor.system.details.xp.value);
+    const second = await api.partyXpAwards.distribute(preview, revision);
+    const secondTotals = [hero, retainer].map(actor => actor.system.details.xp.value);
+    if (!first.ok || !second.ok
+      || JSON.stringify(first) !== JSON.stringify(duplicate)
+      || JSON.stringify(firstTotals) !== JSON.stringify(['1320', '2290'])
+      || JSON.stringify(secondTotals) !== JSON.stringify(['1540', '2380'])) {
+      throw new Error('Formatted XP awards did not preserve and accumulate existing totals.');
+    }
+    return { firstTotals, secondTotals, duplicateMatched: true };
+  }
+  finally {
+    await hero.update({ 'system.details.xp.value': original[0] });
+    await retainer.update({ 'system.details.xp.value': original[1] });
+  }
+}
+
+async function runFormattedCoins() {
+  if (!game.user.isGM) throw new Error('Formatted coin diagnostics require a GM.');
+  const api = getApi();
+  const actors = [findFixture('hero'), findFixture('retainer'), api.partyTreasury.getStatus().actor];
+  const keys = ['cp', 'sp', 'ep', 'gp', 'pp'];
+  const original = actors.map(actor => api.adapter.getMoney(actor));
+  try {
+    for (const [index, actor] of actors.entries()) {
+      await actor.update(Object.fromEntries(keys.map(key => [`system.money.${key}.value`, index === 2 ? '6,251' : '1.000'])));
+    }
+    const revision = api.partyStore.getState().revision;
+    for (let index = 0; index < 2; index++) {
+      const preview = await api.partyCoins.requestPreview({splitCoins: Object.fromEntries(keys.map(key => [key, '1,250']))}, revision);
+      if (!preview.ok) throw new Error('Formatted coin preview failed.');
+      const requestId = `m5-formatted-coins-${foundry.utils.randomID()}`;
+      const first = await api.partyCoinAwards.distribute(preview.value, revision, requestId);
+      const duplicate = await api.partyCoinAwards.distribute(preview.value, revision, requestId);
+      if (!first.ok || JSON.stringify(first) !== JSON.stringify(duplicate)) throw new Error('Formatted coin award or replay failed.');
+    }
+    const balances = actors.map(actor => api.adapter.getMoney(actor));
+    for (const [index, expected] of [2250, 1624, 3753].entries()) {
+      if (keys.some(key => balances[index][key] !== expected)) throw new Error('Formatted coin balance was not conserved.');
+    }
+    return {balances, duplicateMatched: true, conserved: true};
+  }
+  finally {
+    for (const [index, actor] of actors.entries()) await actor.update(api.adapter.buildMoneyUpdate(original[index]));
+  }
+}
+
 function inspect() {
   const api = getApi();
   const hero = findFixture('hero');
@@ -325,6 +386,8 @@ globalThis.Hyp3eUtilitiesM5 = Object.freeze({
   cleanup,
   inspect,
   runGmXp,
+  runFormattedXp,
+  runFormattedCoins,
   runPlayerCoinsAndWages,
   setup,
 });

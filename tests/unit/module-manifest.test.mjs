@@ -17,7 +17,7 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
   assert.equal(manifest.title, 'Hyp3e Utilities');
   assert.equal(packageMetadata.name, manifest.id);
   assert.equal(packageMetadata.version, manifest.version);
-  assert.equal(manifest.version, '1.0.3');
+  assert.equal(manifest.version, '1.0.4');
   assert.equal(packageMetadata.license, 'MIT');
   assert.equal(manifest.license, 'LICENSE');
   assert.equal(manifest.socket, true);
@@ -25,7 +25,7 @@ test('module and package metadata describe Hyp3e Utilities', async () => {
     {
       id: 'hyp3e',
       type: 'system',
-      compatibility: { minimum: '4.0.3' },
+      compatibility: { minimum: '4.0.3', verified: '4.9.2' },
     },
   ]);
   assert.deepEqual(manifest.relationships?.requires, [

@@ -4,6 +4,7 @@ import {
   MODULE_ID,
   SAVE_KEYS,
 } from '../core/constants.mjs';
+import { readWholeCount } from '../core/numbers.mjs';
 
 const ACTOR_TYPES = Object.freeze({
   character: 'character',
@@ -91,7 +92,7 @@ function getSaves(actor) {
 function getMoney(actor) {
   return Object.fromEntries(COIN_KEYS.map((coinKey) => [
     coinKey,
-    normalizeWhole(readPath(actor, `system.money.${coinKey}.value`)),
+    readWholeCount(readPath(actor, `system.money.${coinKey}.value`)),
   ]));
 }
 
@@ -243,7 +244,7 @@ export const hyp3eAdapter = Object.freeze({
   getCharacterExperience(actor) {
     if (actor?.type !== ACTOR_TYPES.character) return null;
     return {
-      value: normalizeWhole(
+      value: readWholeCount(
         readPath(actor, HYP3E_FIELD_PATHS.characterExperience),
       ),
       bonus: normalizeSignedWhole(
@@ -275,10 +276,11 @@ export const hyp3eAdapter = Object.freeze({
   },
 
   buildMoneyUpdate(money) {
-    return Object.fromEntries(COIN_KEYS.map((coinKey) => [
-      `system.money.${coinKey}.value`,
-      String(normalizeWhole(money?.[coinKey])),
-    ]));
+    return Object.fromEntries(COIN_KEYS.map((coinKey) => {
+      const value = readWholeCount(money?.[coinKey] === undefined ? 0 : money[coinKey]);
+      if (value === null) throw new TypeError(`Invalid ${coinKey} coin balance.`);
+      return [`system.money.${coinKey}.value`, String(value)];
+    }));
   },
 
   getItemCategory(item) {

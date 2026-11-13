@@ -17,6 +17,7 @@ export const PARTY_XP_AWARD_ERROR_CODES = Object.freeze({
   auditFailed: 'xpDistributionAuditFailed',
   gmRequired: 'xpDistributionGmRequired',
   invalidActor: 'xpDistributionInvalidActor',
+  invalidExperience: 'xpDistributionInvalidExperience',
   invalidPreview: 'xpDistributionInvalidPreview',
   overflow: 'xpDistributionOverflow',
   previewChanged: 'xpDistributionPreviewChanged',
@@ -266,6 +267,12 @@ export function createPartyXpAwardService({
           );
         }
         const beforeXp = adapter.getCharacterExperience(actor)?.value;
+        if (!Number.isSafeInteger(beforeXp) || beforeXp < 0) {
+          throw new PartyMutationError(
+            PARTY_XP_AWARD_ERROR_CODES.invalidExperience,
+            `XP recipient "${distribution.actorUuid}" has an unreadable XP total.`,
+          );
+        }
         const afterXp = beforeXp + distribution.finalAwardXp;
         if (!Number.isSafeInteger(afterXp)) {
           throw new PartyMutationError(

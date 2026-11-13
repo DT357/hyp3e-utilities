@@ -1,4 +1,5 @@
 import { COIN_KEYS } from '../core/constants.mjs';
+import { readWholeCount } from '../core/numbers.mjs';
 import { allocateCoins } from './coin-distribution.mjs';
 import {
   PARTY_MUTATION_ERROR_CODES,
@@ -22,12 +23,9 @@ function createRequestId() {
 }
 
 function normalizeSafeWhole(value) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) return 0;
-  return Math.min(
-    Number.MAX_SAFE_INTEGER,
-    Math.max(0, Math.trunc(numericValue)),
-  );
+  const numericValue = readWholeCount(value);
+  if (numericValue === null) throw new TypeError('Coin amounts must be non-negative whole numbers.');
+  return numericValue;
 }
 
 function validateSplitCoins(value) {
@@ -127,11 +125,18 @@ export function createPartyCoinPreviewService({
         share: supported ? (state.shares[actorUuid] ?? 1) : 0,
       };
     });
+    const availableCoins = adapter.getMoney(treasury);
+    if (COIN_KEYS.some((key) => !Number.isSafeInteger(availableCoins[key]) || availableCoins[key] < 0)) {
+      throw new PartyMutationError(
+        PARTY_COIN_PREVIEW_ERROR_CODES.invalidTreasury,
+        'The Party Treasury has an unreadable coin balance.',
+      );
+    }
     const allocation = allocateCoins({
-      availableCoins: adapter.getMoney(treasury),
+      availableCoins,
       recipients: recipientRows,
       selectedActorUuids: selectedActorUuids ?? undefined,
-      splitCoins: splitCoins ?? undefined,
+      splitCoins: splitCoins == null ? undefined : validateSplitCoins(splitCoins),
     });
     return {
       ...allocation,

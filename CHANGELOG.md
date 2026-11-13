@@ -2,6 +2,36 @@
 
 All notable changes to Hyp3e Utilities are documented here.
 
+## 1.0.4 — 2026-11-13
+
+### Compatibility
+
+- Record hyp3e 4.9.2 as the most recent verified system version. Minimum
+  requirements remain unchanged.
+- Validate the NPC HUD, Party Sheet, GM/player permissions, distributions,
+  formatted XP/coins, themes, keyboard controls and module lifecycle on
+  Foundry 13.351 and 14.369.
+- Retain the upstream v13 equipment-journal migration and core chat-animation
+  limitations documented in the User Guide.
+
+### Fixed
+
+- Coin splits now preserve formatted balances in all five denominations,
+  including coins left in the treasury and denominations that are not split.
+  Split amounts accept thousands separators such as `1,250` or `1.250`.
+- Invalid stored coin balances stop a split instead of being replaced with
+  zero. Wage payments also preserve formatted treasury balances.
+- XP awards now add to totals saved with thousands separators, such as `1,375`
+  or `1.375`. Previously, saving a character sheet between awards could cause
+  existing XP to be replaced or make a later award appear to do nothing.
+- An unreadable existing XP total stops the distribution instead of being
+  treated as zero. Earlier changes in that failed distribution are rolled back.
+- Added regression checks for formatted totals, repeated awards, and duplicate
+  requests. Corrected an XP test fixture that used an obsolete field name.
+
+These fixes do not reconstruct XP or coins lost earlier. Review affected totals
+against campaign records before making corrections.
+
 ## 1.0.3 — 2026-10-17
 
 ### Compatibility

@@ -17,6 +17,7 @@ export const PARTY_COIN_AWARD_OPERATIONS = Object.freeze({
 export const PARTY_COIN_AWARD_ERROR_CODES = Object.freeze({
   auditFailed: 'coinDistributionAuditFailed',
   invalidActor: 'coinDistributionInvalidActor',
+  invalidBalance: 'coinDistributionInvalidBalance',
   invalidPreview: 'coinDistributionInvalidPreview',
   overflow: 'coinDistributionOverflow',
   previewChanged: 'coinDistributionPreviewChanged',
@@ -211,6 +212,12 @@ export function createPartyCoinAwardService({
           );
         }
         const beforeCoins = adapter.getMoney(actor);
+        if (COIN_KEYS.some((key) => !Number.isSafeInteger(beforeCoins[key]) || beforeCoins[key] < 0)) {
+          throw new PartyMutationError(
+            PARTY_COIN_AWARD_ERROR_CODES.invalidBalance,
+            `Coin recipient "${distribution.actorUuid}" has an unreadable coin balance.`,
+          );
+        }
         const afterCoins = Object.fromEntries(COIN_KEYS.map((coinKey) => {
           const amount = beforeCoins[coinKey] + distribution.awards[coinKey];
           if (!Number.isSafeInteger(amount)) {

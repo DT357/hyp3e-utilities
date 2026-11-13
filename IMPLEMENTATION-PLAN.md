@@ -4,9 +4,9 @@ Version: 1.1
 
 Created: 2026-08-14
 
-Last reconciled: 2026-10-17
+Last reconciled: 2026-11-13
 
-Status: Initial implementation complete; hyp3e 4.6.0 validated; 1.0.3 published on GitHub
+Status: Initial implementation complete; hyp3e 4.9.2 validated; 1.0.4 release validation in progress
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
@@ -398,6 +398,8 @@ historical execution batch.
 
 | ID | Status | Scope | Completion evidence |
 | --- | --- | --- | --- |
+| COIN-004 | `DONE` | Preserve formatted coin balances and accept thousands separators in split input | [Coin regression record](docs/test-runs/2026-10-22-coin-formatting.md): 264 local tests, full v13/v14 matrix and all-15-module campaign test passed. Five-denomination conservation, repeated splits, rollback, remainders and wages verified. Local and unreleased. |
+| XP-004 | `DONE` | Preserve formatted XP totals and reproduce overwritten/apparently skipped awards in a copied campaign | [XP regression record](docs/test-runs/2026-10-21-xp-formatting.md): 257 local tests, complete v13/v14 matrix, and copied v14 campaign with all 15 enabled modules passed. Fix is local and unreleased; historical lost XP is not reconstructed. |
 | QA-002 | `DONE` | Repair stale UI assertions and PAR-009 fixtures; rerun HUD-006 and the current Foundry 13/14 GM/player matrix | [4.5.0 validation and 1.0.2 candidate](docs/test-runs/2026-10-16-hyp3e-450-validation.md): all Utilities assertions pass; exact identities, core-only control reproductions, and upstream limitations recorded. |
 | REL-002 | `DONE` | Publish version 1.0.2 through the GitHub release workflow | [Publication and asset verification](docs/test-runs/2026-10-16-v1.0.2-release.md): release workflow passed; public checksums, exact committed contents, compatibility metadata, and latest manifest verified. |
 | QA-003 | `DONE` | Validate Utilities against hyp3e 4.6.0 on Foundry 13/14 | [4.6.0 validation record](docs/test-runs/2026-10-17-hyp3e-460-validation.md): baseline and final 1.0.3 archive passed the complete GM/player matrix; hashes, expected errors, and cleanup verified. |
