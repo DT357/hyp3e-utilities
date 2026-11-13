@@ -6,7 +6,7 @@ Created: 2026-08-14
 
 Last reconciled: 2026-11-13
 
-Status: Initial implementation complete; hyp3e 4.9.2 validated; 1.0.4 release validation in progress
+Status: Initial implementation complete; hyp3e 4.9.2 validated; 1.0.4 published on GitHub and Foundry
 
 Design source: [HYP3E-UTILITIES-DESIGN.md](./HYP3E-UTILITIES-DESIGN.md)
 
